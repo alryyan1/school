@@ -2,7 +2,7 @@
 
 export enum Gender {
     Male = 'ذكر',
-    Female = 'أنثى'
+    Female = 'انثي'
   }
   
   export enum EducationLevel {

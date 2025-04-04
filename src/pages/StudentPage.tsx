@@ -7,7 +7,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 const StudentPage: React.FC = () => {
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ar">
-            <StudentForm />
+            <StudentForm  />
         </LocalizationProvider>
     );
 };

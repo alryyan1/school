@@ -49,13 +49,11 @@ axiosClient.interceptors.response.use(
             // The request was made but no response was received
             console.error('Network error:', error.request);
             toast.error('Network error. Please check your connection.', {
-                position: toast.POSITION.TOP_RIGHT,
             });
         } else {
             // Something happened in setting up the request that triggered an Error
             console.error('Request error:', error.message);
             toast.error('An unexpected error occurred.', {
-                position: toast.POSITION.TOP_RIGHT,
             });
         }
 
