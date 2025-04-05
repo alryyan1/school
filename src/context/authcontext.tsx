@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkAuth = useCallback(async (signal) => {
     setState(prev => ({ ...prev, isLoading: true }));
-    
+    console.log('check auth started')
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (!token) {
       setState({
@@ -47,10 +47,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
+      setState((prev)=>{
+        return {...prev,isLoading:true}
+      })
       const response = await axiosClient.get('auth/verify',{
         signal
       });
       if (response.data.valid) {
+        console.log('user is valid')
         setState({
           isAuthenticated: true,
           userRole: 'admin',
@@ -60,14 +64,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       }
     } catch (error) {
-      console.log(error,'error inside check auth')
-      setState({
+      console.log(error,'error inside check auth',
+        'error name',error.name
+      )
+      if(error.name != 'CanceledError'){
+   setState({
         isAuthenticated: false,
         userRole: null,
         userId: null,
         userName: null,
         isLoading: false,
       });
+      }
+   
     }
   
   }, []);
@@ -114,12 +123,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [enqueueSnackbar]);
 
   useEffect(() => {
-
-    const controller = new AbortController()
-    checkAuth(controller.signal);
-    return ()=>{
-        controller.abort()
-    }
+    const controller = new AbortController();
+    
+    const authenticate = async () => {
+      try {
+        await checkAuth(controller.signal);
+      } catch (error) {
+        console.error('Authentication error:', error);
+        // Handle error (e.g., show toast, redirect, etc.)
+      }
+    };
+  
+    authenticate();
+  
+    // Cleanup function
+    return () => {
+      controller.abort();
+    };
   }, [checkAuth]);
 
   return (

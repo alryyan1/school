@@ -4,45 +4,49 @@ import {
   RouterProvider,
   Navigate,
   useLocation,
-  Outlet, // Import Outlet
+  Outlet, // Ensure Outlet is imported if layouts need it
 } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { SnackbarProvider } from 'notistack';
 import 'react-toastify/dist/ReactToastify.css';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline'; // Import CssBaseline
 import { arSA } from '@mui/material/locale';
 import { CacheProvider } from '@emotion/react';
 import { cacheRtl } from './constants';
 
-// Layouts
+// --- Layouts ---
 import AuthLayout from './components/AuthLayout';
-import MainLayout from './components/MainLayout'; // Assuming MainLayout has an <Outlet />
+import MainLayout from './components/MainLayout'; // Expects <Outlet /> inside
 
-// Pages
+// --- Core Pages ---
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Unauthorized from './pages/Unauthorized';
-// Student Pages/Components (ensure correct paths)
-import StudentList from './pages/students/StudentList'; // Make sure path is correct
-import StudentDashboard from './pages/students/StudentDashboard'; // Make sure path is correct
-import StudentView from './pages/students/StudentView'; // Make sure path is correct & component exists
 
-// Common Components
+// --- Student Pages & Components ---
+// Verify these paths match your project structure
+import StudentList from './pages/students/StudentList';
+import StudentDashboard from './pages/students/StudentDashboard';
+import StudentView from './pages/students/StudentView';
+
+// --- Teacher Pages & Components ---
+// Verify these paths match your project structure
+import TeacherList from './pages/teachers/TeacherList';
+import TeacherForm from './components/teachers/TeacherForm'; // Note: Component, not page
+// Optional: import TeacherDashboard from './pages/teachers/TeacherDashboard';
+
+// --- Common Components ---
 import LoadingScreen from './components/LoadingScreen';
 
-// Context
+// --- Context ---
 import { useAuth } from './context/authcontext';
 import { StudentForm } from './components/students/studentForm/StudentForm';
+import TeacherView from './components/teachers/TeacherView';
 import Register from './pages/Signup';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import StudentParent from './components/students/StudentParent';
-import { from } from 'stylis';
 
-// CSS (Tailwind/MUI are handled via App.css/Theme)
-// Removed: import 'bootstrap/dist/css/bootstrap.min.css'; - Not typical with MUI/Tailwind
-
+// --- Main App Component ---
 function App() {
   const theme = createTheme(
     {
@@ -62,175 +66,138 @@ function App() {
     arSA
   );
 
-  // ProtectedRoute remains the same
+  // --- Protected Route Component ---
   const ProtectedRoute = ({ children, roles = [] }: { children: React.ReactNode, roles?: string[] }) => {
     const { isAuthenticated, isLoading, userRole } = useAuth();
-    // const location = useLocation()
-    // const from = location.state?.from?.pathname || "/dashboard";
-    // console.log(from,'from app')
+    const location = useLocation(); // Get location for redirect state
+
     if (isLoading) {
       return <LoadingScreen />;
     }
 
     if (!isAuthenticated) {
-      return <Navigate state={{from:location}} to="/auth/login" replace />;
+      console.log('User not authenticated, redirecting to login.');
+      // Pass the current location user tried to access
+      return <Navigate to="/auth/login" state={{ from: location }} replace />;
     }
 
-    // Ensure userRole is treated as string for comparison
-    const currentUserRole = userRole as string;
+    const currentUserRole = userRole as string; // Assuming userRole is set correctly
     if (roles.length > 0 && !roles.includes(currentUserRole)) {
+      console.log(`User role '${currentUserRole}' not authorized for roles: ${roles.join(', ')}`);
       return <Navigate to="/unauthorized" replace />;
     }
 
+    // If authenticated and authorized, render the child route element
     return children;
   };
 
-  // AuthRoute remains the same
+  // --- Auth Route Component (for Login/Register pages) ---
   const AuthRoute = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated, isLoading } = useAuth();
 
     if (isLoading) return <LoadingScreen />;
+
+    // If already authenticated, redirect from login/register to dashboard
     if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
+    // If not authenticated, show the login/register page
     return children;
   };
 
   // --- Router Configuration ---
   const router = createBrowserRouter([
+    // --- Main Application Layout & Routes ---
     {
-      // --- Main Application Layout ---
       path: '/',
       element: (
-        <ProtectedRoute roles={['admin']}> {/* Define roles allowed for main layout */}
-          <MainLayout userRole={'admin'} /> {/* Pass userRole if needed by layout */}
+        <ProtectedRoute roles={['admin']}> {/* Define roles for main app access */}
+          <MainLayout userRole={'admin'} /> {/* Pass role if layout needs it */}
         </ProtectedRoute>
       ),
       children: [
-        // Default route for '/' - redirects to dashboard
-        {
-          index: true,
-          element: <Navigate to="/dashboard" replace />,
-        },
-        // Dashboard route
-        {
-          path: 'dashboard',
-          element: <Dashboard />,
-        },
+        { index: true, element: <Navigate to="/dashboard" replace /> },
+        { path: 'dashboard', element: <Dashboard /> },
 
         // --- Student Section ---
         {
-          path: 'students', // Base path for all student-related routes (/students)
-          element: 
-            <StudentParent />
-          , // Renders the matched nested student route component
+          path: 'students',
+          element: <Outlet />, // Parent renders Outlet for children
           children: [
-            {
-              index: true, // Component for the exact '/students' path
-              element: <StudentDashboard />, // Or <StudentList /> if list is the default view
-            },
-            {
-              path: 'list', // Path: /students/list
-              element: <StudentList />,
-            },
-            {
-              path: 'create', // Path: /students/create
-              element: <StudentForm />, // Assumes StudentForm handles 'create' mode
-            },
-            {
-              path: ':id', // Path: /students/:studentId (e.g., /students/123)
-              element: <StudentView />, // Component to view a single student
-            },
-            {
-              path: ':id/edit', // Path: /students/:studentId/edit (e.g., /students/123/edit)
-              element: <StudentForm />, // Assumes StudentForm handles 'edit' mode based on URL param
-            },
+            { index: true, element: <StudentDashboard /> },
+            { path: 'list', element: <StudentList /> },
+            { path: 'create', element: <StudentForm /> },
+            { path: ':id', element: <StudentView /> },
+            { path: ':id/edit', element: <StudentForm /> },
           ]
         },
         // --- End Student Section ---
 
-        // --- Add other sections like Teachers, Courses similarly ---
-        // Example:
-        // {
-        //   path: 'teachers',
-        //   element: <Outlet />,
-        //   children: [
-        //      { index: true, element: <TeacherList /> },
-        //      { path: 'create', element: <TeacherForm /> },
-        //      { path: ':id', element: <TeacherView /> },
-        //      { path: ':id/edit', element: <TeacherForm /> },
-        //   ]
-        // }
-        // {
-        //   path: 'courses',
-        //   element: <Outlet />,
-        //   children: [ /* ... course routes */ ]
-        // }
+        // --- Teacher Section ---
+        {
+          path: 'teachers',
+          element: <Outlet />, // Parent renders Outlet for children
+          children: [
+            { index: true, element: <Navigate to="/teachers/list" replace /> }, // Default to list
+            // { index: true, element: <TeacherDashboard /> }, // Or use a dashboard
+            { path: 'list', element: <TeacherList /> },
+            { path: 'create', element: <TeacherForm /> },
+            { path: ':id', element: <TeacherView /> },
+            { path: ':id/edit', element: <TeacherForm /> },
+          ]
+        },
+        // --- End Teacher Section ---
+
+        // --- Other Sections (e.g., Courses, Settings) would follow the same pattern ---
+
       ],
     },
 
-    // --- Authentication Layout ---
+    // --- Authentication Layout & Routes ---
     {
       path: '/auth',
-      element: <AuthLayout />, // Layout for login/register pages
+      element: <AuthLayout />, // Specific layout for auth pages
       children: [
         {
           path: 'login',
-          element: (
-            <AuthRoute>
-              <Login />
-            </AuthRoute>
-          ),
+          element: (<AuthRoute><Login /></AuthRoute>),
         },
         {
           path: 'register',
-          element: (
-            <AuthRoute>
-              <Register />
-            </AuthRoute>
-          ),
+          element: (<AuthRoute><Register /></AuthRoute>),
         },
-        // Add forgot password, etc. here if needed
       ],
     },
 
     // --- Standalone Pages ---
-    {
-      path: '/unauthorized', // Unauthorized access page
-      element: <Unauthorized />,
-    },
-    {
-      path: '*', // Catch-all for 404 Not Found
-      element: <NotFound />,
-    },
+    { path: '/unauthorized', element: <Unauthorized /> },
+    { path: '*', element: <NotFound /> }, // Catch-all 404
   ]);
 
   // --- Render Application ---
   return (
     <CacheProvider value={cacheRtl}>
       <ThemeProvider theme={theme}>
-        {/* SnackbarProvider for Material UI based notifications (if needed alongside react-toastify) */}
+        <CssBaseline /> {/* Apply baseline styles */}
         <SnackbarProvider
           maxSnack={3}
           autoHideDuration={3000}
           anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-          dense // Use dense notifications
+          dense
         >
-          {/* ToastContainer for react-toastify notifications */}
           <ToastContainer
             position="top-left"
             autoClose={5000}
             hideProgressBar={false}
             newestOnTop={false}
             closeOnClick
-            rtl={true} // Enable RTL for react-toastify
+            rtl={true}
             pauseOnFocusLoss
             draggable
             pauseOnHover
-            theme="light" // Or "dark" or "colored"
+            theme="light"
           />
-          {/* Provide the router configuration */}
           <RouterProvider router={router} />
-          app
+          {/* Removed stray "app" text */}
         </SnackbarProvider>
       </ThemeProvider>
     </CacheProvider>

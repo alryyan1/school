@@ -1,5 +1,5 @@
 // src/pages/students/StudentDashboard.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
     Box,
@@ -8,19 +8,25 @@ import {
     Typography,
     Paper,
     Grid,
-    Stack // Using Stack for easier spacing of buttons/items
+    Stack, // Using Stack for easier spacing of buttons/items
+    CircularProgress
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/PersonAddAlt1'; // Icon for adding student
 import ListIcon from '@mui/icons-material/FormatListBulleted'; // Icon for listing students
 import AssessmentIcon from '@mui/icons-material/Assessment'; // Example icon for stats
+import { useStudentStore } from '@/stores/studentStore';
 
 // You might fetch some data here later using useStudentStore
 // import { useStudentStore } from '@/stores/studentStore';
 
 const StudentDashboard: React.FC = () => {
     // Example: Placeholder for future stats fetching
-    // const { students } = useStudentStore();
-    // const totalStudents = students.length;
+    const { students,fetchStudents,loading } = useStudentStore();
+    const totalStudents = students.length;
+
+    useEffect(()=>{
+        fetchStudents()
+    },[])
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}> {/* Ensure RTL direction */}
@@ -69,21 +75,21 @@ const StudentDashboard: React.FC = () => {
                         <Typography variant="h6">إجمالي الطلاب</Typography>
                         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                             {/* {totalStudents || 0} Placeholder for actual count */}
-                            150 {/* Example Number */}
+                            {loading ? <CircularProgress/> :totalStudents} {/* Example Number */}
                         </Typography>
                     </Paper>
                 </Grid>
 
                  {/* Example Stat Card 2 */}
-                 <Grid item xs={12} sm={6} md={4}>
+                 {/* <Grid item xs={12} sm={6} md={4}>
                      <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
                          <AddIcon color="secondary" sx={{ fontSize: 40, mb: 1 }}/>
                          <Typography variant="h6">تسجيلات جديدة (آخر شهر)</Typography>
                          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                              12 {/* Example Number */}
-                         </Typography>
-                     </Paper>
-                 </Grid>
+                         {/* </Typography> */}
+                     {/* </Paper> */}
+         
 
                  {/* Add more Grid items for other stats or quick access links */}
 

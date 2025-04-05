@@ -8,7 +8,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import { Gender } from "@/types/student";
+import { EducationLevel, Gender } from "@/types/student";
 import dayjs from "dayjs";
 
 export const StudentInfoTab = () => {
@@ -71,14 +71,15 @@ export const StudentInfoTab = () => {
               {...field}
               value={field.value ? dayjs(field.value) : null}
               onChange={(newValue) => {
-                field.onChange(newValue ? newValue.format('YYYY-MM-DD') : null);
+                field.onChange(newValue ? newValue.format("YYYY-MM-DD") : null);
               }}
               label="تاريخ الميلاد"
               format="YYYY-MM-DD"
               slotProps={{
                 textField: {
                   error: !!errors.date_of_birth,
-                  helperText: errors.date_of_birth?.message.toString() || undefined,
+                  helperText:
+                    errors.date_of_birth?.message.toString() || undefined,
                   fullWidth: true,
                 },
               }}
@@ -87,13 +88,45 @@ export const StudentInfoTab = () => {
         />
       </Grid>
       <Grid item xs={12} sm={6}>
-        <FormControl fullWidth>
-          <InputLabel>الجنس</InputLabel>
-          <Select label="الجنس"  {...register("gender")}>
-            <MenuItem value="ذكر">ذكر</MenuItem>
-            <MenuItem value="انثي">أنثى</MenuItem>
-          </Select>
-        </FormControl>
+       <Controller control={control} name="gender" render={({field})=>{
+        return   <FormControl fullWidth>
+        <InputLabel>الجنس</InputLabel>
+        <Select label="الجنس" {...field}>
+          <MenuItem value={Gender.Male}>{Gender.Male}</MenuItem>
+          <MenuItem value={Gender.Female}>{Gender.Female}</MenuItem>
+        </Select>
+      </FormControl>
+       }}></Controller>
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <Controller
+          name="wished_level"
+          control={control}
+          render={({ field }) => {
+            return (
+              <FormControl fullWidth>
+                <InputLabel>المرحله الدراسيه المرغوبه</InputLabel>
+                <Select label="المرحله الدراسيه المرغوبه" {...field}>
+                  <MenuItem value={EducationLevel.Secondary}>
+                    {EducationLevel.Secondary}
+                  </MenuItem>
+                  <MenuItem value={EducationLevel.Intermediate}>
+                    {EducationLevel.Intermediate}
+                  </MenuItem>
+                  <MenuItem value={EducationLevel.Primary}>
+                    {EducationLevel.Primary}
+                  </MenuItem>
+                  <MenuItem value={EducationLevel.Kindergarten}>
+                    {EducationLevel.Kindergarten}
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            );
+          }}
+        ></Controller>
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField {...register('medical_condition')} fullWidth label='الحاله الصحيه'></TextField>
       </Grid>
     </Grid>
   );

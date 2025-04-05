@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/authcontext';
 
 interface User {
@@ -73,6 +73,8 @@ const Navbar = () => {
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           مدارس الفنار
         </Typography>
+   
+        <NavLink className={'p-5ta'} to={'/'}>الرئيسيه</NavLink>
         {userName ? (
           <div>
             <IconButton

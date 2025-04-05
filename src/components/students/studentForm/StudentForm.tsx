@@ -1,7 +1,7 @@
 // src/components/students/studentForm/StudentForm.tsx
-import { useForm, FormProvider, useController } from "react-hook-form";
+import { useForm, FormProvider, } from "react-hook-form";
 import { Student, EducationLevel, Gender } from "@/types/student";
-import { Tabs, Tab, Box, Button, Grid, Typography, CircularProgress, Alert } from "@mui/material"; // Changed Grid2 to Grid, added CircularProgress, Alert
+import { Tabs, Tab, Box, Button, Typography, CircularProgress, Alert } from "@mui/material"; // Changed Grid2 to Grid, added CircularProgress, Alert
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom'; // Import useParams and useNavigate
 import { StudentInfoTab } from "./StudentTabs/StudentInfoTab";
@@ -69,7 +69,6 @@ export const StudentForm = () => {
     getStudentById,
     currentStudent,
     loading: studentStoreLoading, // Renamed to avoid conflict
-    error: studentStoreError,
     resetCurrentStudent
   } = useStudentStore();
 
@@ -193,7 +192,7 @@ export const StudentForm = () => {
           <Tab label="معلومات الطالب" />
           <Tab label="معلومات الأب" />
           <Tab label="معلومات الأم" />
-          <Tab label="معلومات إضافية" />
+          <Tab label="معلومات ولي الامر الاخر" />
           {/* <Tab label="تأكيد وحفظ" /> */} {/* Confirm tab maybe less useful now? */}
         </Tabs>
 

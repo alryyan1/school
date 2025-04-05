@@ -49,21 +49,6 @@ const MainLayout = ({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activePath, setActivePath] = useState("");
 
-  // Create RTL theme override
-  const rtlTheme = createTheme(
-    {
-      direction: "rtl",
-      palette: {
-        primary: {
-          main: "#1976d2",
-        },
-        secondary: {
-          main: "#dc004e",
-        },
-      },
-    },
-    arSA
-  );
 
   useEffect(() => {
     setActivePath(location.pathname);
@@ -142,7 +127,6 @@ const MainLayout = ({
 
   return (
     <CacheProvider value={cacheRtl}>
-      <ThemeProvider theme={rtlTheme}>
         <Navbar/>
         {/* <div
           style={{
@@ -159,7 +143,6 @@ const MainLayout = ({
             <Outlet />
           </Box>
         {/* </div> */}
-      </ThemeProvider>
     </CacheProvider>
   );
 };
