@@ -45,6 +45,7 @@ import { useAuth } from './context/authcontext';
 import { StudentForm } from './components/students/studentForm/StudentForm';
 import TeacherView from './components/teachers/TeacherView';
 import Register from './pages/Signup';
+import { schoolRoutes, settings } from './router';
 
 // --- Main App Component ---
 function App() {
@@ -146,6 +147,10 @@ function App() {
           ]
         },
         // --- End Teacher Section ---
+
+        // --- School Section ---
+        schoolRoutes,
+        settings
 
         // --- Other Sections (e.g., Courses, Settings) would follow the same pattern ---
 

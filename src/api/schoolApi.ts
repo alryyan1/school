@@ -1,0 +1,66 @@
+// src/api/schoolApi.ts
+import axiosClient from '../axios-client';
+import { School, SchoolFormData } from '@/types/school'; // Adjust path if needed
+
+// Helper to create FormData (can be reused or adapted from teacherApi)
+const createSchoolFormData = (schoolData: Partial<SchoolFormData>): FormData => {
+    const formData = new FormData();
+    Object.keys(schoolData).forEach(key => {
+        const value = schoolData[key as keyof SchoolFormData];
+        if (key !== 'logo' && value !== null && value !== undefined) {
+            formData.append(key, value as string | Blob);
+        }
+    });
+    if (schoolData.logo instanceof File) { // Ensure it's a File
+        formData.append('logo', schoolData.logo);
+    }
+    return formData;
+};
+
+// Type for paginated response
+type PaginatedSchoolsResponse = {
+
+    data: School[];
+    links: {
+        first: string | null;
+        last: string | null;
+        prev: string | null;
+        next: string | null;
+    };
+    meta: {
+        current_page: number;
+        from: number;
+        last_page: number;
+        path: string;
+        per_page: number;
+        to: number;
+        total: number;
+    };
+
+};
+export const SchoolApi = {
+    // No longer expects page parameter, returns array directly
+    getAll: () =>
+        axiosClient.get<{ data: School[] }>(`/schools`), // Expect { data: [...] } wrapper from ResourceCollection
+
+    getById: (id: number) =>
+        axiosClient.get<{ data: School }>(`/schools/${id}`), // Expect { data: {...} } wrapper from Resource
+
+    create: (school: SchoolFormData) => {
+        const formData = createSchoolFormData(school);
+        return axiosClient.post<{ data: School }>('/schools', formData, { // Expect { data: {...} }
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+
+    update: (id: number, school: Partial<SchoolFormData>) => {
+        const formData = createSchoolFormData(school);
+        formData.append('_method', 'PUT');
+        return axiosClient.post<{ data: School }>(`/schools/${id}`, formData, { // Expect { data: {...} }
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+
+    delete: (id: number) =>
+        axiosClient.delete(`/schools/${id}`), // No data expected on success (200/204)
+};
