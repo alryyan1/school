@@ -46,6 +46,7 @@ import { StudentForm } from './components/students/studentForm/StudentForm';
 import TeacherView from './components/teachers/TeacherView';
 import Register from './pages/Signup';
 import { schoolRoutes, settings } from './router';
+import StudentEnrollmentManager from './pages/enrollments/StudentEnrollmentManager';
 
 // --- Main App Component ---
 function App() {
@@ -146,6 +147,11 @@ function App() {
             { path: ':id/edit', element: <TeacherForm /> },
           ]
         },
+         // --- Enrollments Section ---
+         {
+          path: 'enrollments', // New top-level section
+          element: <StudentEnrollmentManager />,
+      },
         // --- End Teacher Section ---
 
         // --- School Section ---

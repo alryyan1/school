@@ -7,6 +7,7 @@ import GradeLevelList from "./components/settings/GradeLevelList";
 import SettingsDashboard from "./components/settings/SettingsDashboard";
 import SubjectList from "./components/settings/SubjectList";
 import CurriculumManager from "./pages/curriculum/CurriculumManager";
+import ClassroomList from "./components/settings/ClassroomList";
 
 export const schoolRoutes: RouteObject = {
   path: "schools", // Base path for schools
@@ -34,6 +35,8 @@ export const settings: RouteObject = {
     // { path: 'general', element: <GeneralSettingsPage /> },
     // Add other settings routes here (e.g., general settings, users)
      // --- Curriculum Section ---
+     { path: 'classrooms', element: <ClassroomList /> }, // <-- Add this route
+
      {
       path: 'curriculum',
       element: <CurriculumManager />, // Direct route to the manager page

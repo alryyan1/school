@@ -114,6 +114,13 @@ const Dashboard: React.FC = () => {
              description: 'إدارة بيانات المدارس والفروع.',
              color: theme.palette.warning.light,
          },
+         {
+            title: 'تعين الطلاب',
+            icon: <BusinessIcon />, // Icon for Schools
+            link: '/enrollments', // Main school list/management
+            description: 'تعيين الطلاب ',
+            color: theme.palette.warning.light,
+        },
         // {
         //     title: 'المقررات الدراسية',
         //     icon: <AssignmentIcon />,

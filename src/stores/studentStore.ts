@@ -1,7 +1,7 @@
 // src/stores/studentStore.ts
 import { create } from "zustand";
 import { Student, Gender, EducationLevel } from "@/types/student";
-import { StudentApi } from "@/api/studentApi";
+import { StudentApi, StudentCollectionResponse, StudentResourceResponse } from "@/api/studentApi";
 
 type StudentState = {
   students: Student[];
@@ -13,10 +13,11 @@ type StudentState = {
 type StudentActions = {
   fetchStudents: () => Promise<void>;
   getStudentById: (id: number) => Promise<void>;
-  createStudent: (student: Omit<Student, "id">) => Promise<void>;
+  createStudent: (student: Omit<Student, "id">) => Promise<void|Student>;
   updateStudent: (id: number, student: Partial<Student>) => Promise<void>;
   deleteStudent: (id: number) => Promise<void>;
   resetCurrentStudent: () => void;
+  updateStudentPhoto: (id: number, photo: File) => Promise<boolean>; 
 };
 
 const initialState: StudentState = {
@@ -34,7 +35,7 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
     try {
       const response = await StudentApi.getAll();
       console.log(response.data, "students data");
-      set({ students: response.data, loading: false });
+      set({ students: response.data.data, loading: false });
     } catch (error) {
       set({ error: "Failed to fetch students", loading: false });
     }
@@ -44,7 +45,7 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await StudentApi.getById(id);
-      set({ currentStudent: response.data, loading: false });
+      set({ currentStudent: response.data.data, loading: false });
     } catch (error) {
       set({ error: "Failed to fetch student", loading: false });
     }
@@ -102,4 +103,26 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
   resetCurrentStudent: () => {
     set({ currentStudent: null });
   },
+   // --- NEW ACTION IMPLEMENTATION ---
+   updateStudentPhoto: async (id: number, photo: File) => {
+    // No loading state change here, handled by component UI
+    try {
+        const response = await StudentApi.updatePhoto(id, photo);
+        const updatedStudent = response.data.data; // Extract updated student data
+
+        // Update the current student in the store immediately
+        set((state) => ({
+            currentStudent: state.currentStudent?.id === id ? updatedStudent : state.currentStudent,
+            // Optionally update the student in the main list as well
+            // students: state.students.map(s => s.id === id ? updatedStudent : s),
+        }));
+        return true; // Indicate success
+    } catch (error: any) {
+        console.error(`Failed to update photo for student ${id}:`, error);
+        // We'll let the component handle showing the error via snackbar
+        // You could set the store error state here too if desired:
+        // set({ error: error.response?.data?.message || 'فشل تحديث الصورة' });
+        return false; // Indicate failure
+    }
+  }
 }));

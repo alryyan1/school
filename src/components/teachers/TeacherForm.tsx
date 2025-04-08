@@ -126,7 +126,7 @@ const TeacherForm: React.FC = () => {
                 hire_date: currentTeacher.data.hire_date ? dayjs(currentTeacher.data.hire_date).format('YYYY-MM-DD') : '',
                 photo: null, // Reset photo file input
             });
-            setImagePreview(`${imagesUrl}${currentTeacher.data.photo_path}`);
+            setImagePreview(`${currentTeacher.data.photo_url}`);
         }
     }, [currentTeacher, isEditMode, reset, teacherId]);
 

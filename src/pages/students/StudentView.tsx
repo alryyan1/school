@@ -1,6 +1,6 @@
 // src/pages/students/StudentView.tsx
-import React, { useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
     Box,
     Grid,
@@ -15,198 +15,302 @@ import {
     Card,
     CardMedia,
     useTheme,
-    Container
+    Container,
+    Stack, // Use Stack for vertical layout
+    IconButton, // For potential close button on alert
+    styled, // For hidden file input
+    LinearProgress // For upload progress
 } from '@mui/material';
-import { Edit as EditIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
-import PersonIcon from '@mui/icons-material/Person'; // Placeholder icon
+import {
+    Edit as EditIcon,
+    ArrowBack as ArrowBackIcon,
+    Person as PersonIcon,
+    CloudUpload as UploadIcon,
+    Close as CloseIcon // For alert
+} from '@mui/icons-material';
 import { useStudentStore } from '@/stores/studentStore';
-import { imagesUrl } from '@/constants'; // Import the base URL for images
-import { Gender, EducationLevel } from '@/types/student'; // Import enums if needed for display logic
+import { imagesUrl } from '@/constants';
+import { Gender } from '@/types/student';
+import { useSnackbar } from 'notistack';
 
-// Helper function to display data or a placeholder
-const displayData = (data: string | null | undefined, placeholder = 'لا يوجد') => {
-    return data || placeholder;
+// Helper to display data or placeholder
+const displayData = (data: string | number | null | undefined, placeholder = 'غير محدد', suffix = '') => {
+    return data ? `${data}${suffix}` : placeholder;
 };
+
+// Styled component for hidden file input
+const VisuallyHiddenInput = styled('input')({
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    whiteSpace: 'nowrap',
+    width: 1,
+});
+
+// Simple component for displaying info items consistently
+const InfoItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
+    <Grid container spacing={1} sx={{ mb: 1 }}>
+        <Grid item xs={4} sm={3}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+                {label}:
+            </Typography>
+        </Grid>
+        <Grid item xs={8} sm={9}>
+            {typeof value === 'string' || typeof value === 'number' ? (
+                <Typography variant="body1">{value}</Typography>
+            ) : (
+                value // Render components like Chip directly
+            )}
+        </Grid>
+    </Grid>
+);
 
 const StudentView: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const theme = useTheme();
+    const { enqueueSnackbar } = useSnackbar();
+    const fileInputRef = useRef<HTMLInputElement>(null); // Ref for file input
+
     const {
         currentStudent,
         loading,
-        error,
+        error: storeError, // Rename to avoid conflict
         getStudentById,
-        resetCurrentStudent
+        resetCurrentStudent,
+        updateStudentPhoto // Get the new action
     } = useStudentStore();
+
+    // State for photo upload
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     useEffect(() => {
         const studentId = parseInt(id ?? '', 10);
         if (!isNaN(studentId)) {
             getStudentById(studentId);
         } else {
-            // Handle invalid ID in URL if necessary
             console.error("Invalid Student ID provided in URL");
         }
-
-        // Cleanup function to reset current student when component unmounts
-        return () => {
-            resetCurrentStudent();
-        };
+        return () => resetCurrentStudent();
     }, [id, getStudentById, resetCurrentStudent]);
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
+    // Clear upload state if student changes
+    useEffect(() => {
+         setSelectedFile(null);
+         setIsUploading(false);
+         setUploadError(null);
+    }, [currentStudent]);
 
-    if (error) {
-        return <Alert severity="error" sx={{ m: 3 }}>{error}</Alert>;
-    }
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            // Basic validation (optional: add size/type check here)
+             if (file.size > 2 * 1024 * 1024) { // Max 2MB example
+                 setUploadError("حجم الملف كبير جداً (الحد الأقصى 2 ميجا).");
+                 setSelectedFile(null);
+                 if(fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+                 return;
+             }
+            setSelectedFile(file);
+            setUploadError(null); // Clear previous error
+        } else {
+            setSelectedFile(null);
+        }
+    };
 
+    const handleUpload = async () => {
+        if (!selectedFile || !currentStudent) return;
+
+        setIsUploading(true);
+        setUploadError(null);
+        const success = await updateStudentPhoto(currentStudent.id, selectedFile);
+        setIsUploading(false);
+
+        if (success) {
+            enqueueSnackbar('تم تحديث صورة الطالب بنجاح', { variant: 'success' });
+            setSelectedFile(null); // Clear selection
+            if(fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+            // No need to refetch, store update should trigger re-render with new image
+        } else {
+            // Error message is set in the store action or defaults here
+            setUploadError(useStudentStore.getState().error || 'فشل رفع الصورة. حاول مرة أخرى.');
+            // enqueueSnackbar(useStudentStore.getState().error || 'فشل رفع الصورة', { variant: 'error' });
+        }
+    };
+
+
+    // --- Render Logic ---
+    if (loading && !currentStudent) { // Show loading only on initial load
+        return <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}><CircularProgress size={40} /></Box>;
+    }
+    if (storeError) {
+        return <Container sx={{mt: 4}}><Alert severity="error">{storeError}</Alert></Container>;
+    }
     if (!currentStudent) {
-        return <Alert severity="warning" sx={{ m: 3 }}>لم يتم العثور على الطالب.</Alert>;
+        return <Container sx={{mt: 4}}><Alert severity="info">لم يتم العثور على بيانات الطالب.</Alert></Container>;
     }
 
-    // Construct image URL or use null if no image
-    const imageUrl = currentStudent.image ? `${imagesUrl}/${currentStudent.image}` : null;
-    const studentName = currentStudent.student_name || "الطالب"; // Fallback name for Avatar
+    const studentName = currentStudent.student_name || "الطالب";
+    // Use photo_url from the resource for immediate display
+    const imageUrl = currentStudent.image_url;
+    // Preview selected file if it exists
+    const imagePreviewUrl = selectedFile ? URL.createObjectURL(selectedFile) : imageUrl;
+    console.log(imagePreviewUrl,'imagePreviewUrl',currentStudent,'current student',`${imagesUrl}${imagePreviewUrl }`)
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
-            <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h4" component="h1">
-                        ملف الطالب: {currentStudent.student_name}
+        <Container style={{direction:'rtl'}} maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
+            <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 2, boxShadow: `0 4px 12px ${theme.palette.action.hover}` }}>
+                {/* Header */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: `1px solid ${theme.palette.divider}`, pb: 2 }}>
+                    <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+                        ملف الطالب: {studentName}
                     </Typography>
-                    <Box>
-                        <Button
-                            variant="outlined"
-                            startIcon={<ArrowBackIcon />}
-                            component={Link}
-                            to="/students/list" // Or '/students' depending on your preference
-                            sx={{ ml: 1 }}
-                        >
-                            العودة للقائمة
+                    <Stack direction="row" spacing={1}>
+                        <Button variant="outlined" startIcon={<ArrowBackIcon />} component={RouterLink} to="/students/list">
+                            القائمة
                         </Button>
-                        <Button
-                            variant="contained"
-                            startIcon={<EditIcon />}
-                            component={Link}
-                            to={`/students/${currentStudent.id}/edit`}
-                        >
+                        <Button variant="contained" startIcon={<EditIcon />} component={RouterLink} to={`/students/${currentStudent.id}/edit`}>
                             تعديل
                         </Button>
-                    </Box>
+                    </Stack>
                 </Box>
 
-                <Grid container spacing={3}>
-                    {/* Image Section */}
+                <Grid container spacing={4}>
+                    {/* Image & Upload Section */}
                     <Grid item xs={12} md={3}>
-                        {imageUrl ? (
-                            <Card>
-                                <CardMedia
-                                    component="img"
-                                    image={imageUrl}
-                                    alt={studentName}
-                                    sx={{
-                                        width: '100%',
-                                        maxHeight: 350,
-                                        objectFit: 'cover', // Or 'contain' based on preference
-                                        borderRadius: 1,
-                                    }}
-                                    onError={(e) => {
-                                        // Optional: Handle broken image links
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        // You could show the avatar fallback here too
-                                    }}
-                                />
-                            </Card>
-                        ) : (
+                        <Stack spacing={2} alignItems="center">
                             <Avatar
+                                src={`${imagePreviewUrl }`|| undefined} // Show preview or existing image
+                                alt={studentName}
                                 sx={{
-                                    width: 150,
-                                    height: 150,
+                                    width: 160, height: 160,
                                     fontSize: '4rem',
-                                    bgcolor: theme.palette.primary.light, // Example background color
-                                    mb: 2
+                                    bgcolor: !imagePreviewUrl ? theme.palette.primary.light : undefined, // Show background only for placeholder
+                                    border: `3px solid ${theme.palette.divider}`
                                 }}
                             >
-                                {/* Display first letter of name or a generic icon */}
-                                {studentName.charAt(0) || <PersonIcon fontSize="inherit" />}
+                                {!imagePreviewUrl && (studentName.charAt(0) || <PersonIcon fontSize="inherit" />)}
                             </Avatar>
-                        )}
+
+                            {/* Hidden Input */}
+                            <VisuallyHiddenInput
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/png, image/jpeg, image/gif"
+                                onChange={handleFileChange}
+                            />
+
+                             {/* Upload Button / Loading */}
+                             <Button
+                                component="label" // Makes the button trigger the hidden input
+                                variant="contained"
+                                startIcon={<UploadIcon />}
+                                disabled={isUploading}
+                                fullWidth
+                                htmlFor="student-photo-upload" // Link to hidden input - ID needed on input
+                                onClick={() => fileInputRef.current?.click()} // Trigger click programmatically
+                             >
+                                {isUploading ? 'جار الرفع...' : (selectedFile ? 'تأكيد الرفع' : 'تغيير الصورة')}
+                                {/* Hidden input linked by component="label" */}
+                                {/* <VisuallyHiddenInput id="student-photo-upload" type="file" accept="image/*" onChange={handleFileChange} /> */}
+                             </Button>
+
+                             {/* Conditionally show Upload button only if a file is selected */}
+                              {selectedFile && !isUploading && (
+                                 <Button
+                                     variant="contained"
+                                     color="primary"
+                                     onClick={handleUpload}
+                                     fullWidth
+                                 >
+                                     تأكيد رفع "{selectedFile.name.substring(0, 15)}..."
+                                 </Button>
+                              )}
+
+                            {/* Show progress or error */}
+                            {isUploading && <LinearProgress sx={{ width: '100%', mt: 1 }} />}
+                            {uploadError && (
+                                <Alert
+                                    severity="error" sx={{ width: '100%', mt: 1 }}
+                                    action={ <IconButton size="small" onClick={() => setUploadError(null)}><CloseIcon fontSize="inherit" /></IconButton> }
+                                >
+                                    {uploadError}
+                                </Alert>
+                            )}
+
+                        </Stack>
                     </Grid>
 
                     {/* Details Section */}
                     <Grid item xs={12} md={9}>
-                        {/* Basic Info */}
-                        <Typography variant="h6" gutterBottom>المعلومات الأساسية</Typography>
-                        <Grid container spacing={1} sx={{ mb: 2 }}>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الاسم الكامل:</strong> {displayData(currentStudent.student_name)}</Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>تاريخ الميلاد:</strong> {displayData(currentStudent.date_of_birth)}</Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الجنس:</strong> <Chip label={displayData(currentStudent.gender)} size="small" color={currentStudent.gender === Gender.Male ? 'info' : 'secondary'} /></Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>المرحلة المرغوبة:</strong> <Chip label={displayData(currentStudent.wished_level)} size="small" color="default" /></Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الرقم الوطني:</strong> {displayData(currentStudent.goverment_id)}</Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>البريد الإلكتروني:</strong> {displayData(currentStudent.email)}</Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>المدرسة السابقة:</strong> {displayData(currentStudent.referred_school)}</Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>نسبة النجاح السابقة:</strong> {displayData(currentStudent.success_percentage)}%</Typography></Grid>
-                             <Grid item xs={12}><Typography variant="body1"><strong>الحالة الصحية:</strong> {displayData(currentStudent.medical_condition)}</Typography></Grid>
-                        </Grid>
-                        <Divider sx={{ my: 2 }} />
+                        <Stack spacing={3}> {/* Vertical spacing between sections */}
+                            {/* Basic Info Section */}
+                            <Box>
+                                <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>المعلومات الأساسية</Typography>
+                                <InfoItem label="الاسم الكامل" value={displayData(currentStudent.student_name)} />
+                                <InfoItem label="تاريخ الميلاد" value={displayData(currentStudent.date_of_birth)} />
+                                <InfoItem label="الجنس" value={<Chip label={displayData(currentStudent.gender)} size="small" color={currentStudent.gender === Gender.Male ? 'info' : 'secondary'} variant="outlined" />} />
+                                <InfoItem label="المرحلة المرغوبة" value={<Chip label={displayData(currentStudent.wished_level)} size="small" variant="outlined" />} />
+                                <InfoItem label="الرقم الوطني" value={displayData(currentStudent.goverment_id)} />
+                                <InfoItem label="البريد الإلكتروني" value={displayData(currentStudent.email)} />
+                                <InfoItem label="المدرسة السابقة" value={displayData(currentStudent.referred_school)} />
+                                <InfoItem label="نسبة النجاح السابقة" value={displayData(currentStudent.success_percentage, undefined, '%')} />
+                                <InfoItem label="الحالة الصحية" value={displayData(currentStudent.medical_condition)} />
+                            </Box>
 
-                        {/* Father Info */}
-                        <Typography variant="h6" gutterBottom>معلومات الأب</Typography>
-                         <Grid container spacing={1} sx={{ mb: 2 }}>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>اسم الأب:</strong> {displayData(currentStudent.father_name)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الوظيفة:</strong> {displayData(currentStudent.father_job)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الهاتف:</strong> {displayData(currentStudent.father_phone)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>واتساب:</strong> {displayData(currentStudent.father_whatsapp)}</Typography></Grid>
-                             <Grid item xs={12}><Typography variant="body1"><strong>العنوان:</strong> {displayData(currentStudent.father_address)}</Typography></Grid>
-                         </Grid>
-                         <Divider sx={{ my: 2 }} />
+                            {/* Father Info Section */}
+                            <Box>
+                                <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>معلومات الأب</Typography>
+                                <InfoItem label="اسم الأب" value={displayData(currentStudent.father_name)} />
+                                <InfoItem label="الوظيفة" value={displayData(currentStudent.father_job)} />
+                                <InfoItem label="الهاتف" value={displayData(currentStudent.father_phone)} />
+                                <InfoItem label="واتساب" value={displayData(currentStudent.father_whatsapp)} />
+                                <InfoItem label="العنوان" value={displayData(currentStudent.father_address)} />
+                            </Box>
 
-                        {/* Mother Info */}
-                        <Typography variant="h6" gutterBottom>معلومات الأم</Typography>
-                        <Grid container spacing={1} sx={{ mb: 2 }}>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>اسم الأم:</strong> {displayData(currentStudent.mother_name)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الوظيفة:</strong> {displayData(currentStudent.mother_job)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الهاتف:</strong> {displayData(currentStudent.mother_phone)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>واتساب:</strong> {displayData(currentStudent.mother_whatsapp)}</Typography></Grid>
-                             <Grid item xs={12}><Typography variant="body1"><strong>العنوان:</strong> {displayData(currentStudent.mother_address)}</Typography></Grid>
-                         </Grid>
-                         <Divider sx={{ my: 2 }} />
+                            {/* Mother Info Section */}
+                            <Box>
+                                <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>معلومات الأم</Typography>
+                                <InfoItem label="اسم الأم" value={displayData(currentStudent.mother_name)} />
+                                <InfoItem label="الوظيفة" value={displayData(currentStudent.mother_job)} />
+                                <InfoItem label="الهاتف" value={displayData(currentStudent.mother_phone)} />
+                                <InfoItem label="واتساب" value={displayData(currentStudent.mother_whatsapp)} />
+                                <InfoItem label="العنوان" value={displayData(currentStudent.mother_address)} />
+                             </Box>
 
-                        {/* Other Parent/Guardian Info */}
-                        <Typography variant="h6" gutterBottom>معلومات ولي الأمر الآخر (إن وجد)</Typography>
-                        <Grid container spacing={1} sx={{ mb: 2 }}>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الاسم:</strong> {displayData(currentStudent.other_parent)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>صلة القرابة:</strong> {displayData(currentStudent.relation_of_other_parent)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الوظيفة:</strong> {displayData(currentStudent.relation_job)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الهاتف:</strong> {displayData(currentStudent.relation_phone)}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>واتساب:</strong> {displayData(currentStudent.relation_whatsapp)}</Typography></Grid>
-                         </Grid>
-                        <Divider sx={{ my: 2 }} />
+                            {/* Other Guardian Info Section (Only show if data exists) */}
+                             {(currentStudent.other_parent) && (
+                                 <Box>
+                                     <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>ولي الأمر الآخر</Typography>
+                                     <InfoItem label="الاسم" value={displayData(currentStudent.other_parent)} />
+                                     <InfoItem label="صلة القرابة" value={displayData(currentStudent.relation_of_other_parent)} />
+                                     <InfoItem label="الوظيفة" value={displayData(currentStudent.relation_job)} />
+                                     <InfoItem label="الهاتف" value={displayData(currentStudent.relation_phone)} />
+                                     <InfoItem label="واتساب" value={displayData(currentStudent.relation_whatsapp)} />
+                                 </Box>
+                             )}
 
-                         {/* Closest Person Info */}
-                        <Typography variant="h6" gutterBottom>معلومات أقرب شخص للطالب</Typography>
-                        <Grid container spacing={1} sx={{ mb: 2 }}>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الاسم:</strong> {displayData(currentStudent.closest_name)}</Typography></Grid>
-                            <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الهاتف:</strong> {displayData(currentStudent.closest_phone)}</Typography></Grid>
-                        </Grid>
-                         <Divider sx={{ my: 2 }} />
+                             {/* Closest Person Section */}
+                              <Box>
+                                <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>أقرب شخص للطالب</Typography>
+                                <InfoItem label="الاسم" value={displayData(currentStudent.closest_name)} />
+                                <InfoItem label="الهاتف" value={displayData(currentStudent.closest_phone)} />
+                             </Box>
 
-                        {/* Approval Status */}
-                        <Typography variant="h6" gutterBottom>حالة القبول</Typography>
-                        <Grid container spacing={1}>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>الحالة:</strong> <Chip label={currentStudent.approved ? 'مقبول' : 'قيد المراجعة'} size="small" color={currentStudent.approved ? 'success' : 'warning'} /></Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>تاريخ القبول:</strong> {displayData(currentStudent.approve_date)}</Typography></Grid>
-                             {/* You might want to fetch the user name based on approved_by_user ID */}
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>تم القبول بواسطة (ID):</strong> {displayData(currentStudent.approved_by_user?.toString())}</Typography></Grid>
-                             <Grid item xs={12} sm={6}><Typography variant="body1"><strong>تم إرسال رسالة القبول:</strong> <Chip label={currentStudent.message_sent ? 'نعم' : 'لا'} size="small" color={currentStudent.message_sent ? 'success' : 'default'} /></Typography></Grid>
-                        </Grid>
+                            {/* Approval Status Section */}
+                            <Box>
+                                <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>حالة القبول</Typography>
+                                <InfoItem label="الحالة" value={<Chip label={currentStudent.approved ? 'مقبول' : 'قيد المراجعة'} size="small" color={currentStudent.approved ? 'success' : 'warning'} variant="filled" />} />
+                                <InfoItem label="تاريخ القبول" value={displayData(currentStudent.approve_date)} />
+                                <InfoItem label="تم القبول بواسطة (ID)" value={displayData(currentStudent.approved_by_user?.toString())} />
+                                <InfoItem label="تم إرسال رسالة القبول" value={<Chip label={currentStudent.message_sent ? 'نعم' : 'لا'} size="small" color={currentStudent.message_sent ? 'success' : 'default'} variant="outlined" />} />
+                            </Box>
+                        </Stack>
                     </Grid>
                 </Grid>
             </Paper>

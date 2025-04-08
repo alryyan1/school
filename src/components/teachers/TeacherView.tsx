@@ -57,9 +57,9 @@ const TeacherView: React.FC = () => {
     }
 
     const teacherName = currentTeacher.data.name || "مدرس";
-
+    console.log(currentTeacher.data.photo_url,'currentTeacher.data.photo_url')
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
+        <Container style={{direction:'rtl'}} maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
             <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h4" component="h1">
@@ -89,12 +89,13 @@ const TeacherView: React.FC = () => {
                     {/* Image Section */}
                     <Grid item xs={12} md={3} sx={{ textAlign: 'center' }}>
                          <Avatar
-                            src={`${imagesUrl}${currentTeacher.data.photo_path }`|| undefined}
+                            src={`${currentTeacher.data.photo_url}`|| undefined}
                             alt={teacherName}
                             sx={{ width: 150, height: 150, mb: 2, mx: 'auto' }} // Center avatar
                          >
                              {teacherName.charAt(0) || <PersonIcon fontSize="large" />}
                          </Avatar>
+                         {/* {currentTeacher.data.photo_url} */}
                          <Chip
                              label={currentTeacher.data.is_active ? 'الحساب نشط' : 'الحساب غير نشط'}
                              color={currentTeacher.data.is_active ? 'success' : 'default'}

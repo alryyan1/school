@@ -21,9 +21,20 @@ const initialState: SubjectState = { subjects: [], loading: false, error: null }
 export const useSubjectStore = create<SubjectState & SubjectActions>((set, get) => ({
     ...initialState,
 
-    fetchSubjects: async () => {
+    // fetchSubjects: async () => {
+    //     set({ loading: true, error: null });
+    //     try {
+    //         const response = await SubjectApi.getAll();
+    //         set({ subjects: response.data.data, loading: false });
+    //     } catch (error: any) {
+    //         const message = error.response?.data?.message || 'فشل جلب المواد الدراسية';
+    //         set({ error: message, loading: false });
+    //     }
+    // },
+    fetchSubjects: async () => { // Ensure this fetches all subjects
         set({ loading: true, error: null });
         try {
+            // Assuming SubjectApi.getAll() fetches all subjects
             const response = await SubjectApi.getAll();
             set({ subjects: response.data.data, loading: false });
         } catch (error: any) {
@@ -31,7 +42,6 @@ export const useSubjectStore = create<SubjectState & SubjectActions>((set, get) 
             set({ error: message, loading: false });
         }
     },
-
     createSubject: async (data: SubjectFormData) => {
         try {
             const response = await SubjectApi.create(data);

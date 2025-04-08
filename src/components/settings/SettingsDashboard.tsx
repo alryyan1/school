@@ -23,7 +23,7 @@ import StairsIcon from '@mui/icons-material/Stairs'; // For Grade Levels
 import ClassIcon from '@mui/icons-material/Class'; // For Subjects (example)
 import GroupIcon from '@mui/icons-material/Group'; // For Users (example)
 import SettingsIcon from '@mui/icons-material/Settings'; // General Settings (example)
-import { Book } from '@mui/icons-material';
+import { Book, School } from '@mui/icons-material';
 
 // Define the structure for each settings card item
 interface SettingsItem {
@@ -61,7 +61,7 @@ const SettingsDashboard: React.FC = () => {
         {
             title: 'الأعوام الدراسية',
             description: 'إدارة الأعوام الدراسية وتحديد العام الحالي.',
-            link: '/settings/academic-years',
+            link: 'academic-years',
             icon: <CalendarMonthIcon />,
             color: theme.palette.secondary.light,
         },
@@ -82,8 +82,15 @@ const SettingsDashboard: React.FC = () => {
         {
             title: 'المنهج الدراسي السنوي',
             description: '  إدارة المواد التعليميه   (مثل  اللغه العربيه و الانجليزيه) علي حسب السنه.',
-            link: '/settings/curriculum',
+            link: 'curriculum',
             icon: <Book />,
+            color: theme.palette.success.light,
+        },
+        {
+            title: 'الفصول',
+            description: '  إدارة الفصول والقاعات الدراسيه   ',
+            link: 'classrooms',
+            icon: <School />,
             color: theme.palette.success.light,
         },
         // Add more settings cards as needed

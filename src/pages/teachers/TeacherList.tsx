@@ -19,12 +19,12 @@ import {
     Chip // For status
 } from '@mui/material';
 import { DataGrid, GridColDef, GridValueGetterParams, GridActionsCellItem } from '@mui/x-data-grid';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as ViewIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as ViewIcon , AssignmentInd as AssignIcon } from '@mui/icons-material';
 import { useTeacherStore } from '@/stores/teacherStore';
 import { useSnackbar } from 'notistack';
 import { Teacher } from '@/types/teacher'; // Import Teacher type
 import { imagesUrl } from '@/constants';
-
+import SubjectAssignmentDialog from '@/components/teachers/SubjectAssignmentDialog'; // <-- Import the dialog
 const TeacherList: React.FC = () => {
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
@@ -33,7 +33,9 @@ const TeacherList: React.FC = () => {
     const [pageSize, setPageSize] = useState(15); // Match backend pagination
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
-
+ // --- State for Subject Assignment Dialog ---
+ const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+ const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
     // Fetch data when page or pageSize changes
     useEffect(() => {
         fetchTeachers(page + 1); // API uses 1-based page index
@@ -47,8 +49,18 @@ const TeacherList: React.FC = () => {
     const handleCloseDeleteDialog = () => {
         setTeacherToDelete(null);
         setDeleteDialogOpen(false);
+        
     };
-
+    
+ // --- Handlers for Subject Assignment Dialog ---
+ const handleOpenAssignDialog = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setAssignDialogOpen(true);
+};
+const handleCloseAssignDialog = () => {
+    setAssignDialogOpen(false);
+    setSelectedTeacher(null); // Clear selected teacher on close
+};
     const handleDeleteConfirm = async () => {
         if (teacherToDelete) {
             const success = await deleteTeacher(teacherToDelete.id);
@@ -66,11 +78,11 @@ const TeacherList: React.FC = () => {
 
     const columns: GridColDef[] = [
         {
-            field: 'photo_path',
+            field: 'photo_url',
             headerName: 'الصورة',
             width: 80,
             renderCell: (params) => (
-                <Avatar src={`${imagesUrl}${params.value}` || undefined} >
+                <Avatar src={`${params.value}` || undefined} >
                     {/* Fallback initials or icon */}
                     {params.row.name ? params.row.name.charAt(0) : '?'}
                 </Avatar>
@@ -98,7 +110,7 @@ const TeacherList: React.FC = () => {
             field: 'actions',
             type: 'actions',
             headerName: 'إجراءات',
-            width: 150,
+            width: 180,
             cellClassName: 'actions',
             getActions: ({ id, row }) => {
                 return [
@@ -108,6 +120,12 @@ const TeacherList: React.FC = () => {
                         onClick={() => navigate(`/teachers/${id}`)}
                         color="inherit"
                     />,
+                    <GridActionsCellItem
+                    icon={<AssignIcon />} // <-- Icon for assigning subjects
+                    label="إدارة المواد"
+                    onClick={() => handleOpenAssignDialog(row)} // <-- Open subject dialog
+                    color="default" // Or primary/secondary
+                />,
                     <GridActionsCellItem
                         icon={<EditIcon />}
                         label="تعديل"
@@ -130,7 +148,7 @@ const TeacherList: React.FC = () => {
     }
 
     return (
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
+        <Container style={{direction:'rtl'}} maxWidth="xl" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" component="h1">
                     قائمة المدرسين
@@ -186,6 +204,12 @@ const TeacherList: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+              {/* --- Subject Assignment Dialog --- */}
+              <SubjectAssignmentDialog
+                open={assignDialogOpen}
+                onClose={handleCloseAssignDialog}
+                teacher={selectedTeacher}
+            />
         </Container>
     );
 };

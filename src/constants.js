@@ -12,7 +12,7 @@ export function blurForNoramlUsers() {
 }
 export const url = `${schema}://${host}/${projectFolder}/public/api/`;
 export const webUrl = `${schema}://${host}/${projectFolder}/public/`;
-export const imagesUrl = `${schema}://${host}/${projectFolder}/public/storage/`;
+export const imagesUrl = `${schema}://${host}/${projectFolder}/public/`;
 
 
 // Create a cache with right-to-left settings
