@@ -23,7 +23,7 @@ import StairsIcon from '@mui/icons-material/Stairs'; // For Grade Levels
 import ClassIcon from '@mui/icons-material/Class'; // For Subjects (example)
 import GroupIcon from '@mui/icons-material/Group'; // For Users (example)
 import SettingsIcon from '@mui/icons-material/Settings'; // General Settings (example)
-import { Book, School } from '@mui/icons-material';
+import { Book, BookOnline, School } from '@mui/icons-material';
 
 // Define the structure for each settings card item
 interface SettingsItem {
@@ -91,6 +91,13 @@ const SettingsDashboard: React.FC = () => {
             description: '  إدارة الفصول والقاعات الدراسيه   ',
             link: 'classrooms',
             icon: <School />,
+            color: theme.palette.success.light,
+        },
+        {
+            title: 'اداره الامتحانات',
+            description: '  إدارة   الامتحانات   ',
+            link: 'exams',
+            icon: <BookOnline/>,
             color: theme.palette.success.light,
         },
         // Add more settings cards as needed

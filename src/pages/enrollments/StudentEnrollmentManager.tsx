@@ -13,6 +13,7 @@ import { StudentAcademicYear } from '@/types/studentAcademicYear';
 import { AcademicYear } from '@/types/academicYear';
 import { GradeLevel } from '@/types/gradeLevel';
 import { useSnackbar } from 'notistack';
+import StudentFeePaymentList from '@/components/finances/StudentFeePaymentList';
 
 // Helper to get status chip color
 const getStatusColor = (status: string): "success" | "info" | "warning" | "error" | "default" => {
@@ -92,11 +93,24 @@ const StudentEnrollmentManager: React.FC = () => {
             handleCloseDeleteDialog();
         }
     };
-
+ 
     // Find selected objects for passing to dialog
      const selectedAcademicYearObj = academicYears.find(ay => ay.id === selectedYearId) || null;
      const selectedGradeLevelObj = gradeLevels.find(gl => gl.id === selectedGradeId) || null;
-
+     const [paymentListOpen, setPaymentListOpen] = useState(false);
+     const [selectedEnrollmentForPayments, setSelectedEnrollmentForPayments] = useState<StudentAcademicYear | null>(null);
+ 
+     // ... existing functions ...
+ 
+     const handleOpenPaymentList = (enrollment: StudentAcademicYear) => {
+         setSelectedEnrollmentForPayments(enrollment);
+         setPaymentListOpen(true);
+     }
+     const handleClosePaymentList = () => {
+         setPaymentListOpen(false);
+         setSelectedEnrollmentForPayments(null);
+     }
+ 
     return (
         <Container style={{direction:'rtl'}} maxWidth="xl" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
             {/* Header & Filters */}
@@ -143,6 +157,7 @@ const StudentEnrollmentManager: React.FC = () => {
                                      <TableCell>الرقم الوطني</TableCell>
                                      <TableCell>الفصل</TableCell>
                                      <TableCell align='center'>الحالة</TableCell>
+                                     <TableCell align="center">الدفعات</TableCell> 
                                      <TableCell align="right">إجراءات</TableCell>
                                  </TableRow>
                              </TableHead>
@@ -159,6 +174,15 @@ const StudentEnrollmentManager: React.FC = () => {
                                           <TableCell align='center'>
                                               <Chip label={enrollment.status} color={getStatusColor(enrollment.status)} size="small"/>
                                           </TableCell>
+                                              {/* Payments Button */}
+                                        <TableCell align="center">
+                                            <Tooltip title="عرض/إدارة الدفعات">
+                                                <Button size="small" variant="text" onClick={() => handleOpenPaymentList(enrollment)}>
+                                                     عرض السجل
+                                                 </Button>
+                                            </Tooltip>
+                                        </TableCell>
+
                                          <TableCell align="right">
                                              <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                                  <Tooltip title="تعديل الحالة/الفصل">
@@ -205,7 +229,30 @@ const StudentEnrollmentManager: React.FC = () => {
                      <Button onClick={handleDeleteConfirm} color="error">حذف التسجيل</Button>
                  </DialogActions>
              </Dialog>
+ {/* --- Dialogs --- */}
+            {/* ... EnrollmentFormDialog, UpdateEnrollmentDialog, DeleteEnrollmentDialog ... */}
 
+            {/* Payments Dialog */}
+            <Dialog open={paymentListOpen} onClose={handleClosePaymentList} maxWidth="md" fullWidth>
+                  <DialogTitle>
+                      سجل دفعات الطالب: {selectedEnrollmentForPayments?.student?.student_name}
+                      <Typography variant="body2" color="text.secondary">
+                          للعام الدراسي: {selectedEnrollmentForPayments?.academic_year?.name} / الصف: {selectedEnrollmentForPayments?.grade_level?.name}
+                      </Typography>
+                  </DialogTitle>
+                  <DialogContent>
+                      {/* Render the Payment List component inside */}
+                      {selectedEnrollmentForPayments && (
+                          <StudentFeePaymentList
+                              studentAcademicYearId={selectedEnrollmentForPayments.id}
+                              title="" // Title is handled by DialogTitle now
+                          />
+                      )}
+                  </DialogContent>
+                   <DialogActions>
+                      <Button onClick={handleClosePaymentList}>إغلاق</Button>
+                  </DialogActions>
+              </Dialog>
         </Container>
     );
 };

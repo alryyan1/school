@@ -8,6 +8,7 @@ import SettingsDashboard from "./components/settings/SettingsDashboard";
 import SubjectList from "./components/settings/SubjectList";
 import CurriculumManager from "./pages/curriculum/CurriculumManager";
 import ClassroomList from "./components/settings/ClassroomList";
+import ExamList from "./components/exams/ExamList";
 
 export const schoolRoutes: RouteObject = {
   path: "schools", // Base path for schools
@@ -36,7 +37,11 @@ export const settings: RouteObject = {
     // Add other settings routes here (e.g., general settings, users)
      // --- Curriculum Section ---
      { path: 'classrooms', element: <ClassroomList /> }, // <-- Add this route
-
+  // --- Exams Section ---
+  {
+    path: 'exams', // New top-level section for exams
+    element: <ExamList />,
+},
      {
       path: 'curriculum',
       element: <CurriculumManager />, // Direct route to the manager page

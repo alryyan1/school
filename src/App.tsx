@@ -157,6 +157,7 @@ function App() {
         // --- School Section ---
         schoolRoutes,
         settings
+        
 
         // --- Other Sections (e.g., Courses, Settings) would follow the same pattern ---
 
