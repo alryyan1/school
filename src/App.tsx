@@ -47,6 +47,7 @@ import TeacherView from './components/teachers/TeacherView';
 import Register from './pages/Signup';
 import { schoolRoutes, settings } from './router';
 import StudentEnrollmentManager from './pages/enrollments/StudentEnrollmentManager';
+import { Box } from '@mui/material';
 
 // --- Main App Component ---
 function App() {
@@ -137,7 +138,9 @@ function App() {
         // --- Teacher Section ---
         {
           path: 'teachers',
-          element: <Outlet />, // Parent renders Outlet for children
+          element: <ProtectedRoute roles={['admin']}>
+            <Outlet />
+          </ProtectedRoute>, // Parent renders Outlet for children
           children: [
             { index: true, element: <Navigate to="/teachers/list" replace /> }, // Default to list
             // { index: true, element: <TeacherDashboard /> }, // Or use a dashboard
@@ -208,6 +211,7 @@ function App() {
             pauseOnHover
             theme="light"
           />
+
           <RouterProvider router={router} />
           {/* Removed stray "app" text */}
         </SnackbarProvider>

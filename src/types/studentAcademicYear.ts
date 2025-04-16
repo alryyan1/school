@@ -7,11 +7,12 @@ import { Student } from './student'; // Assuming simplified Student type for dis
 export type EnrollmentStatus = 'active' | 'transferred' | 'graduated' | 'withdrawn';
 
 export type StudentAcademicYear = {
-    id: number;
-    student_id: number;
-    academic_year_id: number;
-    grade_level_id: number;
+    id: number | string;
+    student_id: number | string;
+    academic_year_id: number | string;
+    grade_level_id: number | string;
     classroom_id: number | null;
+    school_id:number|string;
     status: EnrollmentStatus;
     // Nested data from resource
     student?: Pick<Student, 'id' | 'student_name' | 'goverment_id'>; // Only needed fields
@@ -24,7 +25,7 @@ export type StudentAcademicYear = {
 
 // Form for creating a new enrollment
 export type StudentEnrollmentFormData = Pick<StudentAcademicYear,
-    'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status'
+    'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status'|'school_id'
 >;
 
 // Form for updating an existing enrollment (only classroom & status)

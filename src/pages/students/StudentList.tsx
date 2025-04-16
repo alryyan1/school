@@ -22,6 +22,7 @@ import { useStudentStore } from '@/stores/studentStore';
 import { Gender, Student } from '@/types/student';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
+import { webUrl } from '@/constants';
 
 const StudentList = () => {
   const { students, loading, error, fetchStudents, deleteStudent } = useStudentStore();
@@ -133,6 +134,7 @@ const StudentList = () => {
               <TableCell>رقم الهاتف</TableCell>
               <TableCell>المستوى</TableCell>
               <TableCell>الحالة</TableCell>
+              <TableCell>طباعه الملف</TableCell>
               <TableCell>الإجراءات</TableCell>
             </TableRow>
           </TableHead>
@@ -152,6 +154,9 @@ const StudentList = () => {
                     <Typography color="warning.main">قيد المراجعة</Typography>
                   )}
                 </TableCell>
+                <TableCell>{student.wished_level}</TableCell>
+                <TableCell><Button href={`${webUrl}students/${student.id}/pdf`}>PDF</Button></TableCell>
+
                 <TableCell>
                   <Tooltip title="عرض">
                     <IconButton onClick={() => navigate(`/students/${student.id}`)}>

@@ -9,6 +9,8 @@ import SubjectList from "./components/settings/SubjectList";
 import CurriculumManager from "./pages/curriculum/CurriculumManager";
 import ClassroomList from "./components/settings/ClassroomList";
 import ExamList from "./components/exams/ExamList";
+import SchoolGradeLevelManager from "./pages/settings/SchoolGradeLevelManager";
+import UserList from "./components/users/UserList";
 
 export const schoolRoutes: RouteObject = {
   path: "schools", // Base path for schools
@@ -32,19 +34,21 @@ export const settings: RouteObject = {
     { path: "academic-years", element: <AcademicYearList /> },
     { path: "grade-levels", element: <GradeLevelList /> },
     // Add routes for other settings pages linked from dashboard
-    { path: 'subjects', element: <SubjectList /> },
+    { path: "subjects", element: <SubjectList /> },
     // { path: 'general', element: <GeneralSettingsPage /> },
     // Add other settings routes here (e.g., general settings, users)
-     // --- Curriculum Section ---
-     { path: 'classrooms', element: <ClassroomList /> }, // <-- Add this route
-  // --- Exams Section ---
-  {
-    path: 'exams', // New top-level section for exams
-    element: <ExamList />,
-},
-     {
-      path: 'curriculum',
+    // --- Curriculum Section ---
+    { path: "classrooms", element: <ClassroomList /> }, // <-- Add this route
+    // --- Exams Section ---
+    {
+      path: "exams", // New top-level section for exams
+      element: <ExamList />,
+    },
+    {
+      path: "curriculum",
       element: <CurriculumManager />, // Direct route to the manager page
-  },
+    },
+    { path: "school-grades", element: <SchoolGradeLevelManager /> }, // <-- Add this route
+    { path: "users", element: <UserList /> }, // <-- Add User List Route
   ],
 };

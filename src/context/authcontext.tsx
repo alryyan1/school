@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('user is valid')
         setState({
           isAuthenticated: true,
-          userRole: 'admin',
+          userRole: response.data.user.role,
           userId: response.data.user.id.toString(),
           userName: response.data.user.name,
           isLoading: false,
@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setState({
         isAuthenticated: true,
-        userRole: 'admin',
+        userRole: response.data.user.role,
         userId: response.data.user.id,
         userName: response.data.user.name,
         isLoading: false,

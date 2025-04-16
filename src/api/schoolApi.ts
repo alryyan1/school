@@ -1,7 +1,7 @@
 // src/api/schoolApi.ts
 import axiosClient from '../axios-client';
 import { School, SchoolFormData } from '@/types/school'; // Adjust path if needed
-
+import { GradeLevel } from '@/types/gradeLevel';
 // Helper to create FormData (can be reused or adapted from teacherApi)
 const createSchoolFormData = (schoolData: Partial<SchoolFormData>): FormData => {
     const formData = new FormData();
@@ -16,7 +16,9 @@ const createSchoolFormData = (schoolData: Partial<SchoolFormData>): FormData => 
     }
     return formData;
 };
-
+type GradeLevelCollectionResponse = {
+    data:GradeLevel[]
+}
 // Type for paginated response
 type PaginatedSchoolsResponse = {
 
@@ -63,4 +65,12 @@ export const SchoolApi = {
 
     delete: (id: number) =>
         axiosClient.delete(`/schools/${id}`), // No data expected on success (200/204)
+    // --- NEW ---
+    getAssignedGradeLevels: (schoolId: number) =>
+        // Returns { data: GradeLevel[] }
+        axiosClient.get<GradeLevelCollectionResponse>(`/schools/${schoolId}/grade-levels`),
+
+    updateAssignedGradeLevels: (schoolId: number, gradeLevelIds: number[]) =>
+        // Send { grade_level_ids: [1, 2, 5] }
+        axiosClient.put(`/schools/${schoolId}/grade-levels`, { grade_level_ids: gradeLevelIds }),
 };

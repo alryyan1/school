@@ -14,8 +14,8 @@ export const StudentAcademicYearApi = {
         axiosClient.get<CollectionResponse>('/student-enrollments', { params: filters }),
 
     // Get students not enrolled in a specific year
-    getEnrollableStudents: (academicYearId: number) =>
-        axiosClient.get<EnrollableResponse>('/enrollable-students', { params: { academic_year_id: academicYearId } }),
+    getEnrollableStudents: (academicYearId: number, schoolId: number) =>
+        axiosClient.get<EnrollableResponse>('/enrollable-students', { params: { academic_year_id: academicYearId, school_id: schoolId } }),
 
     // Enroll a student
     create: (data: StudentEnrollmentFormData) =>

@@ -65,7 +65,7 @@ const SchoolList: React.FC = () => {
     if (error) return <Container sx={{ mt: 4 }}><Alert severity="error">{error}</Alert></Container>;
 
     return (
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
+        <Container style={{direction:'rtl'}} maxWidth="xl" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" component="h1">قائمة المدارس</Typography>

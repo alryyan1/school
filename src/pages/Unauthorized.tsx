@@ -2,11 +2,12 @@
 import { Button, Container, Typography, Box, useTheme } from '@mui/material';
 import { Home, ArrowBack } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/authcontext';
 
 const Unauthorized = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-
+  const {logout} = useAuth()
   return (
     <Container
       maxWidth="md"
@@ -88,6 +89,10 @@ const Unauthorized = () => {
             التواصل مع الدعم الفني
           </Link>
         </Typography>
+        <Button onClick={()=>{
+          // alert('s')
+          logout()
+        }}>تسجيل خروج</Button>
       </Box>
     </Container>
   );
