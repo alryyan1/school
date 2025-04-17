@@ -11,6 +11,8 @@ import ClassroomList from "./components/settings/ClassroomList";
 import ExamList from "./components/exams/ExamList";
 import SchoolGradeLevelManager from "./pages/settings/SchoolGradeLevelManager";
 import UserList from "./components/users/UserList";
+import ExamSchedulePage from "./components/exams/ExamSchedulePage";
+import GeneralSettingsPage from "./pages/settings/GeneralSettingsPage";
 
 export const schoolRoutes: RouteObject = {
   path: "schools", // Base path for schools
@@ -44,6 +46,10 @@ export const settings: RouteObject = {
       path: "exams", // New top-level section for exams
       element: <ExamList />,
     },
+    { path: "general", element: <GeneralSettingsPage /> }, // <-- Add route
+
+    { path: "exams/:examId/schedule", element: <ExamSchedulePage /> }, // <-- Route for schedule page
+
     {
       path: "curriculum",
       element: <CurriculumManager />, // Direct route to the manager page

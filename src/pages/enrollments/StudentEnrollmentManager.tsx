@@ -28,6 +28,8 @@ import {
   DialogTitle,
   Chip,
   SelectChangeEvent,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -50,7 +52,9 @@ import { useSnackbar } from "notistack";
 import dayjs from "dayjs"; // Although not directly used here, good to have if formatting dates
 import StudentFeePaymentList from "@/components/finances/StudentFeePaymentList";
 import { SchoolApi } from "@/api/schoolApi";
-
+import { useSettingsStore } from "@/stores/settingsStore";
+import { ClearIcon } from "@mui/x-date-pickers";
+import { SearchIcon } from "lucide-react";
 // Helper to get status chip color
 const getStatusColor = (
   status: EnrollmentStatus
@@ -74,14 +78,32 @@ const StudentEnrollmentManager: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   // --- Component State ---
-  const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">("");
-  const [selectedYearId, setSelectedYearId] = useState<number | "">("");
   const [selectedGradeId, setSelectedGradeId] = useState<number | "">("");
   const [enrollFormOpen, setEnrollFormOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { gradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Use global list again for potential context display
+
+  // --- NEW Search State ---
+  const [searchTerm, setSearchTerm] = useState("");
+  const { activeAcademicYearId, activeSchoolId } = useSettingsStore.getState();
+  console.log(activeAcademicYearId, "activeAcademicYearId");
   const [currentEnrollment, setCurrentEnrollment] =
     useState<StudentAcademicYear | null>(null); // For Update/Delete
+  const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
+    activeSchoolId ?? ""
+  );
+  const [selectedYearId, setSelectedYearId] = useState<number | "">(() => {
+    // Ensure initial year belongs to initial school
+    const initialYear = useSettingsStore.getState().activeAcademicYearId;
+    const initialSchool = useSettingsStore.getState().activeSchoolId;
+    const initialAcademicYears = useAcademicYearStore.getState().academicYears; // Get initial list from other store
+    const yearIsValid = initialAcademicYears.some(
+      (y) => y.id === initialYear && y.school_id === initialSchool
+    );
+    return yearIsValid ? initialYear : ""; // Use only if valid for the school
+  });
+  console.log(selectedYearId, "selectedYearId");
   // State for the list of grade levels available FOR THE SELECTED SCHOOL
   const [availableGradeLevels, setAvailableGradeLevels] = useState<
     GradeLevel[]
@@ -102,6 +124,8 @@ const StudentEnrollmentManager: React.FC = () => {
     fetchEnrollments,
     deleteEnrollment,
     clearEnrollments,
+    searchEnrollments,
+    isSearchResult,
   } = useStudentEnrollmentStore();
 
   // --- Effects ---
@@ -110,8 +134,8 @@ const StudentEnrollmentManager: React.FC = () => {
   useEffect(() => {
     fetchSchoolList();
     fetchAcademicYears(); // Fetch all initially
-    // fetchGradeLevels();
-  }, [fetchSchoolList, fetchAcademicYears]);
+    fetchGradeLevels();
+  }, [fetchSchoolList, fetchAcademicYears, fetchGradeLevels]);
   // Fetch Grade Levels SPECIFIC TO THE SELECTED SCHOOL
   const fetchSchoolGrades = useCallback(
     async (schoolId: number) => {
@@ -135,44 +159,38 @@ const StudentEnrollmentManager: React.FC = () => {
   // Also fetches when optional Grade filter changes
   // Fetch enrollments when School & Year change, Fetch Grades when School changes
   useEffect(() => {
-    if (selectedSchoolId) {
-      // Fetch grades for the selected school
-      fetchSchoolGrades(selectedSchoolId);
+    // If a search is active, don't fetch based on filters
+    if (isSearchResult) return;
 
-      if (selectedYearId) {
-        // Fetch enrollments if both school and year are selected
-        fetchEnrollments({
-          school_id: selectedSchoolId,
-          academic_year_id: selectedYearId,
-          grade_level_id: selectedGradeId || undefined,
-        });
-      } else {
-        clearEnrollments(); // Clear enrollments if year is not selected
-      }
+    if (selectedSchoolId && selectedYearId) {
+      fetchSchoolGrades(activeSchoolId)
+      fetchEnrollments({
+        school_id: selectedSchoolId,
+        academic_year_id: selectedYearId,
+        grade_level_id: selectedGradeId || undefined,
+      });
     } else {
-      // Clear everything if no school is selected
       clearEnrollments();
-      setAvailableGradeLevels([]);
-      setSelectedYearId("");
-      setSelectedGradeId("");
     }
+    // Note: We removed fetchSchoolGrades logic as it's less relevant now
+    // If needed for dialogs, fetch there based on context
   }, [
     selectedSchoolId,
     selectedYearId,
     selectedGradeId,
     fetchEnrollments,
     clearEnrollments,
-    fetchSchoolGrades,
-  ]);
-
+    isSearchResult,
+  ]); // <-- Add isSearchResult
   // --- Filtered/Memoized Data ---
 
+  console.log(academicYears, "academic years");
   // Filter Academic Years based on selected School
   const filteredAcademicYears = useMemo(() => {
     if (!selectedSchoolId) return [];
     return academicYears.filter((ay) => ay.school_id === selectedSchoolId);
   }, [academicYears, selectedSchoolId]);
-
+  console.log(filteredAcademicYears, "filteredAcademicYears");
   // Get the selected objects (needed for the Enroll Dialog)
   const selectedAcademicYearObj = useMemo(() => {
     return academicYears.find((ay) => ay.id === selectedYearId) || null;
@@ -213,6 +231,26 @@ const StudentEnrollmentManager: React.FC = () => {
   const handleCloseUpdateForm = () => {
     setUpdateFormOpen(false);
     setCurrentEnrollment(null);
+  };
+  // --- NEW Search Handlers ---
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const executeSearch = () => {
+    searchEnrollments(searchTerm); // Call store action
+  };
+  const clearSearch = () => {
+    setSearchTerm("");
+    // Clear results and fetch based on current filters
+    clearEnrollments();
+    if (selectedSchoolId && selectedYearId) {
+      fetchEnrollments({
+        school_id: selectedSchoolId,
+        academic_year_id: selectedYearId,
+        grade_level_id: selectedGradeId || undefined,
+      });
+    }
   };
 
   const handleOpenDeleteDialog = (enrollment: StudentAcademicYear) => {
@@ -282,6 +320,30 @@ const StudentEnrollmentManager: React.FC = () => {
             spacing={1.5}
             alignItems="center"
           >
+             {/* --- Search Input --- */}
+             <TextField
+                             label="بحث بالاسم أو الرقم الوطني"
+                             variant="outlined"
+                             size="small"
+                             value={searchTerm}
+                             onChange={handleSearchChange}
+                             sx={{ minWidth: 200 }}
+                             InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                         {searchTerm && (
+                                              <IconButton onClick={clearSearch} size="small" edge="end">
+                                                  <ClearIcon fontSize="small"/>
+                                              </IconButton>
+                                          )}
+                                         <IconButton onClick={executeSearch} size="small" edge="end" color="primary" disabled={!searchTerm}>
+                                             <SearchIcon />
+                                         </IconButton>
+                                    </InputAdornment>
+                                 )
+                             }}
+                             onKeyDown={(e) => { if (e.key === 'Enter' && searchTerm) executeSearch(); }}
+                        />
             {/* School Filter */}
             <FormControl sx={{ minWidth: 180 }} size="small">
               <InputLabel id="enroll-school-select-label">المدرسة *</InputLabel>
@@ -402,11 +464,13 @@ const StudentEnrollmentManager: React.FC = () => {
           {error}
         </Alert>
       )}
-      {!loading && (!selectedSchoolId || !selectedYearId) && (
-        <Alert severity="info">
-          الرجاء تحديد المدرسة والعام الدراسي لعرض الطلاب المسجلين.
-        </Alert>
-      )}
+       {/* Search Results Indicator Alert */}
+       {isSearchResult && !loading && (
+                 <Alert severity="success" sx={{ mb: 2 }} onClose={clearSearch}>
+                     عرض نتائج البحث عن "{searchTerm}". <Button onClick={clearSearch} color="inherit" size="small">عرض الكل حسب الفلتر</Button>
+                 </Alert>
+             )}
+
 
       {/* Enrollments Table */}
       {!loading && !error && selectedYearId && selectedSchoolId && (

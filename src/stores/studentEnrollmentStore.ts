@@ -11,22 +11,44 @@ type StoreState = {
     loading: boolean; // Loading enrollments list
     loadingEnrollable: boolean; // Loading enrollable students list
     error: string | null;
+     /** Flag indicating if the current list is based on search results */
+     isSearchResult: boolean;
 };
 
 type StoreActions = {
     fetchEnrollments: (filters: { school_id: number; academic_year_id: number; grade_level_id?: number; classroom_id?: number }) => Promise<void>;
     fetchEnrollableStudents: (academicYearId: number, schoolId: number) => Promise<void>; // Added schoolId
+    searchEnrollments: (searchTerm: string) => Promise<void>; // <-- Add Search Action
+
     enrollStudent: (data: StudentEnrollmentFormData) => Promise<StudentAcademicYear | null>;
     updateEnrollment: (id: number, data: StudentEnrollmentUpdateFormData) => Promise<StudentAcademicYear | null>;
     deleteEnrollment: (id: number) => Promise<boolean>;
     clearEnrollments: () => void;
     clearEnrollableStudents: () => void;
     };
-const initialState: StoreState = { enrollments: [], enrollableStudents: [], loading: false, loadingEnrollable: false, error: null };
+const initialState: StoreState = { enrollments: [], enrollableStudents: [], loading: false, loadingEnrollable: false, error: null,isSearchResult:false };
 
 export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set, get) => ({
     ...initialState,
-
+   // --- NEW SEARCH ACTION ---
+   searchEnrollments: async (searchTerm) => {
+    if (!searchTerm || searchTerm.trim() === '') {
+        // If search term is empty, potentially clear results or revert to filtered view
+         get().clearEnrollments(); // Clear results if search term is empty
+         // Or trigger fetchEnrollments with current filters? Needs filter state access.
+         // For now, just clear.
+        return;
+    }
+    set({ loading: true, error: null, isSearchResult: true }); // Set search flag true
+    try {
+        const response = await StudentAcademicYearApi.search(searchTerm);
+        set({ enrollments: response.data.data, loading: false });
+    } catch (error: any) {
+        console.error("Search Enrollments error:", error);
+        const msg = error.response?.data?.message || 'فشل البحث عن تسجيلات الطلاب';
+        set({ error: msg, loading: false, enrollments: [] }); // Clear on error
+    }
+},
     fetchEnrollments: async (filters) => {
         if (!filters.school_id || !filters.academic_year_id) {
             set({ enrollments: [], loading: false, error: 'الرجاء تحديد المدرسة والعام الدراسي.' });

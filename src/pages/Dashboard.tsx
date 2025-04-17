@@ -1,39 +1,34 @@
 // src/pages/Dashboard.tsx
-import React, { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom'; // Use alias for clarity
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+// shadcn/ui components
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Adjust path if needed
+import { Skeleton } from "@/components/ui/skeleton"; // For loading state
+import { cn } from "@/lib/utils"; // Utility for combining class names
+
+// lucide-react icons
 import {
-    Box,
-    Container, // Use Container for consistent padding/width
-    Grid,
-    Card,
-    CardActionArea, // Make card clickable
-    CardContent,
-    Typography,
-    Avatar, // Use Avatar for icons
-    styled,
-    useTheme, // Import useTheme
-    CircularProgress,
-    Paper // For stat cards
-} from '@mui/material';
-import { motion } from 'framer-motion'; // Import motion
+    Users, // PeopleIcon replacement
+    GraduationCap, // SchoolIcon (for Teachers) replacement
+    Building, // BusinessIcon (for Schools) replacement
+    UserCheck, // Example for Enrollment
+    Car, // Example for Transport
+    Settings, // SettingsIcon replacement
+    LayoutDashboard, // Example for Dashboard itself or general stat
+    BookOpen, // Example for Courses
+    ClipboardCheck // Example for Grades
+} from 'lucide-react';
 
-// Icons (ensure all needed icons are imported)
-import PeopleIcon from '@mui/icons-material/People';
-import SchoolIcon from '@mui/icons-material/School'; // For Teachers
-import AssignmentIcon from '@mui/icons-material/Assignment'; // For Courses/Subjects
-import GradingIcon from '@mui/icons-material/Grading'; // For Grades
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'; // For Calendar
-import SettingsIcon from '@mui/icons-material/Settings'; // For Settings
-import BusinessIcon from '@mui/icons-material/Business'; // For Schools
-
-// Import API client if you uncomment the stats fetching
+// Import API client if needed for actual stats fetching
 // import axiosClient from '@/axios-client';
 
 // Dashboard Stats Type
 interface DashboardStats {
-    studentCount?: number; // Updated key based on backend example
-    teacherCount?: number; // Updated key based on backend example
-    courseCount?: number; // Updated key based on backend example
+    studentCount?: number;
+    teacherCount?: number;
+    courseCount?: number; // Example stat
     // Add other stats as needed
 }
 
@@ -42,32 +37,31 @@ interface DashboardItem {
     title: string;
     description: string;
     link: string;
-    icon: React.ReactElement;
-    color: string; // Background color for the icon avatar
+    icon: React.ElementType; // Use React.ElementType for icon components
+    iconColor?: string;      // Tailwind text color class (e.g., "text-primary")
+    bgColor?: string;        // Tailwind background class (e.g., "bg-primary/10")
 }
 
-// Styled component for the card (same as in SettingsDashboard)
-const StyledCard = styled(Card)(({ theme }) => ({
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-    '&:hover': {
-        transform: 'translateY(-5px)',
-        boxShadow: theme.shadows[6],
-    },
-    direction: 'rtl', // Ensure RTL direction on card
-}));
+// Animation Variants (same as before)
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
+};
+
 
 const Dashboard: React.FC = () => {
-    const theme = useTheme();
-    const [isLoadingStats, setIsLoadingStats] = useState(true); // Renamed state
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
     const [stats, setStats] = useState<DashboardStats>({});
 
     // --- Fetch Dashboard Stats ---
     useEffect(() => {
         const fetchStats = async () => {
-            setIsLoadingStats(true); // Start loading
+            setIsLoadingStats(true);
             try {
                  // --- UNCOMMENT AND USE YOUR ACTUAL API ENDPOINT ---
                  // const response = await axiosClient.get<{ studentCount: number, teacherCount: number, courseCount: number }>('/dashboard-stats');
@@ -75,191 +69,202 @@ const Dashboard: React.FC = () => {
                  // --- --- --- --- --- --- --- --- --- --- --- --- ---
 
                  // --- Mock Data (REMOVE WHEN API IS READY) ---
-                 await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+                 await new Promise(resolve => setTimeout(resolve, 900)); // Simulate network delay
                  setStats({ studentCount: 125, teacherCount: 23, courseCount: 18 });
                  // --- --- --- --- --- --- --- --- --- --- --- ---
-
             } catch (error) {
                 console.error('Error fetching dashboard stats:', error);
-                 // Optionally set default/error state for stats
-                 setStats({});
+                setStats({}); // Set empty on error
             } finally {
-                 setIsLoadingStats(false); // Finish loading
+                setIsLoadingStats(false);
             }
         };
-
         fetchStats();
-    }, []); // Empty dependency array means run once on mount
+    }, []); // Run once on mount
 
     // --- Define Dashboard Navigation Items ---
+    // Use Tailwind color classes now
     const dashboardItems: DashboardItem[] = [
         {
             title: 'الطلاب',
-            icon: <PeopleIcon />,
-            link: '/students', // Main student dashboard/list
+            icon: Users,
+            link: '/students',
             description: 'إدارة سجلات الطلاب وبياناتهم.',
-            color: theme.palette.primary.light,
+            iconColor: "text-blue-600 dark:text-blue-400",
+            bgColor: "bg-blue-100/80 dark:bg-blue-900/30",
         },
         {
             title: 'المعلمون',
-            icon: <SchoolIcon />, // Using SchoolIcon for teachers
-            link: '/teachers', // Main teacher dashboard/list
+            icon: GraduationCap,
+            link: '/teachers',
             description: 'إدارة ملفات المعلمين وجداولهم.',
-            color: theme.palette.info.light,
+            iconColor: "text-purple-600 dark:text-purple-400",
+            bgColor: "bg-purple-100/80 dark:bg-purple-900/30",
         },
          {
              title: 'المدارس',
-             icon: <BusinessIcon />, // Icon for Schools
-             link: '/schools', // Main school list/management
+             icon: Building,
+             link: '/schools/list', // Link directly to list if no separate school dashboard
              description: 'إدارة بيانات المدارس والفروع.',
-             color: theme.palette.warning.light,
+             iconColor: "text-amber-600 dark:text-amber-400",
+             bgColor: "bg-amber-100/80 dark:bg-amber-900/30",
          },
          {
-            title: 'تعين الطلاب',
-            icon: <BusinessIcon />, // Icon for Schools
-            link: '/enrollments', // Main school list/management
-            description: 'تعيين الطلاب ',
-            color: theme.palette.warning.light,
+            title: 'تسجيل الطلاب', // Enrollment
+            icon: UserCheck,
+            link: '/enrollments',
+            description: 'تسجيل الطلاب في الأعوام والمراحل الدراسية.',
+            iconColor: "text-emerald-600 dark:text-emerald-400",
+            bgColor: "bg-emerald-100/80 dark:bg-emerald-900/30",
         },
-        // {
-        //     title: 'المقررات الدراسية',
-        //     icon: <AssignmentIcon />,
-        //     link: '/courses', // Adjust link as needed
-        //     description: 'عرض وإدارة المقررات الدراسية.',
-        //     color: theme.palette.success.light,
-        // },
-        // {
-        //     title: 'الدرجات',
-        //     icon: <GradingIcon />,
-        //     link: '/grades', // Adjust link as needed
-        //     description: 'إدخال وعرض درجات الطلاب.',
-        //     color: theme.palette.error.light,
-        // },
-        // {
-        //     title: 'التقويم',
-        //     icon: <CalendarMonthIcon />,
-        //     link: '/calendar', // Adjust link as needed
-        //     description: 'عرض الفعاليات والأحداث المدرسية.',
-        //     color: theme.palette.secondary.light,
-        // },
+        {
+            title: 'النقل المدرسي',
+            icon: Car,
+            link: '/transport/routes',
+            description: 'إدارة مسارات النقل وتسجيل الطلاب.',
+            iconColor: "text-cyan-600 dark:text-cyan-400",
+            bgColor: "bg-cyan-100/80 dark:bg-cyan-900/30",
+        },
         {
             title: 'الإعدادات',
-            icon: <SettingsIcon />,
+            icon: Settings,
             link: '/settings', // Link to the settings dashboard
             description: 'تكوين إعدادات النظام المختلفة.',
-            color: theme.palette.grey[400], // Neutral color for settings
+            iconColor: "text-slate-600 dark:text-slate-400",
+            bgColor: "bg-slate-100/80 dark:bg-slate-900/30",
         },
+        // Add other items like Exams, Curriculum, etc. following the same pattern
+        // {
+        //     title: 'الامتحانات',
+        //     icon: ClipboardCheck,
+        //     link: '/exams',
+        //     description: 'إدارة دورات الامتحانات وجداولها.',
+        //     iconColor: "text-indigo-600 dark:text-indigo-400",
+        //     bgColor: "bg-indigo-100/80 dark:bg-indigo-900/30",
+        // },
+        // {
+        //     title: 'المناهج',
+        //     icon: BookOpen,
+        //     link: '/curriculum',
+        //     description: 'إدارة المناهج الدراسية وتعيين المواد.',
+        //     iconColor: "text-pink-600 dark:text-pink-400",
+        //     bgColor: "bg-pink-100/80 dark:bg-pink-900/30",
+        // },
     ];
 
-    // --- Animation Variants ---
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-        },
-    };
-
-    const itemVariants = {
-        hidden: { y: 30, opacity: 0 },
-        visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
-    };
-
+    // --- Render ---
     return (
-        <Box
-            sx={{
-                minHeight: 'calc(100vh - 64px)', // Adjust based on AppBar height
-                py: 4, px: 2, direction: 'rtl',
-                background: `linear-gradient(135deg, ${theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900]} 0%, ${theme.palette.mode === 'light' ? theme.palette.grey[200] : theme.palette.grey[800]} 100%)`,
-            }}
-        >
-            <Container maxWidth="lg">
+        <section className="min-h-[calc(100vh-64px)] w-full py-6 px-4 md:py-8 md:px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
+            <div className="container max-w-screen-xl mx-auto"> {/* Slightly wider container */}
                 {/* Animated Title */}
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                    <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.primary.dark, textAlign: 'center', mb: 4 }}>
+                <motion.div
+                     initial={{ opacity: 0, y: -20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.5 }}
+                >
+                    <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-10 text-primary dark:text-blue-400">
                         لوحة التحكم الرئيسية
-                    </Typography>
+                    </h1>
                 </motion.div>
 
                  {/* Statistics Row */}
-                 <Grid container spacing={3} sx={{ mb: 4 }}>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 md:mb-10">
                      {/* Stat Card 1: Students */}
-                     <Grid item xs={12} sm={4}>
-                         <Paper elevation={2} sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                             <Avatar sx={{ bgcolor: theme.palette.primary.light, width: 48, height: 48 }}>
-                                 <PeopleIcon sx={{ color: theme.palette.primary.contrastText }} />
-                             </Avatar>
-                             <Box>
-                                 <Typography variant="body2" color="text.secondary">إجمالي الطلاب</Typography>
-                                 {isLoadingStats ? <CircularProgress size={20} /> :
-                                     <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{stats.studentCount ?? '...'}</Typography>
+                     <Card>
+                         <CardContent className="flex items-center gap-4 p-4">
+                              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                                 <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div>
+                                 <p className="text-sm font-medium text-muted-foreground">إجمالي الطلاب</p>
+                                 {isLoadingStats ? <Skeleton className="h-7 w-16 mt-1" /> :
+                                     <p className="text-2xl font-bold">{stats.studentCount ?? '-'}</p>
                                  }
-                             </Box>
-                         </Paper>
-                     </Grid>
+                              </div>
+                         </CardContent>
+                     </Card>
                      {/* Stat Card 2: Teachers */}
-                     <Grid item xs={12} sm={4}>
-                         <Paper elevation={2} sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                             <Avatar sx={{ bgcolor: theme.palette.info.light, width: 48, height: 48 }}>
-                                 <SchoolIcon sx={{ color: theme.palette.info.contrastText }}/>
-                             </Avatar>
-                             <Box>
-                                 <Typography variant="body2" color="text.secondary">إجمالي المعلمين</Typography>
-                                  {isLoadingStats ? <CircularProgress size={20} /> :
-                                      <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{stats.teacherCount ?? '...'}</Typography>
-                                  }
-                             </Box>
-                         </Paper>
-                     </Grid>
-                      {/* Stat Card 3: Courses (Example) */}
-                      <Grid item xs={12} sm={4}>
-                         <Paper elevation={2} sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Avatar sx={{ bgcolor: theme.palette.success.light, width: 48, height: 48 }}>
-                                  <AssignmentIcon sx={{ color: theme.palette.success.contrastText }}/>
-                              </Avatar>
-                              <Box>
-                                  <Typography variant="body2" color="text.secondary">إجمالي المقررات</Typography>
-                                   {isLoadingStats ? <CircularProgress size={20} /> :
-                                       <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{stats.courseCount ?? '...'}</Typography>
+                     <Card>
+                         <CardContent className="flex items-center gap-4 p-4">
+                               <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                                   <GraduationCap className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                               </div>
+                               <div>
+                                   <p className="text-sm font-medium text-muted-foreground">إجمالي المعلمين</p>
+                                   {isLoadingStats ? <Skeleton className="h-7 w-16 mt-1" /> :
+                                      <p className="text-2xl font-bold">{stats.teacherCount ?? '-'}</p>
                                    }
-                              </Box>
-                         </Paper>
-                     </Grid>
-                 </Grid>
+                               </div>
+                         </CardContent>
+                     </Card>
+                      {/* Stat Card 3: Courses (Example) */}
+                      <Card>
+                         <CardContent className="flex items-center gap-4 p-4">
+                               <div className="p-3 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                   <BookOpen className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                               </div>
+                               <div>
+                                   <p className="text-sm font-medium text-muted-foreground">إجمالي المقررات</p>
+                                    {isLoadingStats ? <Skeleton className="h-7 w-16 mt-1" /> :
+                                       <p className="text-2xl font-bold">{stats.courseCount ?? '-'}</p>
+                                    }
+                               </div>
+                         </CardContent>
+                      </Card>
+                 </div>
 
                 {/* Animated Grid for Navigation Cards */}
-                <motion.div variants={containerVariants} initial="hidden" animate="visible">
-                    <Grid container spacing={4}>
-                        {dashboardItems.map((item) => (
-                            <Grid item xs={12} sm={6} md={4} key={item.link}>
-                                <motion.div
-                                    variants={itemVariants}
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    style={{ height: '100%' }}
-                                >
-                                    <StyledCard elevation={3}>
-                                        <CardActionArea component={RouterLink} to={item.link} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-                                            <Avatar sx={{ bgcolor: item.color, width: 56, height: 56, mb: 2, color: theme.palette.getContrastText(item.color) }}>
-                                                {React.cloneElement(item.icon, { fontSize: 'medium' })}
-                                            </Avatar>
-                                            <CardContent sx={{ textAlign: 'center', pt: 0 }}>
-                                                <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 'medium' }}>
-                                                    {item.title}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {item.description}
-                                                </Typography>
-                                            </CardContent>
-                                        </CardActionArea>
-                                    </StyledCard>
-                                </motion.div>
-                            </Grid>
-                        ))}
-                    </Grid>
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-5 lg:gap-6" // Adjusted grid columns and gaps
+                >
+                    {dashboardItems.map((item) => {
+                        const IconComponent = item.icon;
+                        return (
+                            <motion.div
+                                key={item.link}
+                                variants={itemVariants}
+                                className="h-full"
+                            >
+                                <RouterLink to={item.link} className="h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg">
+                                    <motion.div
+                                        whileHover={{ y: -4 }} // Simpler lift effect
+                                        whileTap={{ scale: 0.98 }}
+                                        className="h-full"
+                                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                    >
+                                        <Card className="h-full flex flex-col overflow-hidden transition-shadow hover:shadow-md dark:hover:shadow-primary/10">
+                                             <CardContent className="flex flex-col items-center justify-center text-center p-5 sm:p-6 flex-grow">
+                                                 {/* Icon Container */}
+                                                 <div className={cn(
+                                                     "mb-4 flex h-12 w-12 items-center justify-center rounded-full sm:h-14 sm:w-14", // Adjusted size
+                                                     item.bgColor || "bg-gray-100 dark:bg-gray-800"
+                                                 )}>
+                                                     <IconComponent className={cn(
+                                                         "h-6 w-6 sm:h-7 sm:w-7", // Adjusted size
+                                                         item.iconColor || "text-gray-600 dark:text-gray-400"
+                                                     )} strokeWidth={1.75} />
+                                                 </div>
+                                                 {/* Title */}
+                                                 <h3 className="mb-1 text-base sm:text-lg font-semibold text-card-foreground">
+                                                      {item.title}
+                                                 </h3>
+                                                 {/* Description */}
+                                                 <p className="text-xs sm:text-sm text-muted-foreground">
+                                                     {item.description}
+                                                 </p>
+                                             </CardContent>
+                                         </Card>
+                                    </motion.div>
+                                </RouterLink>
+                            </motion.div>
+                        );
+                    })}
                 </motion.div>
-            </Container>
-        </Box>
+            </div>
+        </section>
     );
 };
 

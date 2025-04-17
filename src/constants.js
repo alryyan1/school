@@ -1,6 +1,6 @@
 // export const host = 'sahara-pharma.com'
 export const schema = "http";
-export const host = "127.0.0.1";
+export const host = "192.168.100.70";
 export const projectFolder = "school-backend";
 // export const host = 'server1'مركز النعيم
 import rtlPlugin from "stylis-plugin-rtl";
@@ -21,3 +21,13 @@ export const cacheRtl = createCache({
     stylisPlugins: [prefixer, rtlPlugin], // Add RTL support
   });
 
+  export function formatNumber(number) {
+    return String(number).replace(/^\d+/, (number) =>
+      [...number]
+        .map(
+          (digit, index, digits) =>
+            (!index || (digits.length - index) % 3 ? "" : ",") + digit
+        )
+        .join("")
+    );
+  }

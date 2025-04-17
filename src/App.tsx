@@ -5,64 +5,65 @@ import {
   Navigate,
   useLocation,
   Outlet, // Ensure Outlet is imported if layouts need it
-} from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import { SnackbarProvider } from 'notistack';
-import 'react-toastify/dist/ReactToastify.css';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline'; // Import CssBaseline
-import { arSA } from '@mui/material/locale';
-import { CacheProvider } from '@emotion/react';
-import { cacheRtl } from './constants';
+} from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import { SnackbarProvider } from "notistack";
+import "react-toastify/dist/ReactToastify.css";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline"; // Import CssBaseline
+import { arSA } from "@mui/material/locale";
+import { CacheProvider } from "@emotion/react";
+import { cacheRtl } from "./constants";
 
 // --- Layouts ---
-import AuthLayout from './components/AuthLayout';
-import MainLayout from './components/MainLayout'; // Expects <Outlet /> inside
+import AuthLayout from "./components/AuthLayout";
+import MainLayout from "./components/MainLayout"; // Expects <Outlet /> inside
 
 // --- Core Pages ---
-import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
-import NotFound from './pages/NotFound';
-import Unauthorized from './pages/Unauthorized';
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+import Unauthorized from "./pages/Unauthorized";
 
 // --- Student Pages & Components ---
 // Verify these paths match your project structure
-import StudentList from './pages/students/StudentList';
-import StudentDashboard from './pages/students/StudentDashboard';
-import StudentView from './pages/students/StudentView';
+import StudentList from "./pages/students/StudentList";
+import StudentDashboard from "./pages/students/StudentDashboard";
+import StudentView from "./pages/students/StudentView";
 
 // --- Teacher Pages & Components ---
 // Verify these paths match your project structure
-import TeacherList from './pages/teachers/TeacherList';
-import TeacherForm from './components/teachers/TeacherForm'; // Note: Component, not page
+import TeacherList from "./pages/teachers/TeacherList";
+import TeacherForm from "./components/teachers/TeacherForm"; // Note: Component, not page
 // Optional: import TeacherDashboard from './pages/teachers/TeacherDashboard';
 
 // --- Common Components ---
-import LoadingScreen from './components/LoadingScreen';
+import LoadingScreen from "./components/LoadingScreen";
 
 // --- Context ---
-import { useAuth } from './context/authcontext';
-import { StudentForm } from './components/students/studentForm/StudentForm';
-import TeacherView from './components/teachers/TeacherView';
-import Register from './pages/Signup';
-import { schoolRoutes, settings } from './router';
-import StudentEnrollmentManager from './pages/enrollments/StudentEnrollmentManager';
-import { Box } from '@mui/material';
+import { useAuth } from "./context/authcontext";
+import { StudentForm } from "./components/students/studentForm/StudentForm";
+import TeacherView from "./components/teachers/TeacherView";
+import Register from "./pages/Signup";
+import { schoolRoutes, settings } from "./router";
+import StudentEnrollmentManager from "./pages/enrollments/StudentEnrollmentManager";
+import { Box } from "@mui/material";
+import TransportRouteList from "./pages/transport/TransportRouteList";
 
 // --- Main App Component ---
 function App() {
   const theme = createTheme(
     {
-      direction: 'rtl',
+      direction: "rtl",
       typography: {
-        fontFamily: ['Cairo', 'sans-serif'].join(','),
+        fontFamily: ["Cairo", "sans-serif"].join(","),
       },
       palette: {
         primary: {
-          main: '#1976d2',
+          main: "#1976d2",
         },
         secondary: {
-          main: '#dc004e',
+          main: "#dc004e",
         },
       },
     },
@@ -70,7 +71,13 @@ function App() {
   );
 
   // --- Protected Route Component ---
-  const ProtectedRoute = ({ children, roles = [] }: { children: React.ReactNode, roles?: string[] }) => {
+  const ProtectedRoute = ({
+    children,
+    roles = [],
+  }: {
+    children: React.ReactNode;
+    roles?: string[];
+  }) => {
     const { isAuthenticated, isLoading, userRole } = useAuth();
     const location = useLocation(); // Get location for redirect state
 
@@ -79,14 +86,18 @@ function App() {
     }
 
     if (!isAuthenticated) {
-      console.log('User not authenticated, redirecting to login.');
+      console.log("User not authenticated, redirecting to login.");
       // Pass the current location user tried to access
       return <Navigate to="/auth/login" state={{ from: location }} replace />;
     }
 
     const currentUserRole = userRole as string; // Assuming userRole is set correctly
     if (roles.length > 0 && !roles.includes(currentUserRole)) {
-      console.log(`User role '${currentUserRole}' not authorized for roles: ${roles.join(', ')}`);
+      console.log(
+        `User role '${currentUserRole}' not authorized for roles: ${roles.join(
+          ", "
+        )}`
+      );
       return <Navigate to="/unauthorized" replace />;
     }
 
@@ -111,81 +122,100 @@ function App() {
   const router = createBrowserRouter([
     // --- Main Application Layout & Routes ---
     {
-      path: '/',
+      path: "/",
       element: (
-        <ProtectedRoute roles={['admin']}> {/* Define roles for main app access */}
-          <MainLayout userRole={'admin'} /> {/* Pass role if layout needs it */}
+        <ProtectedRoute roles={["admin"]}>
+          {" "}
+          {/* Define roles for main app access */}
+          <MainLayout userRole={"admin"} /> {/* Pass role if layout needs it */}
         </ProtectedRoute>
       ),
       children: [
         { index: true, element: <Navigate to="/dashboard" replace /> },
-        { path: 'dashboard', element: <Dashboard /> },
+        { path: "dashboard", element: <Dashboard /> },
 
         // --- Student Section ---
         {
-          path: 'students',
+          path: "students",
           element: <Outlet />, // Parent renders Outlet for children
           children: [
             { index: true, element: <StudentDashboard /> },
-            { path: 'list', element: <StudentList /> },
-            { path: 'create', element: <StudentForm /> },
-            { path: ':id', element: <StudentView /> },
-            { path: ':id/edit', element: <StudentForm /> },
-          ]
+            { path: "list", element: <StudentList /> },
+            { path: "create", element: <StudentForm /> },
+            { path: ":id", element: <StudentView /> },
+            { path: ":id/edit", element: <StudentForm /> },
+          ],
         },
         // --- End Student Section ---
 
         // --- Teacher Section ---
         {
-          path: 'teachers',
-          element: <ProtectedRoute roles={['admin']}>
-            <Outlet />
-          </ProtectedRoute>, // Parent renders Outlet for children
+          path: "teachers",
+          element: (
+            <ProtectedRoute roles={["admin"]}>
+              <Outlet />
+            </ProtectedRoute>
+          ), // Parent renders Outlet for children
           children: [
             { index: true, element: <Navigate to="/teachers/list" replace /> }, // Default to list
             // { index: true, element: <TeacherDashboard /> }, // Or use a dashboard
-            { path: 'list', element: <TeacherList /> },
-            { path: 'create', element: <TeacherForm /> },
-            { path: ':id', element: <TeacherView /> },
-            { path: ':id/edit', element: <TeacherForm /> },
-          ]
+            { path: "list", element: <TeacherList /> },
+            { path: "create", element: <TeacherForm /> },
+            { path: ":id", element: <TeacherView /> },
+            { path: ":id/edit", element: <TeacherForm /> },
+          ],
         },
-         // --- Enrollments Section ---
-         {
-          path: 'enrollments', // New top-level section
+        // --- Enrollments Section ---
+        {
+          path: "enrollments", // New top-level section
           element: <StudentEnrollmentManager />,
-      },
+        },
         // --- End Teacher Section ---
 
         // --- School Section ---
         schoolRoutes,
-        settings
-        
+        settings,
 
         // --- Other Sections (e.g., Courses, Settings) would follow the same pattern ---
-
       ],
     },
 
     // --- Authentication Layout & Routes ---
     {
-      path: '/auth',
+      path: "/auth",
       element: <AuthLayout />, // Specific layout for auth pages
       children: [
         {
-          path: 'login',
-          element: (<AuthRoute><Login /></AuthRoute>),
+          path: "login",
+          element: (
+            <AuthRoute>
+              <Login />
+            </AuthRoute>
+          ),
         },
         {
-          path: 'register',
-          element: (<AuthRoute><Register /></AuthRoute>),
+          path: "register",
+          element: (
+            <AuthRoute>
+              <Register />
+            </AuthRoute>
+          ),
         },
       ],
     },
-
+    // --- TRANSPORT SECTION ---
+    {
+      path: "transport", // Base path
+      element: <Outlet />,
+      children: [
+        { index: true, element: <Navigate to="/transport/routes" replace /> },
+        { path: "routes", element: <TransportRouteList /> },
+        // Add other transport pages later (e.g., overview, vehicle management)
+      ],
+    },
     // --- Standalone Pages ---
-    { path: '/unauthorized', element: <Unauthorized /> },
-    { path: '*', element: <NotFound /> }, // Catch-all 404
+    { path: "/unauthorized", element: <Unauthorized /> },
+    { path: "*", element: <NotFound /> }, // Catch-all 404
   ]);
 
   // --- Render Application ---
@@ -196,7 +226,7 @@ function App() {
         <SnackbarProvider
           maxSnack={3}
           autoHideDuration={3000}
-          anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+          anchorOrigin={{ vertical: "top", horizontal: "left" }}
           dense
         >
           <ToastContainer

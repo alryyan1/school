@@ -9,17 +9,14 @@ import StudentFeePaymentFormDialog from './StudentFeePaymentFormDialog'; // Impo
 import { StudentFeePayment } from '@/types/studentFeePayment';
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
+import { formatNumber } from '@/constants';
 
 interface StudentFeePaymentListProps {
     studentAcademicYearId: number | null; // The ID of the student's enrollment record
     title?: string; // Optional title for the section
 }
 
-// Function to format currency (example)
-const formatCurrency = (amount: number | string | undefined | null) => {
-    const num = parseFloat(amount as string || '0');
-    return new Intl.NumberFormat('ar-SY', { style: 'currency', currency: 'SYP', minimumFractionDigits: 2 }).format(num); // Example: Syrian Pound
-}
+
 
 const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({ studentAcademicYearId, title = "سجل الدفعات" }) => {
     const { enqueueSnackbar } = useSnackbar();
@@ -103,7 +100,7 @@ const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({ studentAc
                                 {payments.map((payment) => (
                                     <TableRow key={payment.id} hover>
                                         <TableCell>{dayjs(payment.payment_date).format('YYYY/MM/DD')}</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 'medium' }}>{formatCurrency(payment.amount)}</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 'medium' }}>{formatNumber(payment.amount)}</TableCell>
                                         <TableCell>{payment.notes || '-'}</TableCell>
                                         <TableCell align="right">
                                             <Stack direction="row" spacing={0} justifyContent="flex-end">
@@ -125,7 +122,7 @@ const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({ studentAc
                                  {payments.length > 0 && (
                                       <TableRow sx={{ '& td': { borderTop: '2px solid black', fontWeight:'bold' } }}>
                                           <TableCell>الإجمالي المدفوع</TableCell>
-                                          <TableCell align="right">{formatCurrency(totalPaid)}</TableCell>
+                                          <TableCell align="right">{formatNumber(totalPaid)}</TableCell>
                                           <TableCell colSpan={2}></TableCell>
                                       </TableRow>
                                  )}

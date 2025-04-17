@@ -8,6 +8,7 @@ type AcademicYearState = {
     // No currentAcademicYear needed if using Dialogs mainly
     loading: boolean;
     error: string | null;
+    
 };
 
 type AcademicYearActions = {

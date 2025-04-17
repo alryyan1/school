@@ -102,7 +102,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                             error={!!errors.amount} helperText={errors.amount?.message}
                                             InputProps={{
                                                  inputProps: { step: "0.01", min: "0.01" },
-                                                 endAdornment: <InputAdornment position="end">ل.س</InputAdornment> // Example currency
+                                                 endAdornment: <InputAdornment position="end">SDG</InputAdornment> // Example currency
                                              }}
                                         />
                                     )}
