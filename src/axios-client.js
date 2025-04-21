@@ -53,8 +53,12 @@ axiosClient.interceptors.response.use(
         } else {
             // Something happened in setting up the request that triggered an Error
             console.error('Request error:', error.message);
-            toast.error('An unexpected error occurred.', {
-            });
+            console.log(error.name == 'CanceledError',error.name)
+            if(!error.name == 'CanceledError'){
+                toast.error('An unexpected error occurred.', {
+                });
+            }
+         
         }
 
         return Promise.reject(error); // Re-throw the error

@@ -51,7 +51,7 @@ const SubjectList: React.FC = () => {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
+        <Container style={{direction:'rtl'}} maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" component="h1">

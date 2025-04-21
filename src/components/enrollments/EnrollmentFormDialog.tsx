@@ -1,5 +1,5 @@
 // src/components/enrollments/EnrollmentFormDialog.tsx
-import React, { useEffect, useState } from "react";
+import React, {  useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
   Dialog,
@@ -20,7 +20,6 @@ import {
 } from "@mui/material";
 import {
   StudentEnrollmentFormData,
-  EnrollableStudent,
   EnrollmentStatus,
 } from "@/types/studentAcademicYear";
 
@@ -50,6 +49,7 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
   selectedAcademicYear,
   selectedGradeLevel,
 }) => {
+
   const {
     enrollStudent,
     fetchEnrollableStudents,
@@ -63,7 +63,9 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
 
   const {
     control,
+    watch,
     handleSubmit,
+    setValue,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<StudentEnrollmentFormData>({
@@ -73,6 +75,8 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
       grade_level_id: selectedGradeLevel?.id || "",
       classroom_id: null, // Default to null
       status: "active",
+      fees:selectedGradeLevel.assignment_details.basic_fees,
+      discount:0
     },
   });
 
@@ -90,6 +94,8 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
         school_id: selectedAcademicYear?.school_id || "", // Get school from year
         classroom_id: null, // Default to no classroom
         status: "active",
+        fees:selectedGradeLevel.assignment_details.basic_fees,
+        discount:'0'
       };
       reset(defaults); // Reset the form
 
@@ -125,6 +131,8 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
       academic_year_id: Number(data.academic_year_id),
       grade_level_id: Number(data.grade_level_id),
       school_id: Number(data.school_id),
+      fees:Number(data.fees),
+      discount:Number(data.discount),
       classroom_id: data.classroom_id ? Number(data.classroom_id) : null,
     };
 
@@ -143,111 +151,213 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
       await enrollStudent(submitData);
       enqueueSnackbar("تم تسجيل الطالب بنجاح", { variant: "success" });
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Enrollment Form submission error:", error);
       const backendErrors = error.response?.data?.errors;
       if (backendErrors) {
-        setFormError(`فشل التسجيل: ${Object.values(backendErrors).flat().join('. ')}`);
+        setFormError(
+          `فشل التسجيل: ${Object.values(backendErrors).flat().join(". ")}`
+        );
       } else {
         setFormError(error.message || "حدث خطأ غير متوقع.");
       }
     }
   };
+  const amountRef = useRef<HTMLInputElement>(null)
+
+  //setting amountRef
+
+ 
+
+ 
+  const discount = watch('discount');
+  useEffect(()=>{
+    const amount_discount = (discount as number * selectedGradeLevel.assignment_details.basic_fees) /100 
+    const amount_after_discount =  selectedGradeLevel.assignment_details.basic_fees - amount_discount;
+
+    if(amountRef.current){
+      setValue('fees',amount_after_discount.toString())
+      amountRef.current.value = amount_after_discount.toString() 
+    }
+      
+  },[discount])
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth dir="rtl">
-        <DialogTitle>
-            تسجيل طالب جديد في {selectedGradeLevel?.name ?? '...'} للعام {selectedAcademicYear?.name ?? '...'}
-        </DialogTitle>
-        <form onSubmit={handleSubmit(onSubmit)}>
-            <DialogContent>
-                {formError && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setFormError(null)}>{formError}</Alert>}
-                <Grid container spacing={2.5} sx={{ pt: 1 }}>
+      <DialogTitle>
+        تسجيل طالب جديد في {selectedGradeLevel?.name ?? "..."} للعام{" "}
+        {selectedAcademicYear?.name ?? "..."}
+      </DialogTitle>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <DialogContent>
+          {formError && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              onClose={() => setFormError(null)}
+            >
+              {formError}
+            </Alert>
+          )}
+          <Grid container spacing={2.5} sx={{ pt: 1 }}>
+            {/* Student Selection */}
+            <Grid item xs={12}>
+              <Controller
+                name="student_id"
+                control={control}
+                rules={{ required: "الطالب مطلوب" }}
+                render={({ field }) => (
+                  <Autocomplete
+                    options={enrollableStudents}
+                    loading={loadingEnrollable}
+                    getOptionLabel={(option) =>
+                      `${option.student_name} (${
+                        option.goverment_id || "لا يوجد رقم وطني"
+                      })`
+                    }
+                    value={
+                      enrollableStudents.find(
+                        (s) => s.id === Number(field.value)
+                      ) || null
+                    } // Match value
+                    onChange={(event, newValue) => {
+                      field.onChange(newValue ? newValue.id : ""); // Update RHF field with ID
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="الطالب *"
+                        required
+                        error={!!errors.student_id}
+                        helperText={errors.student_id?.message}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <React.Fragment>
+                              {loadingEnrollable ? (
+                                <CircularProgress color="inherit" size={20} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </React.Fragment>
+                          ),
+                        }}
+                      />
+                    )}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value.id
+                    }
+                    noOptionsText="لا يوجد طلاب متاحون لهذا العام"
+                    disabled={loadingEnrollable}
+                  />
+                )}
+              />
+            </Grid>
 
-                    {/* Student Selection */}
-                    <Grid item xs={12}>
-                         <Controller
-                            name="student_id"
-                            control={control}
-                            rules={{ required: 'الطالب مطلوب' }}
-                            render={({ field }) => (
-                                 <Autocomplete
-                                    options={enrollableStudents}
-                                    loading={loadingEnrollable}
-                                    getOptionLabel={(option) => `${option.student_name} (${option.goverment_id || 'لا يوجد رقم وطني'})`}
-                                    value={enrollableStudents.find(s => s.id === Number(field.value)) || null} // Match value
-                                    onChange={(event, newValue) => {
-                                         field.onChange(newValue ? newValue.id : ''); // Update RHF field with ID
-                                    }}
-                                    renderInput={(params) =>
-                                         <TextField {...params} label="الطالب *" required error={!!errors.student_id} helperText={errors.student_id?.message}
-                                             InputProps={{
-                                                 ...params.InputProps,
-                                                 endAdornment: (
-                                                     <React.Fragment>
-                                                         {loadingEnrollable ? <CircularProgress color="inherit" size={20} /> : null}
-                                                         {params.InputProps.endAdornment}
-                                                     </React.Fragment>
-                                                 ),
-                                             }}
-                                         />}
-                                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                                    noOptionsText="لا يوجد طلاب متاحون لهذا العام"
-                                    disabled={loadingEnrollable}
-                                 />
-                             )} />
-                     </Grid>
+            {/* Classroom Selection */}
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="classroom_id"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.classroom_id}>
+                    <InputLabel id="classroom-select-label">
+                      الفصل (اختياري)
+                    </InputLabel>
+                    <Select
+                      labelId="classroom-select-label"
+                      label="الفصل (اختياري)"
+                      {...field}
+                      value={field.value || ""} // Handle null value
+                    >
+                      <MenuItem value="">
+                        <em>بدون فصل</em>
+                      </MenuItem>
+                      {/* Filter classrooms based on selected grade? Assumes classrooms fetched match grade */}
+                      {classrooms.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.classroom_id && (
+                      <FormHelperText>
+                        {errors.classroom_id.message}
+                      </FormHelperText>
+                    )}
+                  </FormControl>
+                )}
+              />
+            </Grid>
 
-                     {/* Classroom Selection */}
-                    <Grid item xs={12} sm={6}>
-                         <Controller
-                            name="classroom_id"
-                            control={control}
-                            render={({ field }) => (
-                                 <FormControl fullWidth error={!!errors.classroom_id}>
-                                     <InputLabel id="classroom-select-label">الفصل (اختياري)</InputLabel>
-                                     <Select
-                                        labelId="classroom-select-label"
-                                        label="الفصل (اختياري)"
-                                        {...field}
-                                        value={field.value || ''} // Handle null value
-                                     >
-                                         <MenuItem value=""><em>بدون فصل</em></MenuItem>
-                                         {/* Filter classrooms based on selected grade? Assumes classrooms fetched match grade */}
-                                         {classrooms.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-                                     </Select>
-                                     {errors.classroom_id && <FormHelperText>{errors.classroom_id.message}</FormHelperText>}
-                                 </FormControl>
-                            )} />
-                    </Grid>
+            {/* Status Selection */}
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="status"
+                control={control}
+                rules={{ required: "الحالة مطلوبة" }}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.status}>
+                    <InputLabel id="status-select-label">الحالة *</InputLabel>
+                    <Select
+                      labelId="status-select-label"
+                      label="الحالة *"
+                      {...field}
+                    >
+                      {statusOptions.map((s) => (
+                        <MenuItem key={s} value={s}>
+                          {s}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.status && (
+                      <FormHelperText>{errors.status.message}</FormHelperText>
+                    )}
+                  </FormControl>
+                )}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField inputRef={amountRef} defaultValue={selectedGradeLevel.assignment_details.basic_fees} fullWidth label='الرسوم المقرره'/>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Controller name="discount" control={control} render={({field})=>{
+                return  <FormControl>
+                <InputLabel>التخفيض</InputLabel>
+                <Select {...field} sx={{minWidth:'200px'}} label='التخيض'>
+                    <MenuItem value='0'>0%</MenuItem>
+                    <MenuItem value='10'>10%</MenuItem>
+                    <MenuItem value='20'>20%</MenuItem>
+                    <MenuItem divider value='30'>30%</MenuItem>
+                    <MenuItem  value='40'>40%</MenuItem>
+                    <MenuItem value='50'>50%</MenuItem>
+                </Select>
+              </FormControl>
+              }}>
 
-                    {/* Status Selection */}
-                    <Grid item xs={12} sm={6}>
-                         <Controller
-                            name="status"
-                            control={control}
-                            rules={{ required: 'الحالة مطلوبة' }}
-                            render={({ field }) => (
-                                 <FormControl fullWidth error={!!errors.status}>
-                                     <InputLabel id="status-select-label">الحالة *</InputLabel>
-                                     <Select labelId="status-select-label" label="الحالة *" {...field} >
-                                        {statusOptions.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                                     </Select>
-                                     {errors.status && <FormHelperText>{errors.status.message}</FormHelperText>}
-                                 </FormControl>
-                            )} />
-                    </Grid>
-                </Grid>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button onClick={onClose} color="inherit" disabled={isSubmitting}>إلغاء</Button>
-                <Button type="submit" variant="contained" color="primary" disabled={isSubmitting || loadingEnrollable}>
-                    {isSubmitting ? <CircularProgress size={22} /> : 'تسجيل الطالب'}
-                </Button>
-            </DialogActions>
-        </form>
+              </Controller>
+
+             
+            </Grid>
+
+          </Grid>
+         
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={onClose} color="inherit" disabled={isSubmitting}>
+            إلغاء
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={isSubmitting || loadingEnrollable}
+          >
+            {isSubmitting ? <CircularProgress size={22} /> : "تسجيل الطالب"}
+          </Button>
+        </DialogActions>
+      </form>
     </Dialog>
-);
+  );
 };
 
 export default EnrollmentFormDialog;

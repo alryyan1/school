@@ -43,7 +43,7 @@ export enum Gender {
     image: string;
     
     approved?: boolean;
-    approve_date?: string | null;
+    aproove_date?: string | null;
     approved_by_user?: number | null;
     message_sent?: boolean;
     
@@ -52,4 +52,5 @@ export enum Gender {
   
     created_at?: string;
     updated_at?: string;
+    image_url?:string;
   };

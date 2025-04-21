@@ -14,10 +14,7 @@ import { useStudentStore } from "@/stores/studentStore";
 import { useSnackbar } from "notistack";
 
 // Keep initial state for create mode and form structure reference
-const initialStudentState: Omit<
-  Student,
-  "id" | "created_at" | "updated_at" // Removed aproove_date as it's backend-set
-> = {
+const initialStudentState:Omit<Student,'id'|'created_at'|'updated_at'> = {
   student_name: "",
   father_name: "",
   father_job: "",
@@ -55,7 +52,7 @@ const initialStudentState: Omit<
 // const localStorageKey = "studentFormData";
 
 export const StudentForm = () => {
-  const { id } = useParams<{ id: string }>(); // Get ID from URL
+  const { id } = useParams<{id:string}>(); // Get ID from URL
   const navigate = useNavigate();
   const studentId = id ? parseInt(id, 10) : undefined;
   const isEditMode = !!studentId;
@@ -91,7 +88,9 @@ export const StudentForm = () => {
     } else {
         // If in create mode, potentially load from localStorage or reset fully
         // For simplicity now, just ensure form is reset to initial defaults
-        methods.reset(initialStudentState);
+        methods.reset(initialStudentState); 
+        
+      
     }
 
     // Cleanup on unmount or if ID changes (less likely for edit)
@@ -99,8 +98,12 @@ export const StudentForm = () => {
        resetCurrentStudent(); // Clear student data from store on unmount
     };
   }, [studentId, isEditMode, getStudentById, methods, resetCurrentStudent]); // Added resetCurrentStudent
-
-
+  // console.log(methods,'methods')
+  // for(let key in methods.formState.defaultValues){
+    
+  //   console.log(key)
+  // }
+  
   // --- Populate form once data is fetched in edit mode ---
   useEffect(() => {
     // Only reset form if in edit mode AND currentStudent data is available
@@ -111,7 +114,7 @@ export const StudentForm = () => {
     }
   }, [currentStudent, isEditMode, methods, studentId]);
 
-
+  console.log(methods.formState.errors)
   // --- Handle form submission (Create or Update) ---
   const onSubmit = async (data: Student) => { // data will have full Student structure from form
     setIsSubmitting(true);
@@ -128,6 +131,7 @@ export const StudentForm = () => {
         // Exclude fields that shouldn't be sent on creation if necessary
         const createData: Omit<Student, 'id' | 'created_at' | 'updated_at' | 'approve_date'> = data;
         const createdStudent = await createStudent(createData); // createStudent should return the new student with ID
+        navigate('../list')
         enqueueSnackbar('تم إضافة الطالب بنجاح', { variant: 'success' });
         methods.reset(initialStudentState); // Clear form after successful creation
         setActiveTab(0); // Go back to first tab
@@ -205,7 +209,7 @@ export const StudentForm = () => {
         </Box>
 
         {/* Error Summary (Optional but helpful) */}
-        {Object.keys(methods.formState.errors).length > 0 && activeTab !== 4 && ( // Don't show if on confirm tab maybe
+        {Object.keys(methods.formState.errors).length > 0 && ( // Don't show if on confirm tab maybe
           <Alert severity="error" sx={{ mt: 2 }}>
             <Typography variant="h6" component="h3" gutterBottom>
               يرجى مراجعة الأخطاء التالية:

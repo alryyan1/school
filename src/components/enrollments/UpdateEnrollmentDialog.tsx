@@ -57,10 +57,10 @@ useEffect(() => {
         };
 
         try {
-            await updateEnrollment(enrollmentData.id , submitData);
+            await updateEnrollment(enrollmentData.id  as number, submitData);
             enqueueSnackbar('تم تحديث تسجيل الطالب بنجاح', { variant: 'success' });
             onClose();
-        } catch (error: any) {
+        } catch (error) {
              console.error("Update Enrollment Form submission error:", error);
              const backendErrors = error.response?.data?.errors;
              if (backendErrors) {

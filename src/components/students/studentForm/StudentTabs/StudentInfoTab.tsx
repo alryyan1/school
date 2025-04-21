@@ -8,7 +8,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import { EducationLevel, Gender } from "@/types/student";
+import { EducationLevel, Gender, Student } from "@/types/student";
 import dayjs from "dayjs";
 
 export const StudentInfoTab = () => {
@@ -16,7 +16,7 @@ export const StudentInfoTab = () => {
     control,
     register,
     formState: { errors },
-  } = useFormContext();
+  } = useFormContext<Student>();
 
   return (
     <Grid container spacing={3}>
@@ -127,6 +127,15 @@ export const StudentInfoTab = () => {
       </Grid>
       <Grid item xs={12} sm={6}>
         <TextField {...register('medical_condition')} fullWidth label='الحاله الصحيه'></TextField>
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField {...register('goverment_id')} fullWidth label='الرقم الوطني'></TextField>
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField {...register('referred_school')} fullWidth label='اسم المدرسه السابقه'></TextField>
+      </Grid>
+      <Grid item xs={12} sm={6}>
+        <TextField {...register('success_percentage')} fullWidth label='نسبه النجاح'></TextField>
       </Grid>
     </Grid>
   );

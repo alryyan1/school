@@ -101,7 +101,7 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
   },
 
   resetCurrentStudent: () => {
-    set({ currentStudent: null });
+   set({currentStudent:null})
   },
    // --- NEW ACTION IMPLEMENTATION ---
    updateStudentPhoto: async (id: number, photo: File) => {
@@ -125,4 +125,6 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
         return false; // Indicate failure
     }
   }
+
+ 
 }));

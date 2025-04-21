@@ -81,7 +81,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+        <Dialog  open={open} onClose={onClose} maxWidth="xs" fullWidth>
             <DialogTitle>{isEditMode ? 'تعديل سجل دفعة' : 'إضافة دفعة جديدة'}</DialogTitle>
             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ar">
                 <form onSubmit={handleSubmit(onSubmit)}>

@@ -37,7 +37,7 @@ import {
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { useAcademicYearStore } from "@/stores/academicYearStore"; // Adjust path
-import { useGradeLevelStore } from "@/stores/gradeLevelStore"; // Adjust path
+// import { useGradeLevelStore } from "@/stores/gradeLevelStore"; // Adjust path
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
 import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore"; // Adjust path
 import EnrollmentFormDialog from "@/components/enrollments/EnrollmentFormDialog"; // Adjust path
@@ -46,15 +46,14 @@ import {
   StudentAcademicYear,
   EnrollmentStatus,
 } from "@/types/studentAcademicYear"; // Adjust path
-import { AcademicYear } from "@/types/academicYear"; // Adjust path
 import { GradeLevel } from "@/types/gradeLevel"; // Adjust path
 import { useSnackbar } from "notistack";
-import dayjs from "dayjs"; // Although not directly used here, good to have if formatting dates
 import StudentFeePaymentList from "@/components/finances/StudentFeePaymentList";
 import { SchoolApi } from "@/api/schoolApi";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { ClearIcon } from "@mui/x-date-pickers";
 import { SearchIcon } from "lucide-react";
+import { formatNumber } from "@/constants";
 // Helper to get status chip color
 const getStatusColor = (
   status: EnrollmentStatus
@@ -82,7 +81,7 @@ const StudentEnrollmentManager: React.FC = () => {
   const [enrollFormOpen, setEnrollFormOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const { gradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Use global list again for potential context display
+  // const { gradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Use global list again for potential context display
 
   // --- NEW Search State ---
   const [searchTerm, setSearchTerm] = useState("");
@@ -93,16 +92,9 @@ const StudentEnrollmentManager: React.FC = () => {
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
     activeSchoolId ?? ""
   );
-  const [selectedYearId, setSelectedYearId] = useState<number | "">(() => {
-    // Ensure initial year belongs to initial school
-    const initialYear = useSettingsStore.getState().activeAcademicYearId;
-    const initialSchool = useSettingsStore.getState().activeSchoolId;
-    const initialAcademicYears = useAcademicYearStore.getState().academicYears; // Get initial list from other store
-    const yearIsValid = initialAcademicYears.some(
-      (y) => y.id === initialYear && y.school_id === initialSchool
-    );
-    return yearIsValid ? initialYear : ""; // Use only if valid for the school
-  });
+  const [selectedYearId, setSelectedYearId] = useState<number | "">(
+    activeAcademicYearId
+  );
   console.log(selectedYearId, "selectedYearId");
   // State for the list of grade levels available FOR THE SELECTED SCHOOL
   const [availableGradeLevels, setAvailableGradeLevels] = useState<
@@ -122,7 +114,7 @@ const StudentEnrollmentManager: React.FC = () => {
     loading,
     error,
     fetchEnrollments,
-    deleteEnrollment,
+    // deleteEnrollment,
     clearEnrollments,
     searchEnrollments,
     isSearchResult,
@@ -134,8 +126,8 @@ const StudentEnrollmentManager: React.FC = () => {
   useEffect(() => {
     fetchSchoolList();
     fetchAcademicYears(); // Fetch all initially
-    fetchGradeLevels();
-  }, [fetchSchoolList, fetchAcademicYears, fetchGradeLevels]);
+    // fetchGradeLevels();
+  }, [fetchSchoolList, fetchAcademicYears]);
   // Fetch Grade Levels SPECIFIC TO THE SELECTED SCHOOL
   const fetchSchoolGrades = useCallback(
     async (schoolId: number) => {
@@ -163,7 +155,7 @@ const StudentEnrollmentManager: React.FC = () => {
     if (isSearchResult) return;
 
     if (selectedSchoolId && selectedYearId) {
-      fetchSchoolGrades(activeSchoolId)
+      fetchSchoolGrades(selectedSchoolId);
       fetchEnrollments({
         school_id: selectedSchoolId,
         academic_year_id: selectedYearId,
@@ -263,21 +255,21 @@ const StudentEnrollmentManager: React.FC = () => {
   };
 
   // Delete Action
-  const handleDeleteConfirm = async () => {
-    if (currentEnrollment) {
-      const success = await deleteEnrollment(currentEnrollment.id);
-      if (success) {
-        enqueueSnackbar("تم حذف التسجيل بنجاح", { variant: "success" });
-      } else {
-        // Display specific error from store, fallback message if needed
-        enqueueSnackbar(
-          useStudentEnrollmentStore.getState().error || "فشل حذف التسجيل",
-          { variant: "error" }
-        );
-      }
-      handleCloseDeleteDialog();
-    }
-  };
+  // const handleDeleteConfirm = async () => {
+  //   if (currentEnrollment) {
+  //     const success = await deleteEnrollment(currentEnrollment.id);
+  //     if (success) {
+  //       enqueueSnackbar("تم حذف التسجيل بنجاح", { variant: "success" });
+  //     } else {
+  //       // Display specific error from store, fallback message if needed
+  //       enqueueSnackbar(
+  //         useStudentEnrollmentStore.getState().error || "فشل حذف التسجيل",
+  //         { variant: "error" }
+  //       );
+  //     }
+  //     handleCloseDeleteDialog();
+  //   }
+  // };
 
   // Find selected objects for passing to dialog
   //  const selectedAcademicYearObj = academicYears.find(ay => ay.id === selectedYearId) || null;
@@ -296,7 +288,7 @@ const StudentEnrollmentManager: React.FC = () => {
     setPaymentListOpen(false);
     setSelectedEnrollmentForPayments(null);
   };
-
+  console.log(activeAcademicYearId, "activeAcademicYearId");
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }} dir="rtl">
       {/* Header & Filters Section */}
@@ -320,30 +312,38 @@ const StudentEnrollmentManager: React.FC = () => {
             spacing={1.5}
             alignItems="center"
           >
-             {/* --- Search Input --- */}
-             <TextField
-                             label="بحث بالاسم أو الرقم الوطني"
-                             variant="outlined"
-                             size="small"
-                             value={searchTerm}
-                             onChange={handleSearchChange}
-                             sx={{ minWidth: 200 }}
-                             InputProps={{
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                         {searchTerm && (
-                                              <IconButton onClick={clearSearch} size="small" edge="end">
-                                                  <ClearIcon fontSize="small"/>
-                                              </IconButton>
-                                          )}
-                                         <IconButton onClick={executeSearch} size="small" edge="end" color="primary" disabled={!searchTerm}>
-                                             <SearchIcon />
-                                         </IconButton>
-                                    </InputAdornment>
-                                 )
-                             }}
-                             onKeyDown={(e) => { if (e.key === 'Enter' && searchTerm) executeSearch(); }}
-                        />
+            {/* --- Search Input --- */}
+            <TextField
+              label="بحث بالاسم أو الرقم الوطني"
+              variant="outlined"
+              size="small"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              sx={{ minWidth: 200 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {searchTerm && (
+                      <IconButton onClick={clearSearch} size="small" edge="end">
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    <IconButton
+                      onClick={executeSearch}
+                      size="small"
+                      edge="end"
+                      color="primary"
+                      disabled={!searchTerm}
+                    >
+                      <SearchIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchTerm) executeSearch();
+              }}
+            />
             {/* School Filter */}
             <FormControl sx={{ minWidth: 180 }} size="small">
               <InputLabel id="enroll-school-select-label">المدرسة *</InputLabel>
@@ -464,13 +464,15 @@ const StudentEnrollmentManager: React.FC = () => {
           {error}
         </Alert>
       )}
-       {/* Search Results Indicator Alert */}
-       {isSearchResult && !loading && (
-                 <Alert severity="success" sx={{ mb: 2 }} onClose={clearSearch}>
-                     عرض نتائج البحث عن "{searchTerm}". <Button onClick={clearSearch} color="inherit" size="small">عرض الكل حسب الفلتر</Button>
-                 </Alert>
-             )}
-
+      {/* Search Results Indicator Alert */}
+      {isSearchResult && !loading && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={clearSearch}>
+          عرض نتائج البحث عن "{searchTerm}".{" "}
+          <Button onClick={clearSearch} color="inherit" size="small">
+            عرض الكل حسب الفلتر
+          </Button>
+        </Alert>
+      )}
 
       {/* Enrollments Table */}
       {!loading && !error && selectedYearId && selectedSchoolId && (
@@ -484,7 +486,8 @@ const StudentEnrollmentManager: React.FC = () => {
                 <TableRow>
                   <TableCell>الكود</TableCell>
                   <TableCell>اسم الطالب</TableCell>
-                  <TableCell>الرقم الوطني</TableCell>
+                  <TableCell>المرحله الدراسيه</TableCell>
+                  <TableCell>الرسوم </TableCell>
                   <TableCell>الفصل</TableCell>
                   <TableCell align="center">الحالة</TableCell>
                   <TableCell align="center">الدفعات</TableCell>
@@ -506,7 +509,10 @@ const StudentEnrollmentManager: React.FC = () => {
                       {enrollment.student?.student_name ?? "N/A"}
                     </TableCell>
                     <TableCell>
-                      {enrollment.student?.goverment_id || "-"}
+                      {enrollment.grade_level.name || "-"}
+                    </TableCell>
+                    <TableCell>
+                      {formatNumber(enrollment.fees) }
                     </TableCell>
                     <TableCell>
                       {enrollment.classroom?.name ?? (
@@ -605,9 +611,9 @@ const StudentEnrollmentManager: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDeleteDialog}>إلغاء</Button>
-          <Button onClick={handleDeleteConfirm} color="error">
+          {/* <Button onClick={handleDeleteConfirm} color="error">
             تأكيد الحذف
-          </Button>
+          </Button> */}
         </DialogActions>
       </Dialog>
       {/* --- Dialogs --- */}
@@ -631,8 +637,8 @@ const StudentEnrollmentManager: React.FC = () => {
         <DialogContent>
           {/* Render the Payment List component inside */}
           {selectedEnrollmentForPayments && (
-            <StudentFeePaymentList
-              studentAcademicYearId={selectedEnrollmentForPayments.id}
+            <StudentFeePaymentList enrollment={selectedEnrollmentForPayments}
+              studentAcademicYearId={selectedEnrollmentForPayments.id as number}
               title="" // Title is handled by DialogTitle now
             />
           )}

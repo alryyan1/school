@@ -86,10 +86,10 @@ const Dashboard: React.FC = () => {
     // Use Tailwind color classes now
     const dashboardItems: DashboardItem[] = [
         {
-            title: 'الطلاب',
+            title: 'التسجيل ( الاولي )',
             icon: Users,
-            link: '/students',
-            description: 'إدارة سجلات الطلاب وبياناتهم.',
+            link: '/students/list',
+            description: 'إدارة سجلات الطلاب الاساسيه.',
             iconColor: "text-blue-600 dark:text-blue-400",
             bgColor: "bg-blue-100/80 dark:bg-blue-900/30",
         },

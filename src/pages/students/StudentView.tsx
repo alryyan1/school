@@ -9,11 +9,8 @@ import {
     Alert,
     Paper,
     Avatar,
-    Divider,
     Chip,
     Button,
-    Card,
-    CardMedia,
     useTheme,
     Container,
     Stack, // Use Stack for vertical layout
@@ -284,7 +281,7 @@ const StudentView: React.FC = () => {
                              </Box>
 
                             {/* Other Guardian Info Section (Only show if data exists) */}
-                             {(currentStudent.other_parent) && (
+                          
                                  <Box>
                                      <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>ولي الأمر الآخر</Typography>
                                      <InfoItem label="الاسم" value={displayData(currentStudent.other_parent)} />
@@ -293,20 +290,14 @@ const StudentView: React.FC = () => {
                                      <InfoItem label="الهاتف" value={displayData(currentStudent.relation_phone)} />
                                      <InfoItem label="واتساب" value={displayData(currentStudent.relation_whatsapp)} />
                                  </Box>
-                             )}
+                             
 
-                             {/* Closest Person Section */}
-                              <Box>
-                                <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>أقرب شخص للطالب</Typography>
-                                <InfoItem label="الاسم" value={displayData(currentStudent.closest_name)} />
-                                <InfoItem label="الهاتف" value={displayData(currentStudent.closest_phone)} />
-                             </Box>
 
                             {/* Approval Status Section */}
                             <Box>
                                 <Typography variant="h6" sx={{ mb: 1.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>حالة القبول</Typography>
                                 <InfoItem label="الحالة" value={<Chip label={currentStudent.approved ? 'مقبول' : 'قيد المراجعة'} size="small" color={currentStudent.approved ? 'success' : 'warning'} variant="filled" />} />
-                                <InfoItem label="تاريخ القبول" value={displayData(currentStudent.approve_date)} />
+                                <InfoItem label="تاريخ القبول" value={displayData(currentStudent.aproove_date)} />
                                 <InfoItem label="تم القبول بواسطة (ID)" value={displayData(currentStudent.approved_by_user?.toString())} />
                                 <InfoItem label="تم إرسال رسالة القبول" value={<Chip label={currentStudent.message_sent ? 'نعم' : 'لا'} size="small" color={currentStudent.message_sent ? 'success' : 'default'} variant="outlined" />} />
                             </Box>

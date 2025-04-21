@@ -10,15 +10,17 @@ import { StudentFeePayment } from '@/types/studentFeePayment';
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
 import { formatNumber } from '@/constants';
+import { EnrollableStudent, StudentAcademicYear } from '@/types/studentAcademicYear';
 
 interface StudentFeePaymentListProps {
+    enrollment:StudentAcademicYear;
     studentAcademicYearId: number | null; // The ID of the student's enrollment record
     title?: string; // Optional title for the section
 }
 
 
 
-const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({ studentAcademicYearId, title = "سجل الدفعات" }) => {
+const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({ studentAcademicYearId,enrollment, title = "سجل الدفعات" }) => {
     const { enqueueSnackbar } = useSnackbar();
     const { payments, loading, error, totalPaid, fetchPayments, deletePayment } = useStudentFeePaymentStore();
     const [formOpen, setFormOpen] = useState(false);
@@ -59,9 +61,9 @@ const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({ studentAc
             handleCloseDeleteDialog();
         }
     };
-
+    let totalPayments = 0;
     return (
-        <Paper elevation={3} sx={{ p: 2, mt: 3 }}>
+        <Paper style={{direction:'rtl'}} elevation={3} sx={{ p: 2, mt: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">{title}</Typography>
                 <Button
@@ -88,41 +90,48 @@ const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({ studentAc
                             <TableHead>
                                 <TableRow>
                                     <TableCell>تاريخ الدفعة</TableCell>
-                                    <TableCell align="right">المبلغ</TableCell>
+                                    <TableCell align="center">المبلغ</TableCell>
+                                    <TableCell align="center">المتبقي</TableCell>
                                     <TableCell>ملاحظات</TableCell>
-                                    <TableCell align="right">إجراءات</TableCell>
+                                    <TableCell align="center">إجراءات</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {payments.length === 0 && (
                                     <TableRow><TableCell colSpan={4} align="center">لا توجد دفعات مسجلة.</TableCell></TableRow>
                                 )}
-                                {payments.map((payment) => (
-                                    <TableRow key={payment.id} hover>
-                                        <TableCell>{dayjs(payment.payment_date).format('YYYY/MM/DD')}</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 'medium' }}>{formatNumber(payment.amount)}</TableCell>
-                                        <TableCell>{payment.notes || '-'}</TableCell>
-                                        <TableCell align="right">
-                                            <Stack direction="row" spacing={0} justifyContent="flex-end">
-                                                <Tooltip title="تعديل">
-                                                    <IconButton size="small" color="primary" onClick={() => handleOpenForm(payment)}>
-                                                        <EditIcon fontSize="inherit"/>
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="حذف">
-                                                    <IconButton size="small" color="error" onClick={() => handleOpenDeleteDialog(payment)}>
-                                                        <DeleteIcon fontSize="inherit"/>
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Stack>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {payments.map((payment) =>{
+
+                             
+                                    totalPayments+= Number(payment.amount ) ;
+                                    return ( 
+                                        <TableRow key={payment.id} hover>
+                                            <TableCell>{dayjs(payment.payment_date).format('YYYY/MM/DD')}</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 'medium' ,fontSize:'1.5rem'}}>{formatNumber(payment.amount)}</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 'medium',fontSize:'1.5rem' }}>{formatNumber(Number(enrollment.fees) - Number(totalPayments) )}</TableCell>
+                                            <TableCell>{payment.notes || '-'}</TableCell>
+                                            <TableCell align="center">
+                                                <Stack direction="row" spacing={0} justifyContent="flex-end">
+                                                    <Tooltip title="تعديل">
+                                                        <IconButton size="small" color="primary" onClick={() => handleOpenForm(payment)}>
+                                                            <EditIcon fontSize="inherit"/>
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="حذف">
+                                                        <IconButton size="small" color="error" onClick={() => handleOpenDeleteDialog(payment)}>
+                                                            <DeleteIcon fontSize="inherit"/>
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                                 {/* Total Row */}
                                  {payments.length > 0 && (
                                       <TableRow sx={{ '& td': { borderTop: '2px solid black', fontWeight:'bold' } }}>
                                           <TableCell>الإجمالي المدفوع</TableCell>
-                                          <TableCell align="right">{formatNumber(totalPaid)}</TableCell>
+                                          <TableCell align="center">{formatNumber(totalPaid)}</TableCell>
                                           <TableCell colSpan={2}></TableCell>
                                       </TableRow>
                                  )}

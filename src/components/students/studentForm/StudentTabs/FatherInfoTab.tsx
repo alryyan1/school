@@ -8,7 +8,7 @@ export const FatherInfoTab = () => {
   <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  required
+                  
                   fullWidth
                   label="اسم الأب"
                   {...register("father_name", {
@@ -31,7 +31,7 @@ export const FatherInfoTab = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  required
+                  
                   fullWidth
                   label="وظيفة الأب"
                   {...register("father_job", {
@@ -50,7 +50,7 @@ export const FatherInfoTab = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  required
+                  
                   fullWidth
                   label="عنوان الأب"
                   {...register("father_address", {
@@ -58,10 +58,7 @@ export const FatherInfoTab = () => {
                       value: true,
                       message: "عنوان الأب مطلوب",
                     },
-                    minLength: {
-                      value: 5,
-                      message: "يجب أن يكون العنوان على الأقل 5 أحرف",
-                    },
+                 
                   })}
                   error={!!errors.father_address}
                   helperText={errors.father_address?.message}
@@ -69,7 +66,7 @@ export const FatherInfoTab = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  required
+                  
                   fullWidth
                   label="رقم هاتف الأب"
                   {...register("father_phone", {

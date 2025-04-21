@@ -13,6 +13,8 @@ export type StudentAcademicYear = {
     grade_level_id: number | string;
     classroom_id: number | null;
     school_id:number|string;
+    fees:number|string;
+    discount:number|string;
     status: EnrollmentStatus;
     // Nested data from resource
     student?: Pick<Student, 'id' | 'student_name' | 'goverment_id'>; // Only needed fields
@@ -25,12 +27,12 @@ export type StudentAcademicYear = {
 
 // Form for creating a new enrollment
 export type StudentEnrollmentFormData = Pick<StudentAcademicYear,
-    'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status'|'school_id'
+    'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status'|'school_id'|'discount'|'fees'
 >;
 
 // Form for updating an existing enrollment (only classroom & status)
 export type StudentEnrollmentUpdateFormData = Pick<StudentAcademicYear,
-    'classroom_id' | 'status'
+    'classroom_id' | 'status'|'fees'
 >;
 
 // Type for the enrollable students list

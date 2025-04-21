@@ -33,10 +33,7 @@ export const MotherInfoTab = () => {
           label="وظيفة الأم"
           {...register("mother_job", {
             required: "وظيفة الأم مطلوبة",
-            minLength: {
-              value: 2,
-              message: "يجب أن تكون الوظيفة حرفين على الأقل"
-            }
+         
           })}
           error={!!errors.mother_job}
           helperText={errors.mother_job?.message as string}
@@ -51,10 +48,7 @@ export const MotherInfoTab = () => {
           label="عنوان الأم"
           {...register("mother_address", {
             required: "عنوان الأم مطلوب",
-            minLength: {
-              value: 5,
-              message: "يجب أن يكون العنوان 5 أحرف على الأقل"
-            }
+         
           })}
           error={!!errors.mother_address}
           helperText={errors.mother_address?.message as string}
