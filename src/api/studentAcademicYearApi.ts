@@ -43,4 +43,8 @@ export const StudentAcademicYearApi = {
     axiosClient.get<CollectionResponse>("search", {
       params: { term: searchTerm },
     }),
+
+    getAllStudentAcademicYear: ()=>{
+      return  axiosClient.get<StudentAcademicYear[]>('getAllStudentAcademicYear')
+    }
 };

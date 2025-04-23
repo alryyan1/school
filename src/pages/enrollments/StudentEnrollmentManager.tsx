@@ -54,6 +54,10 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { ClearIcon } from "@mui/x-date-pickers";
 import { SearchIcon } from "lucide-react";
 import { formatNumber } from "@/constants";
+import FeeInstallmentList from "@/components/finances/FeeInstallmentList";
+import FeeInstallmentViewerDialog from "@/components/finances/FeeInstallmentViewerDialog";
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'; // Example icon for statement
+
 // Helper to get status chip color
 const getStatusColor = (
   status: EnrollmentStatus
@@ -81,6 +85,9 @@ const StudentEnrollmentManager: React.FC = () => {
   const [enrollFormOpen, setEnrollFormOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [statementDialogOpen, setStatementDialogOpen] = useState(false);
+  const [selectedEnrollmentForStatement, setSelectedEnrollmentForStatement] =
+    useState<StudentAcademicYear | null>(null);
   // const { gradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Use global list again for potential context display
 
   // --- NEW Search State ---
@@ -244,7 +251,23 @@ const StudentEnrollmentManager: React.FC = () => {
       });
     }
   };
-
+  const handleOpenStatementDialog = (enrollment: StudentAcademicYear) => {
+    setSelectedEnrollmentForStatement(enrollment);
+    setStatementDialogOpen(true);
+  };
+  const handleCloseStatementDialog = (refetch = false) => {
+    // Accept refetch flag
+    setStatementDialogOpen(false);
+    setSelectedEnrollmentForStatement(null);
+    // Refetch enrollments if installments were potentially changed indirectly
+    if (refetch && selectedSchoolId && selectedYearId) {
+      fetchEnrollments({
+        school_id: selectedSchoolId,
+        academic_year_id: selectedYearId,
+        grade_level_id: selectedGradeId || undefined,
+      });
+    }
+  };
   const handleOpenDeleteDialog = (enrollment: StudentAcademicYear) => {
     setCurrentEnrollment(enrollment);
     setDeleteDialogOpen(true);
@@ -509,11 +532,9 @@ const StudentEnrollmentManager: React.FC = () => {
                       {enrollment.student?.student_name ?? "N/A"}
                     </TableCell>
                     <TableCell>
-                      {enrollment.grade_level.name || "-"}
+                      {enrollment?.grade_level?.name || "-"}
                     </TableCell>
-                    <TableCell>
-                      {formatNumber(enrollment.fees) }
-                    </TableCell>
+                    <TableCell>{formatNumber(enrollment.fees)}</TableCell>
                     <TableCell>
                       {enrollment.classroom?.name ?? (
                         <Box component="em" sx={{ color: "text.secondary" }}>
@@ -530,13 +551,15 @@ const StudentEnrollmentManager: React.FC = () => {
                     </TableCell>
                     {/* Payments Button */}
                     <TableCell align="center">
-                      <Tooltip title="عرض/إدارة الدفعات">
+                     
+                      <Tooltip title="عرض/إدارة الأقساط والمدفوعات">
                         <Button
                           size="small"
                           variant="text"
-                          onClick={() => handleOpenPaymentList(enrollment)}
+                          onClick={() => handleOpenStatementDialog(enrollment)}
+                          startIcon={<ReceiptLongIcon fontSize="small" />}
                         >
-                          عرض السجل
+                          كشف حساب
                         </Button>
                       </Tooltip>
                     </TableCell>
@@ -623,7 +646,7 @@ const StudentEnrollmentManager: React.FC = () => {
       <Dialog
         open={paymentListOpen}
         onClose={handleClosePaymentList}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
       >
         <DialogTitle>
@@ -637,9 +660,9 @@ const StudentEnrollmentManager: React.FC = () => {
         <DialogContent>
           {/* Render the Payment List component inside */}
           {selectedEnrollmentForPayments && (
-            <StudentFeePaymentList enrollment={selectedEnrollmentForPayments}
+            <FeeInstallmentList
               studentAcademicYearId={selectedEnrollmentForPayments.id as number}
-              title="" // Title is handled by DialogTitle now
+              totalFeesAssigned={0}
             />
           )}
         </DialogContent>
@@ -647,6 +670,14 @@ const StudentEnrollmentManager: React.FC = () => {
           <Button onClick={handleClosePaymentList}>إغلاق</Button>
         </DialogActions>
       </Dialog>
+      <FeeInstallmentViewerDialog
+        open={statementDialogOpen}
+        onClose={handleCloseStatementDialog} // Use the correct close handler
+        studentAcademicYearId={selectedEnrollmentForStatement?.id ?? null}
+        studentName={selectedEnrollmentForStatement?.student?.student_name}
+        academicYearName={selectedEnrollmentForStatement?.academic_year?.name}
+        gradeLevelName={selectedEnrollmentForStatement?.grade_level?.name}
+      />
     </Container>
   );
 };

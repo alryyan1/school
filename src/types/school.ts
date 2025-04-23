@@ -14,6 +14,8 @@ export type School = {
     // is_active?: boolean; // Add if needed
     created_at?: string; // ISO 8601 format
     updated_at?: string; // ISO 8601 format
+    classrooms_count?: number; // <-- Add count
+
 };
 
 // Type for creating/updating

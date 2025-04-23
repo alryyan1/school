@@ -38,7 +38,7 @@ export const useSchoolStore = create<SchoolState & SchoolActions>((set, get) => 
                 schools: response.data.data, // Adjust based on ResourceCollection structure
                 loading: false,
             });
-        } catch (error: any) {
+        } catch (error) {
             const message = error.response?.data?.message || 'فشل في جلب بيانات المدارس';
             set({ error: message, loading: false });
         }
@@ -50,7 +50,7 @@ export const useSchoolStore = create<SchoolState & SchoolActions>((set, get) => 
             const response = await SchoolApi.getById(id);
             set({ currentSchool: response.data.data, loading: false }); // Adjust based on Resource structure
             return response.data.data;
-        } catch (error: any) {
+        } catch (error) {
             const message = error.response?.data?.message || 'فشل في جلب بيانات المدرسة';
             set({ error: message, loading: false });
             return null;
@@ -66,7 +66,7 @@ export const useSchoolStore = create<SchoolState & SchoolActions>((set, get) => 
             get().fetchSchools();
             set({ loading: false });
             return schoolData;
-        } catch (error: any) {
+        } catch (error) {
             const message = error.response?.data?.message || 'فشل في إضافة المدرسة';
             set({ error: message, loading: false });
             return null;
@@ -85,7 +85,7 @@ export const useSchoolStore = create<SchoolState & SchoolActions>((set, get) => 
                 loading: false,
             }));
             return updatedSchool;
-        } catch (error: any) {
+        } catch (error) {
             const message = error.response?.data?.message || 'فشل في تحديث بيانات المدرسة';
             set({ error: message, loading: false });
             return null;
@@ -103,7 +103,7 @@ export const useSchoolStore = create<SchoolState & SchoolActions>((set, get) => 
                  loading: false,
              }));
              return true;
-         } catch (error: any) {
+         } catch (error) {
              const message = error.response?.data?.message || 'فشل في حذف المدرسة';
              set({ error: message, loading: false });
              return false;

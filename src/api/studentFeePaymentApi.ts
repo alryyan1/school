@@ -1,23 +1,31 @@
 // src/api/studentFeePaymentApi.ts
-import axiosClient from '../axios-client';
-import { StudentFeePayment, StudentFeePaymentFormData } from '@/types/studentFeePayment';
+import axiosClient from "../axios-client";
+import {
+  StudentFeePayment,
+  StudentFeePaymentFormData,
+} from "@/types/studentFeePayment";
 
 type CollectionResponse = { data: StudentFeePayment[] };
 type ResourceResponse = { data: StudentFeePayment };
 
 export const StudentFeePaymentApi = {
-    // Get payments for a specific enrollment ID
-    getAll: (studentAcademicYearId: number) =>
-        axiosClient.get<CollectionResponse>('/student-fee-payments', {
-            params: { student_academic_year_id: studentAcademicYearId }
-        }),
+  // Get payments for a specific INSTALLMENT ID
+  getAll: (feeInstallmentId: number) =>
+    axiosClient.get<CollectionResponse>("/student-fee-payments", {
+      params: { fee_installment_id: feeInstallmentId }, // <-- Filter changed
+    }),
 
-    create: (data: StudentFeePaymentFormData) =>
-        axiosClient.post<ResourceResponse>('/student-fee-payments', data),
+  // Data now includes fee_installment_id
+  create: (data: StudentFeePaymentFormData) =>
+    axiosClient.post<ResourceResponse>("/student-fee-payments", data),
 
-    update: (id: number, data: Partial<StudentFeePaymentFormData>) =>
-        axiosClient.put<ResourceResponse>(`/student-fee-payments/${id}`, data),
+  // Can only update amount, date, notes
+  update: (
+    id: number,
+    data: Partial<
+      Pick<StudentFeePaymentFormData, "amount" | "payment_date" | "notes">
+    >
+  ) => axiosClient.put<ResourceResponse>(`/student-fee-payments/${id}`, data),
 
-    delete: (id: number) =>
-        axiosClient.delete(`/student-fee-payments/${id}`),
+  delete: (id: number) => axiosClient.delete(`/student-fee-payments/${id}`),
 };

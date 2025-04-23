@@ -16,6 +16,7 @@ type StoreState = {
 };
 
 type StoreActions = {
+    fetchAllEnrollments:()=>Promise<void>;
     fetchEnrollments: (filters: { school_id: number; academic_year_id: number; grade_level_id?: number; classroom_id?: number }) => Promise<void>;
     fetchEnrollableStudents: (academicYearId: number, schoolId: number) => Promise<void>; // Added schoolId
     searchEnrollments: (searchTerm: string) => Promise<void>; // <-- Add Search Action
@@ -132,4 +133,18 @@ export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set,
 
     clearEnrollments: () => set({ enrollments: [], error: null }),
     clearEnrollableStudents: () => set({ enrollableStudents: [] }),
+    fetchAllEnrollments : async () =>{
+        try{
+            set({loading:true,error:null})
+            const response = await  StudentAcademicYearApi.getAllStudentAcademicYear();
+            set({enrollments:response.data})
+        }catch(error){
+            console.log(error)
+            set({loading:false,error:error.toString()})
+            throw new Error(error)
+        }
+        finally{
+            set({loading:false})
+        }
+    },
 }));

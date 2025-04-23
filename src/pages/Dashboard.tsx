@@ -1,10 +1,10 @@
 // src/pages/Dashboard.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 // shadcn/ui components
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Adjust path if needed
+import { Card, CardContent,} from "@/components/ui/card"; // Adjust path if needed
 import { Skeleton } from "@/components/ui/skeleton"; // For loading state
 import { cn } from "@/lib/utils"; // Utility for combining class names
 
@@ -16,21 +16,15 @@ import {
     UserCheck, // Example for Enrollment
     Car, // Example for Transport
     Settings, // SettingsIcon replacement
-    LayoutDashboard, // Example for Dashboard itself or general stat
     BookOpen, // Example for Courses
-    ClipboardCheck // Example for Grades
 } from 'lucide-react';
+import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
+import { useTeacherStore } from '@/stores/teacherStore';
 
 // Import API client if needed for actual stats fetching
 // import axiosClient from '@/axios-client';
 
 // Dashboard Stats Type
-interface DashboardStats {
-    studentCount?: number;
-    teacherCount?: number;
-    courseCount?: number; // Example stat
-    // Add other stats as needed
-}
 
 // Define the structure for each dashboard card item
 interface DashboardItem {
@@ -56,22 +50,15 @@ const itemVariants = {
 
 const Dashboard: React.FC = () => {
     const [isLoadingStats, setIsLoadingStats] = useState(true);
-    const [stats, setStats] = useState<DashboardStats>({});
-
+    const [stats, setStats] = useState({});
+    const {enrollments,fetchAllEnrollments,loading} = useStudentEnrollmentStore()
+    const {teachers,fetchTeachers} = useTeacherStore()
     // --- Fetch Dashboard Stats ---
     useEffect(() => {
         const fetchStats = async () => {
-            setIsLoadingStats(true);
             try {
-                 // --- UNCOMMENT AND USE YOUR ACTUAL API ENDPOINT ---
-                 // const response = await axiosClient.get<{ studentCount: number, teacherCount: number, courseCount: number }>('/dashboard-stats');
-                 // setStats(response.data);
-                 // --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-                 // --- Mock Data (REMOVE WHEN API IS READY) ---
-                 await new Promise(resolve => setTimeout(resolve, 900)); // Simulate network delay
-                 setStats({ studentCount: 125, teacherCount: 23, courseCount: 18 });
-                 // --- --- --- --- --- --- --- --- --- --- --- ---
+                fetchAllEnrollments()
+                fetchTeachers()
             } catch (error) {
                 console.error('Error fetching dashboard stats:', error);
                 setStats({}); // Set empty on error
@@ -126,10 +113,26 @@ const Dashboard: React.FC = () => {
             bgColor: "bg-cyan-100/80 dark:bg-cyan-900/30",
         },
         {
+            title: 'اقساط    خلال شهر',
+            icon: Car,
+            link: '/finance/due-installments',
+            description: 'الاقساط التي يجب ان يتم سدادها هذا الاسبوع',
+            iconColor: "text-cyan-600 dark:text-cyan-400",
+            bgColor: "bg-cyan-100/80 dark:bg-cyan-900/30",
+        },
+        {
             title: 'الإعدادات',
             icon: Settings,
             link: '/settings', // Link to the settings dashboard
             description: 'تكوين إعدادات النظام المختلفة.',
+            iconColor: "text-slate-600 dark:text-slate-400",
+            bgColor: "bg-slate-100/80 dark:bg-slate-900/30",
+        },
+        {
+            title: 'المتصفح',
+            icon: Settings,
+            link: '/schools-explorer', // Link to the settings dashboard
+            description: 'معرض المدارس و الفصول',
             iconColor: "text-slate-600 dark:text-slate-400",
             bgColor: "bg-slate-100/80 dark:bg-slate-900/30",
         },
@@ -177,8 +180,8 @@ const Dashboard: React.FC = () => {
                               </div>
                               <div>
                                  <p className="text-sm font-medium text-muted-foreground">إجمالي الطلاب</p>
-                                 {isLoadingStats ? <Skeleton className="h-7 w-16 mt-1" /> :
-                                     <p className="text-2xl font-bold">{stats.studentCount ?? '-'}</p>
+                                 {loading ? <Skeleton className="h-7 w-16 mt-1" /> :
+                                     <p className="text-2xl font-bold">{enrollments.length ?? '-'}</p>
                                  }
                               </div>
                          </CardContent>

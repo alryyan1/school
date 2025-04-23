@@ -16,6 +16,7 @@ import { AssignableStudentInfo, StudentTransportAssignment, StudentTransportAssi
 import { AcademicYear } from '@/types/academicYear'; // Adjust path
 import { useStudentTransportAssignmentStore } from '@/stores/studentTransportAssignmentStore'; // Adjust path
 import { useSnackbar } from 'notistack';
+import { SchoolApi } from '@/api/schoolApi'; // Import SchoolApi
 
 interface AssignStudentDialogProps {
     open: boolean;
@@ -33,11 +34,13 @@ function notAssignable(a: readonly AssignableStudentInfo[], b: readonly StudentT
 // Intersection for left list (checked items that are in the left list)
 function intersectionAssignable(a: readonly (AssignableStudentInfo | StudentTransportAssignment)[], b: readonly AssignableStudentInfo[]) {
     const bIds = new Set(b.map(item => item.student_academic_year_id));
+    // Ensure item has student_id property before accessing it
     return a.filter(value => 'student_id' in value && bIds.has(value.student_academic_year_id)) as AssignableStudentInfo[];
 }
 // Intersection for right list (checked items that are in the right list)
 function intersectionAssigned(a: readonly (AssignableStudentInfo | StudentTransportAssignment)[], b: readonly StudentTransportAssignment[]) {
     const bIds = new Set(b.map(item => item.id)); // Use assignment ID for right list
+    // Ensure item does NOT have student_id (meaning it's an assignment) before accessing item.id
     return a.filter(value => !('student_id' in value) && bIds.has(value.id)) as StudentTransportAssignment[];
 }
 // Difference for checked list based on left list items
@@ -115,9 +118,7 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
     const rightChecked = intersectionAssigned(checked, right);
 
     const handleToggle = (value: AssignableStudentInfo | StudentTransportAssignment) => () => {
-        // Unique identifier based on type
         const id = 'student_id' in value ? value.student_academic_year_id : value.id;
-        // Find index based on unique identifier
         const currentIndex = checked.findIndex(item => ('student_id' in item ? item.student_academic_year_id : item.id) === id);
         const newChecked = [...checked];
 
@@ -137,37 +138,28 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
         let errors: string[] = [];
 
         for (const item of itemsToAssign) {
-             // ** IMPORTANT: Ensure backend returns grade_level_id within AssignableStudentInfo **
-              const gradeLevelId = item.grade_level_id;
+             const gradeLevelId = item.grade_level_id; // Ensure backend provides this
              if (!gradeLevelId) {
-                  console.error("Cannot assign student - missing grade level ID in assignable student info", item);
                   errors.push(`فشل تعيين ${item.student_name}: بيانات المرحلة غير متوفرة.`);
-                  continue; // Skip this student
+                  continue;
              }
-
              try {
                   await assignStudent({
                       student_academic_year_id: item.student_academic_year_id,
                       transport_route_id: route.id,
-                      school_id: route.school_id, // Get school from route context
-                      grade_level_id: gradeLevelId, // Use ID from assignable info
-                      pickup_point: null, // Default values, maybe allow setting during assign?
-                      dropoff_point: null,
-                      status: 'active', // Need status? Assuming default handled by backend or not needed here
+                      school_id: route.school_id,
+                      grade_level_id: gradeLevelId,
+                      pickup_point: null, dropoff_point: null, status: 'active',
                   });
                   successCount++;
-             } catch (err: any) {
-                 errors.push(err.message || `فشل تعيين ${item.student_name}`);
-             }
+             } catch (err: any) { errors.push(err.message || `فشل تعيين ${item.student_name}`); }
          }
 
         setIsProcessingAssign(false);
         if (errors.length > 0) setError(errors.join('\n'));
         if (successCount > 0) {
              enqueueSnackbar(`تم تعيين ${successCount} طالب للمسار بنجاح`, { variant: 'success' });
-             // Visually update checked state immediately
              setChecked(checkedDifferenceLeft(checked, itemsToAssign));
-             // Store update will handle left/right lists via useEffect dependency
          }
     };
 
@@ -183,19 +175,14 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
              try {
                   await unassignStudent(item.id);
                   successCount++;
-             } catch (err: any) {
-                 errors.push(err.message || `فشل إلغاء تعيين ${item.student_enrollment?.student?.student_name}`);
-             }
+             } catch (err: any) { errors.push(err.message || `فشل إلغاء تعيين ${item.student_enrollment?.student?.student_name}`); }
          }
 
          setIsProcessingUnassign(false);
           if (errors.length > 0) setError(errors.join('\n'));
          if (successCount > 0) {
               enqueueSnackbar(`تم إلغاء تعيين ${successCount} طالب من المسار بنجاح`, { variant: 'success' });
-              // Visually update checked state immediately
               setChecked(checkedDifferenceRight(checked, itemsToUnassign));
-               // Store update will handle left/right lists via useEffect dependency
-               // Store action should also refetch assignable students
          }
      };
     // --- End Assign/Unassign Handlers ---
@@ -206,21 +193,15 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
          setPickupPoint(assignment.pickup_point || '');
          setDropoffPoint(assignment.dropoff_point || '');
      };
-     const handleCancelEditDetails = () => {
-         setEditingAssignmentId(null);
-     };
+     const handleCancelEditDetails = () => { setEditingAssignmentId(null); };
      const handleSaveDetails = async (assignmentId: number) => {
-          setIsSavingDetails(true);
-          setError(null);
+          setIsSavingDetails(true); setError(null);
           try {
                await updateAssignmentDetails(assignmentId, { pickup_point: pickupPoint || null, dropoff_point: dropoffPoint || null });
                enqueueSnackbar('تم حفظ نقاط الصعود/النزول', { variant: 'success' });
-               setEditingAssignmentId(null); // Exit edit mode
-          } catch (err:any) {
-               setError(err.message || 'فشل حفظ التفاصيل');
-          } finally {
-               setIsSavingDetails(false);
-          }
+               setEditingAssignmentId(null);
+          } catch (err:any) { setError(err.message || 'فشل حفظ التفاصيل'); }
+          finally { setIsSavingDetails(false); }
      }
      // --- End Edit Details Logic ---
 
@@ -234,16 +215,20 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
             <Divider />
             <List dense component="div" role="list" sx={{ flexGrow: 1, overflowY: 'auto' }}>
                 {items.map((value) => {
+                    // --- Corrected Data Access ---
                     const isAssignable = 'student_id' in value;
                     const id = isAssignable ? value.student_academic_year_id : value.id;
                     const labelId = `transfer-list-item-${id}-label`;
-                    const name =  value.student_name ;
-                     const govId = isAssignable ? value.goverment_id : value.student_enrollment?.student?.goverment_id;
+                    // Get name and govId based on type
+                    const name = isAssignable ? value.student_name : value.student_enrollment?.student?.student_name;
+                    const govId = isAssignable ? value.goverment_id : value.student_enrollment?.student?.goverment_id;
+                    // -----------------------------
                     const isChecked = checked.findIndex(item => ('student_id' in item ? item.student_academic_year_id : item.id) === id) !== -1;
                     const isBeingEdited = !isAssignable && editingAssignmentId === value.id;
 
                     // Content for Assigned List Item (Right)
                      const assignedItemContent = isBeingEdited ? (
+                         // --- Inline Edit Form ---
                          <Stack spacing={1} sx={{ width: '100%', pr: 1, py: 0.5 }}>
                               <TextField size="small" label="نقطة الصعود" value={pickupPoint} onChange={(e)=> setPickupPoint(e.target.value)} variant="outlined" margin="dense"/>
                               <TextField size="small" label="نقطة النزول" value={dropoffPoint} onChange={(e)=> setDropoffPoint(e.target.value)} variant="outlined" margin="dense"/>
@@ -253,9 +238,10 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
                               </Stack>
                          </Stack>
                      ) : (
+                          // --- Standard Display ---
                           <ListItemText
                                 id={labelId}
-                                primary={name ?? '...'}
+                                primary={name ?? '...'} // Display corrected name
                                 secondary={isAssignable ? govId || '-' : `الصعود: ${value.pickup_point || '-'} | النزول: ${value.dropoff_point || '-'}`}
                                 sx={{ textAlign: 'right', mr: 1 }}
                           />
@@ -265,27 +251,28 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
                         <ListItem
                             key={id} role="listitem" button onClick={handleToggle(value)}
                             disabled={isProcessingAssign || isProcessingUnassign || isSavingDetails}
-                            secondaryAction={!isAssignable && !isBeingEdited ? ( // Edit button only for assigned items not being edited
+                            secondaryAction={!isAssignable && !isBeingEdited ? (
                                  <Tooltip title="تعديل نقاط الصعود/النزول">
                                       <IconButton edge="end" size="small" onClick={(e) => { e.stopPropagation(); handleEditDetails(value); }}>
                                          <EditIcon fontSize="inherit" />
                                       </IconButton>
                                  </Tooltip>
                             ) : null}
-                            sx={{bgcolor: isBeingEdited ? 'action.selected' : 'inherit'}} // Highlight item being edited
+                            sx={{bgcolor: isBeingEdited ? 'action.selected' : 'inherit'}}
                          >
                              <ListItemIcon sx={{ minWidth: 'auto' }}>
                                  <Checkbox
                                      checked={isChecked} tabIndex={-1} disableRipple
                                      inputProps={{ 'aria-labelledby': labelId }} size="small"
                                      edge="start"
-                                     disabled={isBeingEdited} // Disable checkbox while editing details
+                                     disabled={isBeingEdited}
                                  />
                              </ListItemIcon>
                               {assignedItemContent}
                         </ListItem>
                     );
                 })}
+                 {/* Empty/Loading States */}
                  {items.length === 0 && !loadingAssignments && !loadingAssignable && (
                     <ListItem>
                         <ListItemText primary="-- لا يوجد طلاب --" sx={{textAlign:'center', color:'text.disabled', py: 2}} />
@@ -301,10 +288,10 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
     );
 
     // --- Render ---
-    if (!route || !academicYear) return null; // Ensure context is available
+    if (!route || !academicYear) return null; // Check both props
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md"> {/* Use medium or large */}
+        <Dialog open={open} onClose={onClose} maxWidth="md" dir="rtl"> {/* Added RTL */}
             <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>
                  إدارة تسجيل الطلاب للمسار: {route.name}
                  <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -334,7 +321,6 @@ const AssignStudentDialog: React.FC<AssignStudentDialogProps> = ({
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
                 <Button onClick={onClose} color="inherit">إغلاق</Button>
-                {/* Save is done via transfer buttons or inline edit */}
             </DialogActions>
         </Dialog>
     );

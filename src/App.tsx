@@ -47,8 +47,11 @@ import TeacherView from "./components/teachers/TeacherView";
 import Register from "./pages/Signup";
 import { schoolRoutes, settings } from "./router";
 import StudentEnrollmentManager from "./pages/enrollments/StudentEnrollmentManager";
-import { Box } from "@mui/material";
 import TransportRouteList from "./pages/transport/TransportRouteList";
+import SchoolExplorerPage from "./pages/pages/SchoolExplorerPage";
+import SchoolClassroomListPage from "./pages/pages/SchoolClassroomListPage";
+import ClassroomStudentListPage from "./pages/pages/ClassroomStudentListPage";
+import DueInstallmentsPage from "./pages/finances/DueInstallmentsPage";
 
 // --- Main App Component ---
 function App() {
@@ -144,6 +147,35 @@ function App() {
             { path: "create", element: <StudentForm /> },
             { path: ":id", element: <StudentView /> },
             { path: ":id/edit", element: <StudentForm /> },
+          ],
+        },
+        {
+          // --- Maybe add a Finance Section ---
+          path: "finance",
+          element: <Outlet />,
+          children: [
+            {
+              index: true,
+              element: <Navigate to="due-installments" replace />,
+            }, // Default finance page
+            { path: "due-installments", element: <DueInstallmentsPage /> },
+            // Add other finance related pages here later
+          ],
+        },
+        // --- School Explorer Section ---
+        {
+          path: "schools-explorer",
+          element: <Outlet />, // Use Outlet for nesting
+          children: [
+            { index: true, element: <SchoolExplorerPage /> }, // Level 1
+            {
+              path: ":schoolId/classrooms",
+              element: <SchoolClassroomListPage />, // Level 2
+            },
+            {
+              path: ":schoolId/classrooms/:classroomId/students",
+              element: <ClassroomStudentListPage />, // Level 3
+            },
           ],
         },
         // --- End Student Section ---

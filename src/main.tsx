@@ -7,6 +7,8 @@ import { AuthProvider } from "./context/authcontext";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { scan } from "react-scan";
+
+
 scan({
   enabled: true,
 });

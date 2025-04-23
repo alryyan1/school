@@ -7,8 +7,8 @@ type ResourceResponse = { data: Classroom };
 
 export const ClassroomApi = {
     // Add filter parameters
-    getAll: (filters?: { school_id?: number; grade_level_id?: number }) =>
-        axiosClient.get<CollectionResponse>('/classrooms', { params: filters }),
+    getAll: (filters: { school_id: number; active_academic_year_id: number; grade_level_id?: number }) => // Added active_academic_year_id
+    axiosClient.get<CollectionResponse>('/classrooms', { params: filters }),
 
     getById: (id: number) =>
         axiosClient.get<ResourceResponse>(`/classrooms/${id}`),

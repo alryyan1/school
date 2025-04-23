@@ -16,6 +16,8 @@ export type Classroom = {
     school?: School;
     created_at?: string;
     updated_at?: string;
+    students_count?: number; // <-- Add count
+
 };
 
 export type ClassroomFormData = Omit<Classroom, 'id' | 'created_at' | 'updated_at' | 'grade_level' | 'homeroom_teacher' | 'school'>;

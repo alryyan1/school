@@ -1,93 +1,134 @@
 // src/components/finances/StudentFeePaymentFormDialog.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
-    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField, CircularProgress, Alert, InputAdornment
+    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,
+    CircularProgress, Alert, InputAdornment, Typography // Added Typography
 } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import 'dayjs/locale/ar';
+import 'dayjs/locale/ar'; // Ensure Arabic locale is imported for date picker
 import dayjs from 'dayjs';
-import { StudentFeePayment, StudentFeePaymentFormData } from '@/types/studentFeePayment';
-import { useStudentFeePaymentStore } from '@/stores/studentFeePaymentStore';
+import { StudentFeePayment, StudentFeePaymentFormData } from '@/types/studentFeePayment'; // Adjust path
+import { FeeInstallment } from '@/types/feeInstallment'; // Import for context display
+import { useStudentFeePaymentStore } from '@/stores/studentFeePaymentStore'; // Adjust path
 import { useSnackbar } from 'notistack';
 
 interface StudentFeePaymentFormDialogProps {
     open: boolean;
-    onClose: () => void;
-    studentAcademicYearId: number; // ID of the enrollment record
-    initialData?: StudentFeePayment | null; // For editing
+    onClose: (refetchList?: boolean) => void; // Callback accepts optional boolean
+    feeInstallmentId: number;              // ID of the parent installment
+    installmentDetails?: Pick<FeeInstallment, 'amount_due' | 'amount_paid'>; // Pass current due/paid for validation
+    initialData?: StudentFeePayment | null;   // For editing a payment
 }
 
+// Exclude fee_installment_id from the form data type itself
+type DialogFormData = Omit<StudentFeePaymentFormData, 'fee_installment_id'>;
+
 const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = ({
-    open, onClose, studentAcademicYearId, initialData
+    open, onClose, feeInstallmentId, installmentDetails, initialData
 }) => {
     const isEditMode = !!initialData;
     const { createPayment, updatePayment } = useStudentFeePaymentStore();
     const { enqueueSnackbar } = useSnackbar();
-    const [formError, setFormError] = React.useState<string | null>(null);
+    const [formError, setFormError] = useState<string | null>(null);
 
-    const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<StudentFeePaymentFormData>({
+    const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<DialogFormData>({
         defaultValues: {
-            student_academic_year_id: studentAcademicYearId,
-            amount: '', // Use empty string, handle as number on submit
+            amount: '', // Use string for controlled number input
             payment_date: dayjs().format('YYYY-MM-DD'),
             notes: '',
         }
     });
+
+    // Calculate remaining amount for validation
+    const amountDue = parseFloat(installmentDetails?.amount_due as string || 'Infinity');
+    const amountPaid = parseFloat(installmentDetails?.amount_paid as string || '0');
+    // Adjust remaining amount calculation based on edit mode
+    const currentPaymentAmount = isEditMode ? parseFloat(initialData?.amount as string || '0') : 0;
+    const maxAllowedPayment = isEditMode ? (amountDue - amountPaid + currentPaymentAmount) : (amountDue - amountPaid);
+
 
     // Reset form when opening or data changes
     useEffect(() => {
         if (open) {
             setFormError(null);
             reset({
-                student_academic_year_id: studentAcademicYearId,
                 amount: '', payment_date: dayjs().format('YYYY-MM-DD'), notes: '', // Create defaults
                 ...(initialData ? { // Edit defaults
-                     ...initialData,
-                     amount: initialData.amount, // Keep original type for display if needed
+                     amount: String(initialData.amount ?? ''), // Use string for input value
                      payment_date: dayjs(initialData.payment_date).format('YYYY-MM-DD'),
                      notes: initialData.notes || '',
-                 } : {})
+                 } : {}),
             });
         }
-    }, [initialData, open, reset, studentAcademicYearId]);
+    }, [initialData, open, reset]);
 
-    const onSubmit = async (data: StudentFeePaymentFormData) => {
+    const onSubmit = async (data: DialogFormData) => {
         setFormError(null);
+        const paymentAmount = Number(data.amount);
+
+        // Additional client-side check (backend also validates)
+         if (paymentAmount > maxAllowedPayment) {
+             setFormError(`المبلغ يتجاوز المتبقي للقسط (${maxAllowedPayment.toFixed(2)}).`);
+             return;
+         }
+
+        // Add fee_installment_id to the payload for create/update
         const submitData = {
-             ...data,
-             amount: Number(data.amount) // Convert amount to number for API
+            ...data,
+            amount: paymentAmount, // Send as number
+            fee_installment_id: feeInstallmentId
         };
 
         try {
             if (isEditMode && initialData) {
-                await updatePayment(initialData.id, submitData);
+                 // Only send fields allowed for update by API
+                 const updatePayload = {
+                     amount: submitData.amount,
+                     payment_date: submitData.payment_date,
+                     notes: submitData.notes
+                 };
+                await updatePayment(initialData.id, updatePayload);
                 enqueueSnackbar('تم تحديث الدفعة بنجاح', { variant: 'success' });
             } else {
-                await createPayment(submitData);
+                // Send full data for create
+                await createPayment(submitData as StudentFeePaymentFormData); // Cast as full type for create
                 enqueueSnackbar('تم إضافة الدفعة بنجاح', { variant: 'success' });
             }
-            onClose();
+            onClose(true); // <-- Signal parent to refetch installment list
         } catch (error: any) {
-            console.error("Payment Form submission error:", error);
-            const backendErrors = error.response?.data?.errors;
-            if (backendErrors) {
+             console.error("Payment Form submission error:", error);
+             const backendErrors = error.response?.data?.errors;
+             if (backendErrors) {
                  setFormError(`فشل الحفظ: ${Object.values(backendErrors).flat().join('. ')}`);
-            } else {
+             } else {
                  setFormError(error.message || 'حدث خطأ غير متوقع.');
-            }
+             }
         }
     };
 
     return (
-        <Dialog  open={open} onClose={onClose} maxWidth="xs" fullWidth>
+        // Using 'xs' maxWidth, suitable for simpler forms
+        <Dialog open={open} onClose={() => onClose(false)} maxWidth="xs" fullWidth dir="rtl">
             <DialogTitle>{isEditMode ? 'تعديل سجل دفعة' : 'إضافة دفعة جديدة'}</DialogTitle>
             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ar">
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <DialogContent>
-                        {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
+                         {/* Display installment ID for context */}
+                         <Typography variant="caption" color="text.secondary" gutterBottom>
+                             (للقسط رقم: {feeInstallmentId})
+                         </Typography>
+
+                         {/* Display remaining amount */}
+                         <Typography variant="body2" color="text.primary" gutterBottom sx={{mb: 1}}>
+                             المبلغ المتبقي من القسط: <strong >{maxAllowedPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> ل.س
+                         </Typography>
+
+
+                        {formError && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setFormError(null)}>{formError}</Alert>}
                         <Grid container spacing={2.5} sx={{ pt: 1 }}>
+                            {/* Amount Field */}
                             <Grid item xs={12}>
                                 <Controller
                                     name="amount"
@@ -95,42 +136,71 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                     rules={{
                                          required: 'المبلغ مطلوب',
                                          min: { value: 0.01, message: 'المبلغ يجب أن يكون أكبر من صفر' },
-                                         pattern: { value: /^\d+(\.\d{1,2})?$/, message: 'صيغة المبلغ غير صحيحة (e.g., 150.50)' }
+                                         pattern: { value: /^\d+(\.\d{1,2})?$/, message: 'صيغة المبلغ غير صحيحة (e.g., 150.50)' },
+                                         validate: value => parseFloat(value) <= maxAllowedPayment || `المبلغ يتجاوز المتبقي (${maxAllowedPayment.toFixed(2)})`
                                     }}
                                     render={({ field }) => (
-                                        <TextField {...field} label="المبلغ" type="number" fullWidth required
-                                            error={!!errors.amount} helperText={errors.amount?.message}
+                                        <TextField
+                                            {...field}
+                                            label="المبلغ المدفوع"
+                                            type="number"
+                                            fullWidth
+                                            required
+                                            autoFocus // Focus on amount field first
+                                            error={!!errors.amount}
+                                            helperText={errors.amount?.message}
                                             InputProps={{
-                                                 inputProps: { step: "0.01", min: "0.01" },
-                                                 endAdornment: <InputAdornment position="end">SDG</InputAdornment> // Example currency
+                                                 inputProps: { step: "0.01", min: "0.01", max: maxAllowedPayment.toFixed(2) }, // Set max based on remaining
+                                                 endAdornment: <InputAdornment position="end">ل.س</InputAdornment> // Example currency
                                              }}
                                         />
                                     )}
                                 />
                             </Grid>
+                            {/* Payment Date Field */}
                              <Grid item xs={12}>
                                 <Controller
                                     name="payment_date"
                                     control={control}
                                     rules={{ required: 'تاريخ الدفعة مطلوب' }}
                                     render={({ field }) => (
-                                        <DatePicker label="تاريخ الدفعة *" value={field.value ? dayjs(field.value) : null} onChange={(d) => field.onChange(d?.format('YYYY-MM-DD') ?? null)} format="YYYY/MM/DD" slotProps={{ textField: { fullWidth: true, required: true, error: !!errors.payment_date, helperText: errors.payment_date?.message }}} />
+                                        <DatePicker
+                                            label="تاريخ الدفعة *"
+                                            value={field.value ? dayjs(field.value) : null}
+                                            onChange={(newValue) => field.onChange(newValue ? newValue.format('YYYY-MM-DD') : null)}
+                                            format="YYYY/MM/DD" // Display format
+                                            slotProps={{ textField: {
+                                                fullWidth: true,
+                                                required: true,
+                                                error: !!errors.payment_date,
+                                                helperText: errors.payment_date?.message
+                                            }}}
+                                        />
                                     )}
                                 />
                             </Grid>
+                            {/* Notes Field */}
                             <Grid item xs={12}>
                                 <Controller
                                     name="notes"
                                     control={control}
                                     render={({ field }) => (
-                                        <TextField {...field} label="ملاحظات (اختياري)" fullWidth multiline rows={3} />
+                                        <TextField
+                                            {...field}
+                                            value={field.value ?? ''} // Ensure controlled component
+                                            label="ملاحظات (اختياري)"
+                                            fullWidth
+                                            multiline
+                                            rows={3}
+                                        />
                                     )}
                                 />
                             </Grid>
                         </Grid>
                     </DialogContent>
                     <DialogActions sx={{ px: 3, pb: 2 }}>
-                        <Button onClick={onClose} color="inherit" disabled={isSubmitting}>إلغاء</Button>
+                        {/* Pass false to onClose for Cancel */}
+                        <Button onClick={() => onClose(false)} color="inherit" disabled={isSubmitting}>إلغاء</Button>
                         <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
                             {isSubmitting ? <CircularProgress size={22} /> : (isEditMode ? 'حفظ التعديلات' : 'إضافة دفعة')}
                         </Button>

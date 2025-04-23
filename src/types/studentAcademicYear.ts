@@ -2,6 +2,7 @@
 import { AcademicYear } from './academicYear';
 import { Classroom } from './classroom';
 import { GradeLevel } from './gradeLevel';
+import { School } from './school';
 import { Student } from './student'; // Assuming simplified Student type for display
 
 export type EnrollmentStatus = 'active' | 'transferred' | 'graduated' | 'withdrawn';
@@ -23,6 +24,9 @@ export type StudentAcademicYear = {
     classroom?: Pick<Classroom, 'id' | 'name'> | null;
     created_at?: string;
     updated_at?: string;
+     // --- Ensure these keys match the Resource ---
+     school?: Pick<School, 'id' | 'name'>; // <-- Key is 'school'
+     // ------------------------------------------
 };
 
 // Form for creating a new enrollment

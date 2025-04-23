@@ -10,7 +10,7 @@ type ClassroomState = {
 };
 
 type ClassroomActions = {
-    fetchClassrooms: (filters?: { school_id?: number|string; grade_level_id?: number|string }) => Promise<void>;
+    fetchClassrooms: (filters?: { school_id: number; grade_level_id?: number,active_academic_year_id: number; }) => Promise<void>;
     createClassroom: (data: ClassroomFormData) => Promise<Classroom | null>;
     updateClassroom: (id: number, data: Partial<ClassroomFormData>) => Promise<Classroom | null>;
     deleteClassroom: (id: number) => Promise<boolean>;
@@ -27,7 +27,7 @@ export const useClassroomStore = create<ClassroomState & ClassroomActions>((set,
         try {
             const response = await ClassroomApi.getAll(filters);
             set({ classrooms: response.data.data, loading: false });
-        } catch (error: any) {
+        } catch (error) {
             const message = error.response?.data?.message || 'فشل جلب الفصول الدراسية';
             set({ error: message, loading: false });
         }
@@ -39,14 +39,14 @@ export const useClassroomStore = create<ClassroomState & ClassroomActions>((set,
             const newClassroom = response.data.data;
             // Refetch based on current filters or add optimistically if filters match
             // For simplicity, we'll rely on the List component to refetch or the user to change filters
-            set((state) => ({
+            set(() => ({
                  // Add only if it matches current filters? Complex. Rely on refetch for now.
                  // classrooms: [...state.classrooms, newClassroom]...
             }));
             // Manually trigger refetch in component after successful add? Or here?
             // get().fetchClassrooms({ school_id: newClassroom.school_id, grade_level_id: newClassroom.grade_level_id });
             return newClassroom;
-        } catch (error: any) {
+        } catch (error) {
              console.error("Create Classroom error:", error);
              const message = error.response?.data?.message || 'فشل إضافة الفصل';
              set({ error: message });
@@ -64,7 +64,7 @@ export const useClassroomStore = create<ClassroomState & ClassroomActions>((set,
                  ),
              }));
              return updatedClassroom;
-         } catch (error: any) {
+         } catch (error) {
               console.error("Update Classroom error:", error);
               const message = error.response?.data?.message || 'فشل تحديث الفصل';
               set({ error: message });
@@ -79,7 +79,7 @@ export const useClassroomStore = create<ClassroomState & ClassroomActions>((set,
                  classrooms: state.classrooms.filter((c) => c.id !== id),
              }));
              return true;
-         } catch (error: any) {
+         } catch (error) {
               console.error("Delete Classroom error:", error);
               const message = error.response?.data?.message || 'فشل حذف الفصل';
               set({ error: message });

@@ -1,15 +1,16 @@
 // src/types/studentFeePayment.ts
-import { StudentAcademicYear } from './studentAcademicYear'; // Optional
+import { FeeInstallment } from './feeInstallment'; // <-- Import
 
 export type StudentFeePayment = {
     id: number;
-    student_academic_year_id: number;
-    amount: number | string; // Backend sends string due to decimal cast, frontend might use number
-    payment_date: string; // Format YYYY-MM-DD
+    fee_installment_id: number; // <-- Updated FK
+    amount: number | string;
+    payment_date: string;
     notes: string | null;
-    // enrollment?: StudentAcademicYear; // Optional nested data
+    fee_installment?: FeeInstallment; // <-- Optional relation
     created_at?: string;
     updated_at?: string;
 };
 
-export type StudentFeePaymentFormData = Omit<StudentFeePayment, 'id' | 'created_at' | 'updated_at' | 'enrollment'>;
+// Form data needs installment ID now
+export type StudentFeePaymentFormData = Omit<StudentFeePayment, 'id' | 'created_at' | 'updated_at' | 'fee_installment'>;
