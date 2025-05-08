@@ -8,9 +8,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Building, DoorOpen } from 'lucide-react'; // Example icons
 import { cn } from "@/lib/utils";
+// Animation Variants (same as before)
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
 
-const containerVariants = { /* ... same as dashboard ... */ };
-const itemVariants = { /* ... same as dashboard ... */ };
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
+};
 
 const SchoolExplorerPage: React.FC = () => {
     const { schools, fetchSchools, loading } = useSchoolStore();
@@ -45,9 +52,10 @@ const SchoolExplorerPage: React.FC = () => {
                         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-5 lg:gap-6"
                     >
                         {schools.map((school) => (
-                            <motion.div key={school.id} variants={itemVariants} className="h-full">
+                            <motion.div  transition={{duration:0.5}} animate={{opacity: 1, y: 0}}
+                            initial={{ opacity: 0, y: 20 }} key={school.id} variants={itemVariants} className="h-full">
                                 {/* Link to the classroom list for this school */}
-                                <RouterLink to={`/schools-explorer/${school.id}/classrooms`} className="h-full block group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg">
+                                <RouterLink to={`/schools-explorer/${school.id}/gradelevels`} className="h-full block group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg">
                                      <motion.div whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} className="h-full" transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
                                         <Card className="h-full flex flex-col overflow-hidden transition-shadow hover:shadow-md dark:hover:shadow-primary/10 relative">
                                              {/* Badge for classroom count */}

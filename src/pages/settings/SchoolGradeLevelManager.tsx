@@ -8,7 +8,7 @@ import {
     Grid,
     Divider
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ArrowBack } from '@mui/icons-material';
 import { useSchoolStore } from '@/stores/schoolStore';       // Adjust path
 import { useGradeLevelStore } from '@/stores/gradeLevelStore'; // Keep for getting ALL grades for assignment dialog
 import { SchoolApi } from '@/api/schoolApi';                   // Use API directly here
@@ -17,6 +17,7 @@ import { useSnackbar } from 'notistack';
 import { formatNumber } from '@/constants';
 import AssignGradeLevelDialog from './AssignGradeLevelDialog';
 import EditGradeFeeDialog from './EditGradeFeeDialog';
+import { NavLink } from 'react-router-dom';
 
 const SchoolGradeLevelManager: React.FC = () => {
     const { enqueueSnackbar } = useSnackbar();
@@ -126,6 +127,7 @@ const SchoolGradeLevelManager: React.FC = () => {
     // --- Render ---
     return (
         <Container maxWidth="md" sx={{ mt: 4, mb: 4 }} dir="rtl">
+            <NavLink to={'..'}><ArrowBack/></NavLink>
             <Typography variant="h4" component="h1" gutterBottom>
                 إدارة المراحل الدراسية للمدارس
             </Typography>

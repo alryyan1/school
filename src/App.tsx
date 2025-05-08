@@ -52,6 +52,8 @@ import SchoolExplorerPage from "./pages/pages/SchoolExplorerPage";
 import SchoolClassroomListPage from "./pages/pages/SchoolClassroomListPage";
 import ClassroomStudentListPage from "./pages/pages/ClassroomStudentListPage";
 import DueInstallmentsPage from "./pages/finances/DueInstallmentsPage";
+import { Grade } from "@mui/icons-material";
+import GradeLevelClassroomListPage from "./pages/pages/GradeLevelClassroomListPage";
 
 // --- Main App Component ---
 function App() {
@@ -169,13 +171,17 @@ function App() {
           children: [
             { index: true, element: <SchoolExplorerPage /> }, // Level 1
             {
-              path: ":schoolId/classrooms",
+              path: ":schoolId/gradelevels",
               element: <SchoolClassroomListPage />, // Level 2
             },
             {
               path: ":schoolId/classrooms/:classroomId/students",
               element: <ClassroomStudentListPage />, // Level 3
             },
+            {
+              path:":schoolId/grade-levels/:gradeLevelId/classrooms",
+              element:<GradeLevelClassroomListPage/>
+            }
           ],
         },
         // --- End Student Section ---

@@ -48,7 +48,7 @@ const ClassroomStudentListPage: React.FC = () => {
                        طلاب الفصل {/* Classroom Name Needed Here */}
                     </h1>
                      {/* Back button to classroom list */}
-                     <Button variant="outline" size="sm" onClick={() => navigate(`/schools-explorer/${schoolId}/classrooms`)}>
+                     <Button variant="outline" size="sm" onClick={() => navigate(`..`)}>
                          <ArrowRight className="ml-2 h-4 w-4" /> العودة للفصول
                      </Button>
                 </motion.div>

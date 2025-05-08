@@ -31,6 +31,7 @@ import {
 } from "@mui/material";
 import {
   Add as AddIcon,
+  ArrowBack,
   Delete as DeleteIcon,
   Edit as EditIcon,
 } from "@mui/icons-material";
@@ -43,6 +44,7 @@ import { useSnackbar } from "notistack";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { SchoolApi } from "@/api/schoolApi";
+import { NavLink } from "react-router-dom";
 
 const CurriculumManager: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -215,6 +217,8 @@ const CurriculumManager: React.FC = () => {
 
   return (
     <Container style={{direction:'rtl'}} maxWidth="xl" sx={{ mt: 4, mb: 4, direction: "rtl" }}>
+                  <NavLink to={'..'}><ArrowBack/></NavLink>
+      
       {/* Header and Filters */}
       <Box
         sx={{

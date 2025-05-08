@@ -13,12 +13,11 @@ scan({
   enabled: true,
 });
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
     <AuthProvider>
       {/* <CssBaseline/> */}
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ar">
         <App />
       </LocalizationProvider>
     </AuthProvider>
-  </React.StrictMode>
+
 );

@@ -2,14 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
-    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,
-    CircularProgress, Alert, InputAdornment, Typography // Added Typography
+    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,FormHelperText,
+    CircularProgress, Alert, InputAdornment, Typography, // Added Typography
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/ar'; // Ensure Arabic locale is imported for date picker
 import dayjs from 'dayjs';
-import { StudentFeePayment, StudentFeePaymentFormData } from '@/types/studentFeePayment'; // Adjust path
+import { StudentFeePayment, StudentFeePaymentFormData ,paymentMethod} from '@/types/studentFeePayment'; // Adjust path
 import { FeeInstallment } from '@/types/feeInstallment'; // Import for context display
 import { useStudentFeePaymentStore } from '@/stores/studentFeePaymentStore'; // Adjust path
 import { useSnackbar } from 'notistack';
@@ -21,6 +25,16 @@ interface StudentFeePaymentFormDialogProps {
     installmentDetails?: Pick<FeeInstallment, 'amount_due' | 'amount_paid'>; // Pass current due/paid for validation
     initialData?: StudentFeePayment | null;   // For editing a payment
 }
+//define options for the dropdown menu
+const paymentMethodOptions : {
+    value: paymentMethod; // Use the type defined in studentFeePayment.ts
+    label: string;
+}[] = [
+    { value: 'cash', label: 'نقدي' },
+    { value: 'bank', label: 'تحويل بنكي' },
+    
+];
+
 
 // Exclude fee_installment_id from the form data type itself
 type DialogFormData = Omit<StudentFeePaymentFormData, 'fee_installment_id'>;
@@ -37,6 +51,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
         defaultValues: {
             amount: '', // Use string for controlled number input
             payment_date: dayjs().format('YYYY-MM-DD'),
+            payment_method: 'cash', // Default to cash
             notes: '',
         }
     });
@@ -59,6 +74,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                      amount: String(initialData.amount ?? ''), // Use string for input value
                      payment_date: dayjs(initialData.payment_date).format('YYYY-MM-DD'),
                      notes: initialData.notes || '',
+                     payment_method: initialData.payment_method,
                  } : {}),
             });
         }
@@ -78,7 +94,8 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
         const submitData = {
             ...data,
             amount: paymentAmount, // Send as number
-            fee_installment_id: feeInstallmentId
+            fee_installment_id: feeInstallmentId,
+            payment_method: data.payment_method, // Include payment method
         };
 
         try {
@@ -87,7 +104,8 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                  const updatePayload = {
                      amount: submitData.amount,
                      payment_date: submitData.payment_date,
-                     notes: submitData.notes
+                     notes: submitData.notes,
+                     payment_method:submitData.payment_method, // Include payment method
                  };
                 await updatePayment(initialData.id, updatePayload);
                 enqueueSnackbar('تم تحديث الدفعة بنجاح', { variant: 'success' });
@@ -133,12 +151,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                 <Controller
                                     name="amount"
                                     control={control}
-                                    rules={{
-                                         required: 'المبلغ مطلوب',
-                                         min: { value: 0.01, message: 'المبلغ يجب أن يكون أكبر من صفر' },
-                                         pattern: { value: /^\d+(\.\d{1,2})?$/, message: 'صيغة المبلغ غير صحيحة (e.g., 150.50)' },
-                                         validate: value => parseFloat(value) <= maxAllowedPayment || `المبلغ يتجاوز المتبقي (${maxAllowedPayment.toFixed(2)})`
-                                    }}
+                                 
                                     render={({ field }) => (
                                         <TextField
                                             {...field}
@@ -147,12 +160,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                             fullWidth
                                             required
                                             autoFocus // Focus on amount field first
-                                            error={!!errors.amount}
-                                            helperText={errors.amount?.message}
-                                            InputProps={{
-                                                 inputProps: { step: "0.01", min: "0.01", max: maxAllowedPayment.toFixed(2) }, // Set max based on remaining
-                                                 endAdornment: <InputAdornment position="end">ل.س</InputAdornment> // Example currency
-                                             }}
+                                          
                                         />
                                     )}
                                 />
@@ -179,6 +187,31 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                     )}
                                 />
                             </Grid>
+                              {/* --- Payment Method Field --- */}
+                              <Grid item xs={12}>
+                                <Controller
+                                    name="payment_method"
+                                    control={control}
+                                    rules={{ required: 'طريقة الدفع مطلوبة' }}
+                                    render={({ field }) => (
+                                        <FormControl fullWidth required error={!!errors.payment_method}>
+                                            <InputLabel id="payment-method-label">طريقة الدفع *</InputLabel>
+                                            <Select
+                                                labelId="payment-method-label"
+                                                label="طريقة الدفع *"
+                                                {...field} // Spread field props (value, onChange, etc.)
+                                            >
+                                                {paymentMethodOptions.map(option => (
+                                                    <MenuItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                            {errors.payment_method && <FormHelperText>{errors.payment_method.message}</FormHelperText>}
+                                        </FormControl>
+                                    )}
+                                />
+                             </Grid>
                             {/* Notes Field */}
                             <Grid item xs={12}>
                                 <Controller

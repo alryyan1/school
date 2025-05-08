@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import {
     Box, Button, Container, Typography, CircularProgress, Alert, IconButton, Tooltip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Stack
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ArrowBack } from '@mui/icons-material';
 import { useGradeLevelStore } from '@/stores/gradeLevelStore';
 import GradeLevelForm from '@/components/settings/GradeLevelForm'; // Import the Form Dialog
 import { GradeLevel } from '@/types/gradeLevel';
 import { useSnackbar } from 'notistack';
+import { NavLink } from 'react-router-dom';
 
 const GradeLevelList: React.FC = () => {
     const { enqueueSnackbar } = useSnackbar();
@@ -53,6 +54,8 @@ const GradeLevelList: React.FC = () => {
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
+                                        <NavLink  to={'..'}><ArrowBack/></NavLink>
+
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" component="h1">
@@ -70,6 +73,7 @@ const GradeLevelList: React.FC = () => {
             {/* Table */}
             {!loading && !error && (
                 <Paper elevation={2}>
+                    
                     <TableContainer>
                         <Table sx={{ minWidth: 650 }} aria-label="grade levels table">
                             <TableHead sx={{ bgcolor: 'grey.100' }}>

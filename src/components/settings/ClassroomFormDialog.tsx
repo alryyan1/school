@@ -1,5 +1,5 @@
 // src/components/settings/ClassroomFormDialog.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,
@@ -34,7 +34,7 @@ const ClassroomFormDialog: React.FC<ClassroomFormDialogProps> = ({
     const { users: allUsers, fetchUsers: fetchAllUsers } = useUserStore(); // Assuming useUserStore exists
     const { enqueueSnackbar } = useSnackbar();
     const [formError, setFormError] = useState<string | null>(null);
-
+    const classRoomInputRef = useRef(null); // Ref for the classroom name input
     const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<DialogFormData>({
         // Default values set in useEffect
         defaultValues: {
@@ -132,7 +132,13 @@ const ClassroomFormDialog: React.FC<ClassroomFormDialogProps> = ({
     // For now, we use all fetched users (assuming they are potential teachers).
     const teacherOptions = React.useMemo(() => allUsers.filter(u => u.role === 'teacher' || u.role === 'admin'), [allUsers]);
 
-
+    useEffect(()=>{
+     if(open){
+        setTimeout(() => {
+            classRoomInputRef.current.focus(); 
+        }, 100);
+     }
+    },[ open]);
     // --- Render ---
     return (
         <Dialog open={open} onClose={() => onClose()} maxWidth="xs" fullWidth dir="rtl"> {/* Maybe 'sm' width */}
@@ -159,7 +165,7 @@ const ClassroomFormDialog: React.FC<ClassroomFormDialogProps> = ({
                         <Grid item xs={12} sm={8}>
                             <Controller name="name" control={control} rules={{ required: 'اسم الفصل مطلوب' }}
                                 render={({ field }) => (
-                                    <TextField {...field} label="اسم الفصل (مثال: شعبه أ)" fullWidth required error={!!errors.name} helperText={errors.name?.message} />
+                                    <TextField inputRef={classRoomInputRef} {...field} label="اسم الفصل (مثال: شعبه أ)" fullWidth required error={!!errors.name} helperText={errors.name?.message} />
                                 )} />
                         </Grid>
                         <Grid item xs={12} sm={4}>

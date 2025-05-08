@@ -63,7 +63,7 @@ const SettingsDashboard: React.FC = () => {
             bgColor: "bg-red-100/80 dark:bg-red-900/30",
         },
         {
-            title: 'المراحل الدراسية',
+            title: ' المراحل الدراسية العامه',
             description: 'إدارة المراحل والصفوف الدراسية.',
             link: 'grade-levels', // Relative link within /settings
             icon: Milestone,

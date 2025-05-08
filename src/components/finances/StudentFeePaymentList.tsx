@@ -8,7 +8,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useStudentFeePaymentStore } from '@/stores/studentFeePaymentStore'; // Adjust path
 import StudentFeePaymentFormDialog from './StudentFeePaymentFormDialog'; // Import Payment Form Dialog
-import { StudentFeePayment } from '@/types/studentFeePayment'; // Adjust path
+import { paymentMethod, StudentFeePayment } from '@/types/studentFeePayment'; // Adjust path
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
 import { formatNumber } from '@/constants';
@@ -17,7 +17,15 @@ interface StudentFeePaymentListProps {
     feeInstallmentId: number; // ID of the parent installment
     onDataChange: () => void; // Callback to notify parent when data changes
 }
-
+// Helper function to translate payment method
+const translatePaymentMethod = (method: paymentMethod): string => {
+    switch (method) {
+        case 'cash': return 'نقداً';
+        case 'bank': return 'تحويل بنكي';
+        // Add other cases if needed
+        default: return method;
+    }
+};
 const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({
     feeInstallmentId, onDataChange
 }) => {
@@ -102,6 +110,8 @@ const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({
                                 <TableRow sx={{bgcolor: 'grey.50'}}>
                                     <TableCell>تاريخ الدفعة</TableCell>
                                     <TableCell align="right">المبلغ</TableCell>
+                                    <TableCell>طريقة الدفع</TableCell> {/* <-- New Column */}
+
                                     <TableCell>ملاحظات</TableCell>
                                     <TableCell align="right">إجراءات</TableCell>
                                 </TableRow>
@@ -114,6 +124,7 @@ const StudentFeePaymentList: React.FC<StudentFeePaymentListProps> = ({
                                     <TableRow key={payment.id} hover>
                                         <TableCell>{dayjs(payment.payment_date).format('YYYY/MM/DD')}</TableCell>
                                         <TableCell align="right" sx={{ fontWeight: 'medium' }}>{formatNumber(payment.amount)}</TableCell>
+                                        <TableCell>{translatePaymentMethod(payment.payment_method)}</TableCell> {/* <-- Display Method */}
                                         <TableCell>{payment.notes || '-'}</TableCell>
                                         <TableCell align="right">
                                             <Stack direction="row" spacing={0} justifyContent="flex-end">

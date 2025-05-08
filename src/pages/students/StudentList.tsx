@@ -17,17 +17,31 @@ import {
   Typography,
   Button,
 } from "@mui/material";
-import { Edit, Delete, Visibility, Add, MarkAsUnread, AttachEmail } from "@mui/icons-material";
+import {
+  Edit,
+  Delete,
+  Visibility,
+  Add,
+  MarkAsUnread,
+  AttachEmail,
+} from "@mui/icons-material";
 import { useStudentStore } from "@/stores/studentStore";
 import { Gender, Student } from "@/types/student";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
 import dayjs from "dayjs";
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
 const StudentList = () => {
-  const { students, loading, error, fetchStudents, deleteStudent,updateStudent } =
-    useStudentStore();
+  const {
+    students,
+    loading,
+    error,
+    fetchStudents,
+    deleteStudent,
+    updateStudent,
+  } = useStudentStore();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
@@ -55,6 +69,24 @@ const StudentList = () => {
     }
   };
 
+  const handlePrintList = () => {
+    // Base URL for the report
+    let reportUrl = `${webUrl}reports/students/list-pdf`;
+
+    // --- Optional: Add filters based on current UI state ---
+    const filters = new URLSearchParams();
+    // Example: if you have selectedGradeFilter and activeAcademicYearId state
+    // if (selectedGradeFilter) filters.append('grade_level_id', selectedGradeFilter.toString());
+    // if (activeAcademicYearId) filters.append('academic_year_id', activeAcademicYearId.toString());
+
+    if (filters.toString()) {
+      reportUrl += "?" + filters.toString();
+    }
+    // --- End Optional Filters ---
+
+    window.open(reportUrl, "_blank"); // Open PDF in new tab
+  };
+
   const handleSort = (property: keyof Student) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
@@ -68,15 +100,15 @@ const StudentList = () => {
         value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
-    console.log('renderede')
+  console.log("renderede");
   const sortedStudents = filteredStudents.sort((a, b) => {
     const aValue = a[orderBy];
     const bValue = b[orderBy];
 
     if (aValue === undefined || bValue === undefined) return 0;
 
-    if(typeof aValue  == 'number' && typeof bValue =='number'){
-       return order == 'asc' ? aValue - bValue : bValue - aValue;
+    if (typeof aValue == "number" && typeof bValue == "number") {
+      return order == "asc" ? aValue - bValue : bValue - aValue;
     }
 
     if (order === "asc") {
@@ -94,17 +126,16 @@ const StudentList = () => {
   if (loading) return <Typography>جاري التحميل...</Typography>;
   if (error) return <Typography color="error">{error}</Typography>;
 
-  function handleAccept(student:Student): void {
-    console.log(student.aproove_date,'approve_Date',student)
-   const result =  confirm('تأكيد العمليه')
-   if(result){
-        updateStudent(student.id,{
-      ...student,
-      approved:true,
-      aproove_date:dayjs().format('YYYY-MM-DD HH:mm:ss')
-    })
-   }
-
+  function handleAccept(student: Student): void {
+    console.log(student.aproove_date, "approve_Date", student);
+    const result = confirm("تأكيد العمليه");
+    if (result) {
+      updateStudent(student.id, {
+        ...student,
+        approved: true,
+        aproove_date: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      });
+    }
   }
 
   return (
@@ -125,21 +156,27 @@ const StudentList = () => {
         >
           إضافة طالب جديد
         </Button>
+        <Button
+          variant="outlined"
+          startIcon={<PictureAsPdfIcon />}
+          onClick={handlePrintList}
+        >
+          طباعة قائمة الطلاب
+        </Button>
       </Box>
 
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-            <TableCell>
-
-              <TableSortLabel
-                active={orderBy === "id"}
-                direction={orderBy === "id" ? order : "asc"}
-                onClick={() => handleSort("id")}
-              >
-                الكود 
-              </TableSortLabel>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "id"}
+                  direction={orderBy === "id" ? order : "asc"}
+                  onClick={() => handleSort("id")}
+                >
+                  الكود
+                </TableSortLabel>
               </TableCell>
               <TableCell>
                 <TableSortLabel
@@ -206,11 +243,13 @@ const StudentList = () => {
                       <Edit color="primary" />
                     </IconButton>
                   </Tooltip>
-                  {student.aproove_date == null && <Tooltip title="قبول">
-                    <IconButton onClick={() => handleAccept(student)}>
-                      <AttachEmail color="success" />
-                    </IconButton>
-                  </Tooltip>}
+                  {student.aproove_date == null && (
+                    <Tooltip title="قبول">
+                      <IconButton onClick={() => handleAccept(student)}>
+                        <AttachEmail color="success" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
