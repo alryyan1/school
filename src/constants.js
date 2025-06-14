@@ -1,6 +1,6 @@
 // export const host = 'sahara-pharma.com'
-export const schema = "http";
-export const host = "192.168.100.70";
+export const schema = "https";
+export const host = "alfanar-school.com";
 export const projectFolder = "school-backend";
 // export const host = 'server1'مركز النعيم
 import rtlPlugin from "stylis-plugin-rtl";

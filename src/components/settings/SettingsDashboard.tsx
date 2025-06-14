@@ -1,8 +1,7 @@
 // src/pages/settings/SettingsDashboard.tsx
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link, Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 // Import shadcn/ui components
 import { cn } from "@/lib/utils"; // For combining class names
@@ -18,8 +17,11 @@ import {
     MonitorPlay, // Alternative for BookOnline/Exams
     Network, // Alternative for Stairs/Grade Levels
     ListOrdered, // Example for Curriculum
-    School
+    School,
+    GraduationCap
 } from 'lucide-react';
+import { Box, Button } from '@mui/material';
+import { ArrowBack } from '@mui/icons-material';
 
 // Define the structure for each settings card item
 interface SettingsItem {
@@ -126,6 +128,16 @@ const SettingsDashboard: React.FC = () => {
              iconColor: "text-slate-600",
              bgColor: "bg-slate-100/80 dark:bg-slate-900/30",
          },
+         {
+            title: 'المدرسين',
+            icon: GraduationCap,
+            link: '/teachers',
+            description: 'إدارة ملفات المدرسين وجداولهم.',
+            iconColor: "text-purple-600 dark:text-purple-400",
+            bgColor: "bg-purple-100/80 dark:bg-purple-900/30",
+        },
+
+         
     ];
 
 
@@ -134,15 +146,23 @@ const SettingsDashboard: React.FC = () => {
         <section className="min-h-[calc(100vh-64px)] w-full py-6 px-4 md:py-8 md:px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800" dir="rtl">
             <div className="container max-w-screen-lg mx-auto">
                 {/* Animated Title */}
-                <motion.div
-                     initial={{ opacity: 0, y: -20 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ duration: 0.5 }}
-                >
+
+          
+                    <Box className="flex gap-1 items-center justify-between">
                     <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-primary dark:text-sky-400">
                         الإعدادات العامة للنظام
                     </h1>
-                </motion.div>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            component={Link}
+                            to="/"
+                        >
+                            <ArrowBack />{" "}
+                        </Button>
+                       
+                    </Box>
+                    
 
                 {/* Animated Grid for Settings Cards */}
                 <motion.div

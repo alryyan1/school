@@ -1,205 +1,214 @@
 // src/components/settings/ClassroomFormDialog.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
-    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,
-    CircularProgress, Alert, Autocomplete, Box, // Removed FormControl, InputLabel, Select, MenuItem, FormHelperText
-    Typography
-} from '@mui/material';
-import { Classroom, ClassroomFormData } from '@/types/classroom';         // Adjust path
-import { useClassroomStore } from '@/stores/classroomStore';           // Adjust path
-import { useTeacherStore } from '@/stores/teacherStore';             // Adjust path
-import { User } from '@/types/user';                               // Adjust path
-import { useSnackbar } from 'notistack';
-import { useUserStore } from '@/stores/userStore';
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose
+} from "@/components/ui/dialog"; // shadcn Dialog
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select"; // shadcn Select
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+import { Loader2, AlertCircle } from 'lucide-react'; // Icons
+
+import { Classroom, ClassroomFormData } from '@/types/classroom'; // Adjust path
+import { useClassroomStore } from '@/stores/classroomStore';   // Adjust path
+import { useUserStore } from '@/stores/userStore';             // For a broader user list if teachers aren't separate
+import { useSnackbar } from 'notistack'; // Keep for general notifications
 
 interface ClassroomFormDialogProps {
     open: boolean;
-    onClose: (refetch?: boolean) => void;
+    onOpenChange: (open: boolean) => void; // For shadcn Dialog
+    onSuccess: () => void; // Callback to refetch list on success
     initialData?: Classroom | null;
-    // Context passed from parent for Create mode
-    schoolId: number | null;
-    gradeLevelId: number | null;
+    schoolId: number | null; // Required from parent (ClassroomList)
+    gradeLevelId: number | null; // Required from parent (ClassroomList)
 }
 
-// Type for the form data handled by react-hook-form
-// Excludes school_id and grade_level_id as they are not form fields anymore
+// Form data for this dialog (name, capacity, teacher_id)
 type DialogFormData = Omit<ClassroomFormData, 'school_id' | 'grade_level_id'>;
 
 const ClassroomFormDialog: React.FC<ClassroomFormDialogProps> = ({
-    open, onClose, initialData, schoolId, gradeLevelId
+    open, onOpenChange, onSuccess, initialData, schoolId, gradeLevelId
 }) => {
     const isEditMode = !!initialData;
     const { createClassroom, updateClassroom } = useClassroomStore();
-    const { users: allUsers, fetchUsers: fetchAllUsers } = useUserStore(); // Assuming useUserStore exists
+    // Assuming useUserStore fetches users with 'teacher' role or similar
+    const { users: allTeachers, fetchUsers: fetchAllTeachers, loading: teachersLoading } = useUserStore();
     const { enqueueSnackbar } = useSnackbar();
-    const [formError, setFormError] = useState<string | null>(null);
-    const classRoomInputRef = useRef(null); // Ref for the classroom name input
+    const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
+
     const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<DialogFormData>({
-        // Default values set in useEffect
-        defaultValues: {
-             name: '', teacher_id: null, capacity: 30,
-        }
+        defaultValues: { name: '', teacher_id: null, capacity: 30 }
     });
 
-    // Fetch teachers when dialog opens
+    // Fetch potential teachers (users with teacher role)
     useEffect(() => {
         if (open) {
-            // Fetch only relevant users (e.g., teachers or admins) if possible
-            fetchAllUsers(1, { role: 'teacher', /* maybe filter by schoolId if applicable */ });
+            // Fetch users if not already loaded or if list is empty
+            // Add filter for 'teacher' role if your API/store supports it
+            if (allTeachers.length === 0) {
+                 fetchAllTeachers(1, { role: 'teacher' }); // Example: Fetch teachers
+            }
         }
-    }, [open, fetchAllUsers]);
+    }, [open, allTeachers.length, fetchAllTeachers]);
 
-    // Reset form effect
+    // Reset form based on mode and data
     useEffect(() => {
         if (open) {
-            setFormError(null);
+            setFormSubmitError(null);
             if (isEditMode && initialData) {
-                // Set defaults from existing classroom data for Edit mode
                 reset({
                     name: initialData.name || '',
                     teacher_id: initialData.teacher_id || null,
                     capacity: initialData.capacity || 30,
-                    // school_id and grade_level_id are part of initialData, not separate form fields
                 });
             } else {
-                // Set defaults for Create mode (school/grade come from props)
-                reset({
-                    name: '',
-                    teacher_id: null,
-                    capacity: 30,
-                });
+                reset({ name: '', teacher_id: null, capacity: 30 });
             }
         }
-    }, [initialData, open, reset, isEditMode]);
+    }, [initialData, isEditMode, open, reset]);
 
-    // Form Submit Handler
+
     const onSubmit = async (data: DialogFormData) => {
-        setFormError(null);
-        // Construct the full payload including IDs from context/initialData
+        setFormSubmitError(null);
         let submitData: ClassroomFormData;
 
         if (isEditMode && initialData) {
-            // For update, use existing school/grade IDs, merge form data
             submitData = {
-                 ...initialData, // Include original IDs
-                 ...data,        // Include form data (name, capacity, teacher_id)
-                 teacher_id: data.teacher_id ? Number(data.teacher_id) : null,
-                 capacity: Number(data.capacity),
+                ...data,
+                school_id: initialData.school_id,
+                grade_level_id: initialData.grade_level_id,
+                teacher_id: data.teacher_id ? Number(data.teacher_id) : null,
+                capacity: Number(data.capacity),
             };
         } else if (!isEditMode && schoolId && gradeLevelId) {
-            // For create, use IDs from props, merge form data
-             submitData = {
-                 ...data,
-                 school_id: schoolId,
-                 grade_level_id: gradeLevelId,
-                 teacher_id: data.teacher_id ? Number(data.teacher_id) : null,
-                 capacity: Number(data.capacity),
+            submitData = {
+                ...data,
+                school_id: schoolId,
+                grade_level_id: gradeLevelId,
+                teacher_id: data.teacher_id ? Number(data.teacher_id) : null,
+                capacity: Number(data.capacity),
             };
         } else {
-             setFormError("بيانات المدرسة أو المرحلة الدراسية غير متوفرة."); // Should not happen if button logic is correct
-             return;
+            setFormSubmitError("بيانات المدرسة أو المرحلة الدراسية غير متوفرة.");
+            return;
         }
-
 
         try {
-            let result: Classroom | null = null;
             if (isEditMode && initialData) {
-                // Update doesn't need school/grade IDs in payload if API uses route model binding
-                 const { school_id, grade_level_id, ...updatePayload } = submitData;
-                result = await updateClassroom(initialData.id, updatePayload);
+                 const updatePayload = {
+                     name: submitData.name,
+                     teacher_id: submitData.teacher_id,
+                     capacity: submitData.capacity
+                 }; // Backend might not need school/grade ID for update
+                await updateClassroom(initialData.id, updatePayload);
                 enqueueSnackbar('تم تحديث الفصل بنجاح', { variant: 'success' });
             } else {
-                result = await createClassroom(submitData);
+                await createClassroom(submitData);
                 enqueueSnackbar('تم إضافة الفصل بنجاح', { variant: 'success' });
             }
-            if (result) {
-                onClose(true); // Close and refetch list
+            onSuccess(); // Close dialog and trigger refetch
+        } catch (error: unknown) {
+            console.error("Classroom Form submission error:", error);
+            const backendErrors = (error as { response?: { data?: { errors?: Record<string, string[]> } } }).response?.data?.errors;
+            if (backendErrors) {
+                setFormSubmitError(`فشل الحفظ: ${Object.values(backendErrors).flat().join('. ')}`);
+            } else {
+                setFormSubmitError((error as Error).message || 'حدث خطأ غير متوقع.');
             }
-        } catch (error: any) {
-             console.error("Classroom Form submission error:", error);
-             const backendErrors = error.response?.data?.errors;
-             if (backendErrors) {
-                 setFormError(`فشل الحفظ: ${Object.values(backendErrors).flat().join('. ')}`);
-             } else {
-                 setFormError(error.message || 'حدث خطأ غير متوقع.');
-             }
         }
     };
+    
+    const teacherOptions = useMemo(() =>
+        allTeachers.filter(u => u.role === 'teacher' || u.role === 'admin') // Example roles
+        .sort((a,b) => a.name.localeCompare(b.name)),
+    [allTeachers]);
 
-    // --- Filter relevant teachers (e.g., belonging to the specific school if applicable) ---
-    // This depends on whether your Teacher model/data includes school association.
-    // For now, we use all fetched users (assuming they are potential teachers).
-    const teacherOptions = React.useMemo(() => allUsers.filter(u => u.role === 'teacher' || u.role === 'admin'), [allUsers]);
 
-    useEffect(()=>{
-     if(open){
-        setTimeout(() => {
-            classRoomInputRef.current.focus(); 
-        }, 100);
-     }
-    },[ open]);
-    // --- Render ---
     return (
-        <Dialog open={open} onClose={() => onClose()} maxWidth="xs" fullWidth dir="rtl"> {/* Maybe 'sm' width */}
-            <DialogTitle>{isEditMode ? 'تعديل الفصل الدراسي' : 'إضافة فصل دراسي جديد'}</DialogTitle>
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <DialogContent>
-                    {/* Display School/Grade Context (Optional but helpful) */}
-                    {isEditMode && initialData && (
-                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                              المدرسة: {initialData.school?.name ?? schoolId ?? '-'} /
-                              المرحلة: {initialData.grade_level?.name ?? gradeLevelId ?? '-'}
-                         </Typography>
-                    )}
-                     {!isEditMode && (
-                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                              (للمدرسة والمرحلة المحددتين في الصفحة السابقة)
-                         </Typography>
-                    )}
-
-                    {formError && <Alert severity="error" sx={{ mb: 2 }} onClose={()=>setFormError(null)}>{formError}</Alert>}
-                    <Grid container spacing={2.5} sx={{ pt: 1 }}>
-
-                        {/* Name and Capacity */}
-                        <Grid item xs={12} sm={8}>
-                            <Controller name="name" control={control} rules={{ required: 'اسم الفصل مطلوب' }}
-                                render={({ field }) => (
-                                    <TextField inputRef={classRoomInputRef} {...field} label="اسم الفصل (مثال: شعبه أ)" fullWidth required error={!!errors.name} helperText={errors.name?.message} />
-                                )} />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <Controller name="capacity" control={control} rules={{ required: 'السعة مطلوبة', min: {value: 1, message: 'السعة يجب أن تكون 1 على الأقل'} }}
-                                render={({ field }) => (
-                                    <TextField {...field} label="السعة" type="number" fullWidth required error={!!errors.capacity} helperText={errors.capacity?.message} InputProps={{ inputProps: { min: 1 } }}/>
-                                )} />
-                        </Grid>
-
-                         {/* Homeroom Teacher */}
-                        <Grid item xs={12}>
-                            <Controller name="teacher_id" control={control}
-                                render={({ field }) => (
-                                    <Autocomplete
-                                        options={teacherOptions}
-                                        getOptionLabel={(option) => `${option.name} (${option.username})`}
-                                        value={teacherOptions.find(t => t.id === field.value) || null}
-                                        onChange={(event, newValue) => field.onChange(newValue ? newValue.id : null)}
-                                        renderInput={(params) => <TextField {...params} label="مدرس الفصل (اختياري)" helperText="المدرس المسؤول عن الفصل" error={!!errors.teacher_id} />}
-                                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                                        noOptionsText="لا يوجد مدرسون متاحون"
-                                        clearOnBlur handleHomeEndKeys
-                                    />
-                                )} />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={() => onClose()} color="inherit" disabled={isSubmitting}>إلغاء</Button>
-                    <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
-                        {isSubmitting ? <CircularProgress size={22} /> : (isEditMode ? 'حفظ التعديلات' : 'إضافة فصل')}
-                    </Button>
-                </DialogActions>
-            </form>
+        <Dialog open={open} onOpenChange={onOpenChange} modal>
+            <DialogContent className="sm:max-w-[480px]" dir="rtl">
+                <DialogHeader>
+                    <DialogTitle>{isEditMode ? `تعديل الفصل: ${initialData?.name}` : 'إضافة فصل دراسي جديد'}</DialogTitle>
+                    <DialogDescription>
+                        {isEditMode ? 'تعديل تفاصيل الفصل الدراسي المحدد.' : 'أدخل تفاصيل الفصل الدراسي الجديد.'}
+                         {initialData && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                                للمدرسة: {initialData.school?.name ?? '-'} / المرحلة: {initialData.grade_level?.name ?? '-'}
+                            </p>
+                        )}
+                         {!initialData && schoolId && gradeLevelId && (
+                             <p className="text-xs text-muted-foreground mt-1">
+                                 (سيتم إضافة الفصل للمدرسة والمرحلة المحددتين)
+                             </p>
+                         )}
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="grid gap-4 py-4">
+                        {formSubmitError && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>خطأ</AlertTitle>
+                                <AlertDescription>{formSubmitError}</AlertDescription>
+                            </Alert>
+                        )}
+                        <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
+                            <Label htmlFor="name" className="text-right col-span-1">اسم الفصل *</Label>
+                            <div className="col-span-3">
+                                <Controller name="name" control={control} rules={{ required: 'اسم الفصل مطلوب' }}
+                                    render={({ field }) => <Input id="name" placeholder="مثال: شعبه أ" {...field} className={cn(errors.name && "border-destructive")} />} />
+                                {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
+                            <Label htmlFor="capacity" className="text-right col-span-1">السعة *</Label>
+                            <div className="col-span-3">
+                                <Controller name="capacity" control={control} rules={{ required: 'السعة مطلوبة', min: {value: 1, message:'السعة >= 1'} }}
+                                    render={({ field }) => <Input id="capacity" type="number" {...field} className={cn(errors.capacity && "border-destructive")} />} />
+                                {errors.capacity && <p className="text-xs text-destructive mt-1">{errors.capacity.message}</p>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-x-4 gap-y-2">
+                            <Label htmlFor="teacher_id" className="text-right col-span-1">مدرس الفصل</Label>
+                             <div className="col-span-3">
+                                <Controller name="teacher_id" control={control}
+                                    render={({ field }) => (
+                                        <Select
+                                            value={field.value ? String(field.value) : ""}
+                                            onValueChange={(value) => field.onChange(value ? Number(value) : null)}
+                                            disabled={teachersLoading}
+                                        >
+                                            <SelectTrigger className={cn(errors.teacher_id && "border-destructive")}>
+                                                <SelectValue placeholder={teachersLoading ? "جاري تحميل المدرسين..." : "اختر مدرس الفصل (اختياري)"} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                 <SelectItem value=" "><em>(بدون مدرس)</em></SelectItem>
+                                                 {teacherOptions.map(teacher => (
+                                                     <SelectItem key={teacher.id} value={String(teacher.id)}>{teacher.name}</SelectItem>
+                                                 ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )} />
+                                {errors.teacher_id && <p className="text-xs text-destructive mt-1">{errors.teacher_id.message}</p>}
+                             </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline" disabled={isSubmitting}>إلغاء</Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={isSubmitting || teachersLoading}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isEditMode ? 'حفظ التعديلات' : 'إضافة فصل'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
         </Dialog>
     );
 };

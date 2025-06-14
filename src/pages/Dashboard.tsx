@@ -5,21 +5,19 @@ import { motion } from 'framer-motion';
 
 // shadcn/ui components
 import { Card, CardContent,} from "@/components/ui/card"; // Adjust path if needed
-import { Skeleton } from "@/components/ui/skeleton"; // For loading state
 import { cn } from "@/lib/utils"; // Utility for combining class names
 
 // lucide-react icons
 import {
     Users, // PeopleIcon replacement
     GraduationCap, // SchoolIcon (for Teachers) replacement
-    Building, // BusinessIcon (for Schools) replacement
     UserCheck, // Example for Enrollment
     Car, // Example for Transport
     Settings, // SettingsIcon replacement
-    BookOpen, // Example for Courses
 } from 'lucide-react';
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 import { useTeacherStore } from '@/stores/teacherStore';
+import StatisticsRow from '@/components/dashboard/StatisticsRow';
 
 // Import API client if needed for actual stats fetching
 // import axiosClient from '@/axios-client';
@@ -50,7 +48,6 @@ const itemVariants = {
 
 const Dashboard: React.FC = () => {
     const [isLoadingStats, setIsLoadingStats] = useState(true);
-    const [stats, setStats] = useState({});
     const {enrollments,fetchAllEnrollments,loading} = useStudentEnrollmentStore()
     const {teachers,fetchTeachers} = useTeacherStore()
     // --- Fetch Dashboard Stats ---
@@ -61,7 +58,6 @@ const Dashboard: React.FC = () => {
                 fetchTeachers()
             } catch (error) {
                 console.error('Error fetching dashboard stats:', error);
-                setStats({}); // Set empty on error
             } finally {
                 setIsLoadingStats(false);
             }
@@ -80,24 +76,10 @@ const Dashboard: React.FC = () => {
             iconColor: "text-blue-600 dark:text-blue-400",
             bgColor: "bg-blue-100/80 dark:bg-blue-900/30",
         },
-        {
-            title: 'المعلمون',
-            icon: GraduationCap,
-            link: '/teachers',
-            description: 'إدارة ملفات المعلمين وجداولهم.',
-            iconColor: "text-purple-600 dark:text-purple-400",
-            bgColor: "bg-purple-100/80 dark:bg-purple-900/30",
-        },
+   
+       
          {
-             title: 'المدارس',
-             icon: Building,
-             link: '/schools/list', // Link directly to list if no separate school dashboard
-             description: 'إدارة بيانات المدارس والفروع.',
-             iconColor: "text-amber-600 dark:text-amber-400",
-             bgColor: "bg-amber-100/80 dark:bg-amber-900/30",
-         },
-         {
-            title: 'تسجيل الطلاب', // Enrollment
+            title: 'تعيين الطلاب', // Enrollment
             icon: UserCheck,
             link: '/enrollments',
             description: 'تسجيل الطلاب في الأعوام والمراحل الدراسية.',
@@ -157,65 +139,20 @@ const Dashboard: React.FC = () => {
 
     // --- Render ---
     return (
-        <section className="min-h-[calc(100vh-64px)] w-full py-6 px-4 md:py-8 md:px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
+        <section className="min-h-[calc(100vh-64px)] w-full py-1 px-4 md:py-8 md:px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
             <div className="container max-w-screen-xl mx-auto"> {/* Slightly wider container */}
                 {/* Animated Title */}
-                <motion.div
-                     initial={{ opacity: 0, y: -20 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ duration: 0.5 }}
-                >
-                    <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-10 text-primary dark:text-blue-400">
-                        لوحة التحكم الرئيسية
-                    </h1>
-                </motion.div>
+           
 
                  {/* Statistics Row */}
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 md:mb-10">
-                     {/* Stat Card 1: Students */}
-                     <Card>
-                         <CardContent className="flex items-center gap-4 p-4">
-                              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                                 <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                              </div>
-                              <div>
-                                 <p className="text-sm font-medium text-muted-foreground">إجمالي الطلاب</p>
-                                 {loading ? <Skeleton className="h-7 w-16 mt-1" /> :
-                                     <p className="text-2xl font-bold">{enrollments.length ?? '-'}</p>
-                                 }
-                              </div>
-                         </CardContent>
-                     </Card>
-                     {/* Stat Card 2: Teachers */}
-                     <Card>
-                         <CardContent className="flex items-center gap-4 p-4">
-                               <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
-                                   <GraduationCap className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                               </div>
-                               <div>
-                                   <p className="text-sm font-medium text-muted-foreground">إجمالي المعلمين</p>
-                                   {isLoadingStats ? <Skeleton className="h-7 w-16 mt-1" /> :
-                                      <p className="text-2xl font-bold">{stats.teacherCount ?? '-'}</p>
-                                   }
-                               </div>
-                         </CardContent>
-                     </Card>
-                      {/* Stat Card 3: Courses (Example) */}
-                      <Card>
-                         <CardContent className="flex items-center gap-4 p-4">
-                               <div className="p-3 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                                   <BookOpen className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                               </div>
-                               <div>
-                                   <p className="text-sm font-medium text-muted-foreground">إجمالي المقررات</p>
-                                    {isLoadingStats ? <Skeleton className="h-7 w-16 mt-1" /> :
-                                       <p className="text-2xl font-bold">{stats.courseCount ?? '-'}</p>
-                                    }
-                               </div>
-                         </CardContent>
-                      </Card>
-                 </div>
-               
+                 {/* <StatisticsRow
+                     enrollmentsCount={enrollments.length}
+                     teachersCount={teachers.length}
+                     coursesCount={0} // Placeholder for courses count
+                     isLoadingEnrollments={loading}
+                     isLoadingStats={isLoadingStats}
+                 />
+                */}
                      
                  
                  

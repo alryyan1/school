@@ -1,18 +1,18 @@
 import { useFormContext } from 'react-hook-form';
-import { TextField, Grid } from '@mui/material';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { validateArabicName, validatePhoneNumber } from '@/utils/validators';
 
 export const MotherInfoTab = () => {
   const { register, formState: { errors } } = useFormContext();
 
   return (
-    <Grid container spacing={3}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Mother's Name */}
-      <Grid item xs={12} sm={6}>
-        <TextField
-          required
-          fullWidth
-          label="اسم الأم"
+      <div className="space-y-2">
+        <Label htmlFor="mother_name">اسم الأم *</Label>
+        <Input
+          id="mother_name"
           {...register("mother_name", {
             required: "اسم الأم مطلوب",
             validate: {
@@ -20,69 +20,76 @@ export const MotherInfoTab = () => {
               minLength: (v) => v.length >= 3 || "يجب أن يكون الاسم 3 أحرف على الأقل"
             }
           })}
-          error={!!errors.mother_name}
-          helperText={errors.mother_name?.message as string}
+          className={errors.mother_name ? "border-red-500" : ""}
         />
-      </Grid>
+        {errors.mother_name && (
+          <p className="text-sm text-red-500">{errors.mother_name.message as string}</p>
+        )}
+      </div>
 
       {/* Mother's Job */}
-      <Grid item xs={12} sm={6}>
-        <TextField
-          required
-          fullWidth
-          label="وظيفة الأم"
+      <div className="space-y-2">
+        <Label htmlFor="mother_job">وظيفة الأم *</Label>
+        <Input
+          id="mother_job"
           {...register("mother_job", {
             required: "وظيفة الأم مطلوبة",
-         
           })}
-          error={!!errors.mother_job}
-          helperText={errors.mother_job?.message as string}
+          className={errors.mother_job ? "border-red-500" : ""}
         />
-      </Grid>
+        {errors.mother_job && (
+          <p className="text-sm text-red-500">{errors.mother_job.message as string}</p>
+        )}
+      </div>
 
       {/* Mother's Address */}
-      <Grid item xs={12} sm={6}>
-        <TextField
-          required
-          fullWidth
-          label="عنوان الأم"
+      <div className="space-y-2">
+        <Label htmlFor="mother_address">عنوان الأم *</Label>
+        <Input
+          id="mother_address"
           {...register("mother_address", {
             required: "عنوان الأم مطلوب",
-         
           })}
-          error={!!errors.mother_address}
-          helperText={errors.mother_address?.message as string}
+          className={errors.mother_address ? "border-red-500" : ""}
         />
-      </Grid>
+        {errors.mother_address && (
+          <p className="text-sm text-red-500">{errors.mother_address.message as string}</p>
+        )}
+      </div>
 
       {/* Mother's Phone */}
-      <Grid item xs={12} sm={6}>
-        <TextField
-          required
-          fullWidth
-          label="رقم هاتف الأم"
+      <div className="space-y-2">
+        <Label htmlFor="mother_phone">رقم هاتف الأم *</Label>
+        <Input
+          id="mother_phone"
+          type="tel"
           {...register("mother_phone", {
             required: "رقم الهاتف مطلوب",
             validate: validatePhoneNumber
           })}
-          error={!!errors.mother_phone}
-          helperText={errors.mother_phone?.message as string}
+          className={errors.mother_phone ? "border-red-500" : ""}
         />
-      </Grid>
+        {errors.mother_phone && (
+          <p className="text-sm text-red-500">{errors.mother_phone.message as string}</p>
+        )}
+      </div>
 
       {/* Mother's WhatsApp */}
-      <Grid item xs={12} sm={6}>
-        <TextField
-          fullWidth
-          label="واتساب الأم"
+      <div className="space-y-2">
+        <Label htmlFor="mother_whatsapp">واتساب الأم</Label>
+        <Input
+          id="mother_whatsapp"
+          type="tel"
           {...register("mother_whatsapp", {
             validate: (value) => 
               !value || validatePhoneNumber(value) || "رقم واتساب غير صحيح"
           })}
-          error={!!errors.mother_whatsapp}
-          helperText={errors.mother_whatsapp?.message as string}
+          className={errors.mother_whatsapp ? "border-red-500" : ""}
         />
-      </Grid>
-    </Grid>
+        {errors.mother_whatsapp && (
+          <p className="text-sm text-red-500">{errors.mother_whatsapp.message as string}</p>
+        )}
+      </div>
+    </div>
   );
 };

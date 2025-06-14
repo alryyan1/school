@@ -4,34 +4,38 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
+  TableHeader,
   TableRow,
-  Paper,
-  TablePagination,
-  TableSortLabel,
-  TextField,
-  IconButton,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
   Tooltip,
-  Box,
-  Typography,
-  Button,
-} from "@mui/material";
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Edit,
-  Delete,
-  Visibility,
-  Add,
-  MarkAsUnread,
-  AttachEmail,
-} from "@mui/icons-material";
+  Trash2,
+  Eye,
+  Plus,
+  FileText,
+  ChevronUp,
+  ChevronDown,
+  Mail,
+} from "lucide-react";
 import { useStudentStore } from "@/stores/studentStore";
 import { Gender, Student } from "@/types/student";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
 import dayjs from "dayjs";
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
 const StudentList = () => {
   const {
@@ -70,21 +74,14 @@ const StudentList = () => {
   };
 
   const handlePrintList = () => {
-    // Base URL for the report
     let reportUrl = `${webUrl}reports/students/list-pdf`;
-
-    // --- Optional: Add filters based on current UI state ---
     const filters = new URLSearchParams();
-    // Example: if you have selectedGradeFilter and activeAcademicYearId state
-    // if (selectedGradeFilter) filters.append('grade_level_id', selectedGradeFilter.toString());
-    // if (activeAcademicYearId) filters.append('academic_year_id', activeAcademicYearId.toString());
 
     if (filters.toString()) {
       reportUrl += "?" + filters.toString();
     }
-    // --- End Optional Filters ---
 
-    window.open(reportUrl, "_blank"); // Open PDF in new tab
+    window.open(reportUrl, "_blank");
   };
 
   const handleSort = (property: keyof Student) => {
@@ -100,7 +97,7 @@ const StudentList = () => {
         value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
-  console.log("renderede");
+
   const sortedStudents = filteredStudents.sort((a, b) => {
     const aValue = a[orderBy];
     const bValue = b[orderBy];
@@ -123,11 +120,9 @@ const StudentList = () => {
     page * rowsPerPage + rowsPerPage
   );
 
-  if (loading) return <Typography>جاري التحميل...</Typography>;
-  if (error) return <Typography color="error">{error}</Typography>;
+  const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
 
   function handleAccept(student: Student): void {
-    console.log(student.aproove_date, "approve_Date", student);
     const result = confirm("تأكيد العمليه");
     if (result) {
       updateStudent(student.id, {
@@ -138,142 +133,198 @@ const StudentList = () => {
     }
   }
 
+  const SortButton = ({ column, children }: { column: keyof Student; children: React.ReactNode }) => (
+    <Button
+      variant="ghost"
+      onClick={() => handleSort(column)}
+      className="h-auto p-0 font-medium hover:bg-transparent"
+    >
+      {children}
+      {orderBy === column && (
+        order === "asc" ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />
+      )}
+    </Button>
+  );
+
+  if (loading) return (
+    <div className="container mx-auto p-6" dir="rtl">
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  if (error) return (
+    <div className="container mx-auto p-6" dir="rtl">
+      <Alert variant="destructive">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    </div>
+  );
+
   return (
-    <Box style={{ direction: "rtl" }} sx={{ width: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <TextField
-          label="بحث"
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: 300 }}
-        />
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => navigate("/students/create")}
-        >
-          إضافة طالب جديد
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<PictureAsPdfIcon />}
-          onClick={handlePrintList}
-        >
-          طباعة قائمة الطلاب
-        </Button>
-      </Box>
+    <div className="container mx-auto p-6" dir="rtl">
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center flex-wrap gap-4">
+            <CardTitle className="text-2xl">قائمة الطلاب</CardTitle>
+            <div className="flex gap-2 flex-wrap">
+              <Input
+                placeholder="بحث..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-80"
+              />
+              <Button onClick={() => navigate("/students/create")}>
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة طالب جديد
+              </Button>
+              <Button variant="outline" onClick={handlePrintList}>
+                <FileText className="ml-2 h-4 w-4" />
+                طباعة قائمة الطلاب
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">
+                    <SortButton column="id">الكود</SortButton>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <SortButton column="student_name">اسم الطالب</SortButton>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <SortButton column="gender">الجنس</SortButton>
+                  </TableHead>
+                  <TableHead className="text-center">رقم الهاتف</TableHead>
+                  <TableHead className="text-center">المستوى</TableHead>
+                  <TableHead className="text-center">الحالة</TableHead>
+                  <TableHead className="text-center">المرحلة</TableHead>
+                  <TableHead className="text-center">طباعة الملف</TableHead>
+                  <TableHead className="text-center">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedStudents.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="text-center">{student.id}</TableCell>
+                    <TableCell className="text-center">{student.student_name}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={student.gender === Gender.Male ? "info" : "secondary"}>
+                        {student.gender === Gender.Male ? "ذكر" : "أنثى"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">{student.father_phone}</TableCell>
+                    <TableCell className="text-center">{student.wished_level}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={student.approved ? "success" : "outline"}>
+                        {student.approved ? "مقبول" : "قيد المراجعة"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">{student.wished_level}</TableCell>
+                    <TableCell className="text-center">
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={`${webUrl}students/${student.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                          PDF
+                        </a>
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-1">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/students/${student.id}`)}
+                              >
+                                <Eye className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>عرض</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === "id"}
-                  direction={orderBy === "id" ? order : "asc"}
-                  onClick={() => handleSort("id")}
-                >
-                  الكود
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === "student_name"}
-                  direction={orderBy === "student_name" ? order : "asc"}
-                  onClick={() => handleSort("student_name")}
-                >
-                  اسم الطالب
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === "gender"}
-                  direction={orderBy === "gender" ? order : "asc"}
-                  onClick={() => handleSort("gender")}
-                >
-                  الجنس
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>رقم الهاتف</TableCell>
-              <TableCell>المستوى</TableCell>
-              <TableCell>الحالة</TableCell>
-              <TableCell>المرحله </TableCell>
-              <TableCell>طباعه الملف</TableCell>
-              <TableCell>الإجراءات</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedStudents.map((student) => (
-              <TableRow key={student.id}>
-                <TableCell>{student.id}</TableCell>
-                <TableCell>{student.student_name}</TableCell>
-                <TableCell>
-                  {student.gender === Gender.Male ? "ذكر" : "أنثى"}
-                </TableCell>
-                <TableCell>{student.father_phone}</TableCell>
-                <TableCell>{student.wished_level}</TableCell>
-                <TableCell>
-                  {student.approved ? (
-                    <Typography color="success.main">مقبول</Typography>
-                  ) : (
-                    <Typography color="warning.main">قيد المراجعة</Typography>
-                  )}
-                </TableCell>
-                <TableCell>{student.wished_level}</TableCell>
-                <TableCell>
-                  <Button href={`${webUrl}students/${student.id}/pdf`}>
-                    PDF
-                  </Button>
-                </TableCell>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/students/${student.id}/edit`)}
+                              >
+                                <Edit className="h-4 w-4 text-green-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>تعديل</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
 
-                <TableCell>
-                  <Tooltip title="عرض">
-                    <IconButton
-                      onClick={() => navigate(`/students/${student.id}`)}
-                    >
-                      <Visibility color="info" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="تعديل">
-                    <IconButton
-                      onClick={() => navigate(`/students/${student.id}/edit`)}
-                    >
-                      <Edit color="primary" />
-                    </IconButton>
-                  </Tooltip>
-                  {student.aproove_date == null && (
-                    <Tooltip title="قبول">
-                      <IconButton onClick={() => handleAccept(student)}>
-                        <AttachEmail color="success" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                        {student.aproove_date == null && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleAccept(student)}
+                                >
+                                  <Mail className="h-4 w-4 text-green-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>قبول</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={filteredStudents.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        onRowsPerPageChange={(e) => {
-          setRowsPerPage(parseInt(e.target.value, 10));
-          setPage(0);
-        }}
-        labelRowsPerPage="عدد الصفوف:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} من ${count}`
-        }
-      />
-    </Box>
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              عرض {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredStudents.length)} من {filteredStudents.length}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={page === 0}
+              >
+                السابق
+              </Button>
+              <span className="text-sm">
+                صفحة {page + 1} من {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={page >= totalPages - 1}
+              >
+                التالي
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -3,11 +3,13 @@
     "jsx": "react-jsx",
     "baseUrl": "./",
     "types": ["node"],
+    "strict": false,
     "module": "ESNext",
     "moduleResolution": "node",
     "allowJs": true,
     "checkJs": false,
     "allowSyntheticDefaultImports": true,
+    "skipDefaultLibCheck": false,
     "paths": {
       "@/*":["src/*"]
     }

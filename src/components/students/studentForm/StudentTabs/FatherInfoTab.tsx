@@ -1,104 +1,114 @@
 import { useFormContext } from 'react-hook-form';
-import { TextField, Grid } from '@mui/material';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const FatherInfoTab = () => {
   const { register, formState: { errors } } = useFormContext();
 
   return (
-  <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  
-                  fullWidth
-                  label="اسم الأب"
-                  {...register("father_name", {
-                    required: {
-                      value: true,
-                      message: "اسم الأب مطلوب",
-                    },
-                    minLength: {
-                      value: 3,
-                      message: "يجب أن يكون اسم الأب على الأقل 3 أحرف",
-                    },
-                    pattern: {
-                      value: /^[\u0600-\u06FF\s]+$/,
-                      message: "يجب أن يحتوي الاسم على أحرف عربية فقط",
-                    },
-                  })}
-                  error={!!errors.father_name}
-                  helperText={errors.father_name?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  
-                  fullWidth
-                  label="وظيفة الأب"
-                  {...register("father_job", {
-                    required: {
-                      value: true,
-                      message: "وظيفة الأب مطلوبة",
-                    },
-                    minLength: {
-                      value: 2,
-                      message: "يجب أن تكون الوظيفة على الأقل حرفين",
-                    },
-                  })}
-                  error={!!errors.father_job}
-                  helperText={errors.father_job?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  
-                  fullWidth
-                  label="عنوان الأب"
-                  {...register("father_address", {
-                    required: {
-                      value: true,
-                      message: "عنوان الأب مطلوب",
-                    },
-                 
-                  })}
-                  error={!!errors.father_address}
-                  helperText={errors.father_address?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  
-                  fullWidth
-                  label="رقم هاتف الأب"
-                  {...register("father_phone", {
-                    required: {
-                      value: true,
-                      message: "رقم هاتف الأب مطلوب",
-                    },
-                    pattern: {
-                      value: /^(0|09)\d{8}$/,
-                      message:
-                        "يجب أن يكون رقم هاتف  صحيح (يبدأ بـ 0 أو 09 ويتكون من 10 أرقام)",
-                    },
-                  })}
-                  error={!!errors.father_phone}
-                  helperText={errors.father_phone?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="واتساب الأب"
-                  {...register("father_whatsapp", {
-                    pattern: {
-                      value: /^(0|09)\d{8}$/,
-                      message:
-                        "يجب أن يكون رقم هاتف  صحيح (يبدأ بـ 0 أو 09 ويتكون من 10 أرقام)",
-                    },
-                  })}
-                  error={!!errors.father_whatsapp}
-                  helperText={errors.father_whatsapp?.message}
-                />
-              </Grid>
-            </Grid>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-2">
+        <Label htmlFor="father_name">اسم الأب *</Label>
+        <Input
+          id="father_name"
+          {...register("father_name", {
+            required: {
+              value: true,
+              message: "اسم الأب مطلوب",
+            },
+            minLength: {
+              value: 3,
+              message: "يجب أن يكون اسم الأب على الأقل 3 أحرف",
+            },
+            pattern: {
+              value: /^[\u0600-\u06FF\s]+$/,
+              message: "يجب أن يحتوي الاسم على أحرف عربية فقط",
+            },
+          })}
+          className={errors.father_name ? "border-red-500" : ""}
+        />
+        {errors.father_name && (
+          <p className="text-sm text-red-500">{errors.father_name.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="father_job">وظيفة الأب *</Label>
+        <Input
+          id="father_job"
+          {...register("father_job", {
+            required: {
+              value: true,
+              message: "وظيفة الأب مطلوبة",
+            },
+            minLength: {
+              value: 2,
+              message: "يجب أن تكون الوظيفة على الأقل حرفين",
+            },
+          })}
+          className={errors.father_job ? "border-red-500" : ""}
+        />
+        {errors.father_job && (
+          <p className="text-sm text-red-500">{errors.father_job.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="father_address">عنوان الأب *</Label>
+        <Input
+          id="father_address"
+          {...register("father_address", {
+            required: {
+              value: true,
+              message: "عنوان الأب مطلوب",
+            },
+          })}
+          className={errors.father_address ? "border-red-500" : ""}
+        />
+        {errors.father_address && (
+          <p className="text-sm text-red-500">{errors.father_address.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="father_phone">رقم هاتف الأب *</Label>
+        <Input
+          id="father_phone"
+          type="tel"
+          {...register("father_phone", {
+            required: {
+              value: true,
+              message: "رقم هاتف الأب مطلوب",
+            },
+            pattern: {
+              value: /^(0|09)\d{8}$/,
+              message: "يجب أن يكون رقم هاتف صحيح (يبدأ بـ 0 أو 09 ويتكون من 10 أرقام)",
+            },
+          })}
+          className={errors.father_phone ? "border-red-500" : ""}
+        />
+        {errors.father_phone && (
+          <p className="text-sm text-red-500">{errors.father_phone.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="father_whatsapp">واتساب الأب</Label>
+        <Input
+          id="father_whatsapp"
+          type="tel"
+          {...register("father_whatsapp", {
+            pattern: {
+              value: /^(0|09)\d{8}$/,
+              message: "يجب أن يكون رقم هاتف صحيح (يبدأ بـ 0 أو 09 ويتكون من 10 أرقام)",
+            },
+          })}
+          className={errors.father_whatsapp ? "border-red-500" : ""}
+        />
+        {errors.father_whatsapp && (
+          <p className="text-sm text-red-500">{errors.father_whatsapp.message}</p>
+        )}
+      </div>
+    </div>
   );
 };

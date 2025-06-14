@@ -1,19 +1,13 @@
 // src/App.tsx
 import {
-  createBrowserRouter,
+  createHashRouter,
   RouterProvider,
   Navigate,
-  useLocation,
   Outlet, // Ensure Outlet is imported if layouts need it
 } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { SnackbarProvider } from "notistack";
 import "react-toastify/dist/ReactToastify.css";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline"; // Import CssBaseline
-import { arSA } from "@mui/material/locale";
-import { CacheProvider } from "@emotion/react";
-import { cacheRtl } from "./constants";
 
 // --- Layouts ---
 import AuthLayout from "./components/AuthLayout";
@@ -33,17 +27,16 @@ import StudentView from "./pages/students/StudentView";
 
 // --- Teacher Pages & Components ---
 // Verify these paths match your project structure
-import TeacherList from "./pages/teachers/TeacherList";
-import TeacherForm from "./components/teachers/TeacherForm"; // Note: Component, not page
+
 // Optional: import TeacherDashboard from './pages/teachers/TeacherDashboard';
 
 // --- Common Components ---
-import LoadingScreen from "./components/LoadingScreen";
+import { ProtectedRoute, AuthRoute } from "./components/ProtectedRoute";
 
 // --- Context ---
-import { useAuth } from "./context/authcontext";
+import { AuthProvider } from "./context/authcontext";
 import { StudentForm } from "./components/students/studentForm/StudentForm";
-import TeacherView from "./components/teachers/TeacherView";
+
 import Register from "./pages/Signup";
 import { schoolRoutes, settings } from "./router";
 import StudentEnrollmentManager from "./pages/enrollments/StudentEnrollmentManager";
@@ -52,79 +45,13 @@ import SchoolExplorerPage from "./pages/pages/SchoolExplorerPage";
 import SchoolClassroomListPage from "./pages/pages/SchoolClassroomListPage";
 import ClassroomStudentListPage from "./pages/pages/ClassroomStudentListPage";
 import DueInstallmentsPage from "./pages/finances/DueInstallmentsPage";
-import { Grade } from "@mui/icons-material";
 import GradeLevelClassroomListPage from "./pages/pages/GradeLevelClassroomListPage";
 
 // --- Main App Component ---
 function App() {
-  const theme = createTheme(
-    {
-      direction: "rtl",
-      typography: {
-        fontFamily: ["Cairo", "sans-serif"].join(","),
-      },
-      palette: {
-        primary: {
-          main: "#1976d2",
-        },
-        secondary: {
-          main: "#dc004e",
-        },
-      },
-    },
-    arSA
-  );
-
-  // --- Protected Route Component ---
-  const ProtectedRoute = ({
-    children,
-    roles = [],
-  }: {
-    children: React.ReactNode;
-    roles?: string[];
-  }) => {
-    const { isAuthenticated, isLoading, userRole } = useAuth();
-    const location = useLocation(); // Get location for redirect state
-
-    if (isLoading) {
-      return <LoadingScreen />;
-    }
-
-    if (!isAuthenticated) {
-      console.log("User not authenticated, redirecting to login.");
-      // Pass the current location user tried to access
-      return <Navigate to="/auth/login" state={{ from: location }} replace />;
-    }
-
-    const currentUserRole = userRole as string; // Assuming userRole is set correctly
-    if (roles.length > 0 && !roles.includes(currentUserRole)) {
-      console.log(
-        `User role '${currentUserRole}' not authorized for roles: ${roles.join(
-          ", "
-        )}`
-      );
-      return <Navigate to="/unauthorized" replace />;
-    }
-
-    // If authenticated and authorized, render the child route element
-    return children;
-  };
-
-  // --- Auth Route Component (for Login/Register pages) ---
-  const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-    const { isAuthenticated, isLoading } = useAuth();
-
-    if (isLoading) return <LoadingScreen />;
-
-    // If already authenticated, redirect from login/register to dashboard
-    if (isAuthenticated) return <Navigate to="/dashboard" replace />;
-
-    // If not authenticated, show the login/register page
-    return children;
-  };
 
   // --- Router Configuration ---
-  const router = createBrowserRouter([
+  const router = createHashRouter([
     // --- Main Application Layout & Routes ---
     {
       path: "/",
@@ -132,7 +59,7 @@ function App() {
         <ProtectedRoute roles={["admin"]}>
           {" "}
           {/* Define roles for main app access */}
-          <MainLayout userRole={"admin"} /> {/* Pass role if layout needs it */}
+          <MainLayout /> {/* Updated to not pass userRole */}
         </ProtectedRoute>
       ),
       children: [
@@ -186,23 +113,7 @@ function App() {
         },
         // --- End Student Section ---
 
-        // --- Teacher Section ---
-        {
-          path: "teachers",
-          element: (
-            <ProtectedRoute roles={["admin"]}>
-              <Outlet />
-            </ProtectedRoute>
-          ), // Parent renders Outlet for children
-          children: [
-            { index: true, element: <Navigate to="/teachers/list" replace /> }, // Default to list
-            // { index: true, element: <TeacherDashboard /> }, // Or use a dashboard
-            { path: "list", element: <TeacherList /> },
-            { path: "create", element: <TeacherForm /> },
-            { path: ":id", element: <TeacherView /> },
-            { path: ":id/edit", element: <TeacherForm /> },
-          ],
-        },
+    
         // --- Enrollments Section ---
         {
           path: "enrollments", // New top-level section
@@ -258,33 +169,12 @@ function App() {
 
   // --- Render Application ---
   return (
-    <CacheProvider value={cacheRtl}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline /> {/* Apply baseline styles */}
-        <SnackbarProvider
-          maxSnack={3}
-          autoHideDuration={3000}
-          anchorOrigin={{ vertical: "top", horizontal: "left" }}
-          dense
-        >
-          <ToastContainer
-            position="top-left"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={true}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-          />
-
-          <RouterProvider router={router} />
-          {/* Removed stray "app" text */}
-        </SnackbarProvider>
-      </ThemeProvider>
-    </CacheProvider>
+    <AuthProvider> {/* Your AuthContext remains crucial */}
+    <SnackbarProvider /* ... MUI Snackbar ... */ >
+      <ToastContainer /* ... react-toastify ... */ />
+      <RouterProvider router={router} />
+    </SnackbarProvider>
+  </AuthProvider>
   );
 }
 

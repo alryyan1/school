@@ -13,7 +13,11 @@ import SchoolGradeLevelManager from "./pages/settings/SchoolGradeLevelManager";
 import UserList from "./components/users/UserList";
 import ExamSchedulePage from "./components/exams/ExamSchedulePage";
 import GeneralSettingsPage from "./pages/settings/GeneralSettingsPage";
-
+import TeacherList from "./pages/teachers/TeacherList";
+import TeacherForm from "./components/teachers/TeacherForm";
+import TeacherView from "./components/teachers/TeacherView";
+import ProtectedRoute from "./components/ProtectedRoute";
+  
 export const schoolRoutes: RouteObject = {
   path: "schools", // Base path for schools
   element: <Outlet />, // Renders nested school routes
@@ -35,6 +39,23 @@ export const settings: RouteObject = {
     // Specific settings pages are still routed directly
     { path: "academic-years", element: <AcademicYearList /> },
     { path: "grade-levels", element: <GradeLevelList /> },
+      // --- Teacher Section ---
+      {
+        path: "teachers",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <Outlet />
+          </ProtectedRoute>
+        ), // Parent renders Outlet for children
+        children: [
+          { index: true, element: <Navigate to="/teachers/list" replace /> }, // Default to list
+          // { index: true, element: <TeacherDashboard /> }, // Or use a dashboard
+          { path: "list", element: <TeacherList /> },
+          { path: "create", element: <TeacherForm /> },
+          { path: ":id", element: <TeacherView /> },
+          { path: ":id/edit", element: <TeacherForm /> },
+        ],
+      },
     // Add routes for other settings pages linked from dashboard
     { path: "subjects", element: <SubjectList /> },
     // { path: 'general', element: <GeneralSettingsPage /> },

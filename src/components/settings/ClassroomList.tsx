@@ -1,72 +1,76 @@
-// src/pages/settings/ClassroomList.tsx (or similar path)
-import React, { useState, useEffect, useMemo, useCallback } from "react"; // Added useCallback
+// src/pages/settings/ClassroomList.tsx
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  Box,
-  Button,
-  Container,
-  Typography,
-  CircularProgress,
-  Alert,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Paper,
-  TableContainer,
   Table,
-  TableHead,
-  TableRow,
-  TableCell,
   TableBody,
-  Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
-} from "@mui/material";
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ArrowBack,
-} from "@mui/icons-material";
-import { useClassroomStore } from "@/stores/classroomStore"; // Adjust path
-import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
-// Removed: useGradeLevelStore - Fetching specific grades now
-import { useSettingsStore } from "@/stores/settingsStore"; // Import settings store
-import { SchoolApi } from "@/api/schoolApi"; // Import School API to fetch grades
-import ClassroomFormDialog from "@/components/settings/ClassroomFormDialog"; // Adjust path
-import { Classroom } from "@/types/classroom"; // Adjust path
-import { GradeLevel } from "@/types/gradeLevel"; // Adjust path
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog as ShadcnDialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  PlusCircle,
+  MoreHorizontal,
+  Edit3,
+  Trash2,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+import { useClassroomStore } from "@/stores/classroomStore";
+import { useSchoolStore } from "@/stores/schoolStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { SchoolApi } from "@/api/schoolApi";
+import ClassroomFormDialog from "@/components/settings/ClassroomFormDialog";
+import { Classroom } from "@/types/classroom";
+import { GradeLevel } from "@/types/gradeLevel";
 import { useSnackbar } from "notistack";
-import { NavLink } from "react-router-dom";
 
 const ClassroomList: React.FC = () => {
-  // --- Hooks ---
   const { enqueueSnackbar } = useSnackbar();
-
-  // --- Global Settings ---
-  // Use Zustand's selector to get the initial value and subscribe to changes if needed,
-  // or just get initial state if it won't change often while viewing this page.
-  const { activeSchoolId, activeAcademicYearId } = useSettingsStore.getState(); // Get initial default
+  const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
+  const initialActiveSchoolId = activeSchoolId;
 
   // --- Local State ---
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
-    activeSchoolId ?? ""
+    initialActiveSchoolId ?? ""
   );
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<number | "">(
     ""
   );
-  // State for Grade Levels specific to the selected school
   const [availableGradeLevels, setAvailableGradeLevels] = useState<
     GradeLevel[]
   >([]);
-  const [loadingGradeLevels, setLoadingGradeLevels] = useState<boolean>(false);
-  // Dialog states
+  const [loadingSchoolGrades, setLoadingSchoolGrades] =
+    useState<boolean>(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(
     null
@@ -76,7 +80,7 @@ const ClassroomList: React.FC = () => {
     null
   );
 
-  // --- Data from Stores ---
+  // --- Store Data ---
   const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
   const {
     classrooms,
@@ -88,326 +92,362 @@ const ClassroomList: React.FC = () => {
   } = useClassroomStore();
 
   // --- Effects ---
-  // Fetch schools on mount
   useEffect(() => {
     fetchSchools();
   }, [fetchSchools]);
 
-  // Fetch school-specific Grade Levels when school selection changes
-  const fetchSchoolGrades = useCallback(
+  const fetchSchoolSpecificGrades = useCallback(
     async (schoolId: number) => {
-      setLoadingGradeLevels(true);
-      setAvailableGradeLevels([]); // Clear previous grades
+      setLoadingSchoolGrades(true);
+      setAvailableGradeLevels([]);
       try {
         const response = await SchoolApi.getAssignedGradeLevels(schoolId);
         setAvailableGradeLevels(response.data.data ?? []);
       } catch (err) {
-        console.error("Failed to fetch grade levels for school", err);
-        enqueueSnackbar("فشل تحميل المراحل الدراسية لهذه المدرسة", {
+        console.error("Failed to fetch school grades", err);
+        enqueueSnackbar("فشل تحميل مراحل المدرسة المختارة", {
           variant: "error",
         });
-        setAvailableGradeLevels([]);
       } finally {
-        setLoadingGradeLevels(false);
+        setLoadingSchoolGrades(false);
       }
     },
     [enqueueSnackbar]
-  ); // useCallback prevents unnecessary refetching if dependencies are stable
+  );
 
-  // Fetch classrooms when filters change, and fetch grades when school changes
   useEffect(() => {
-    if (selectedSchoolId) {
-      // Fetch grades for the selected school
-      fetchSchoolGrades(selectedSchoolId);
-      // Fetch classrooms based on current school and grade filters
+    if (selectedSchoolId && activeAcademicYearId) {
+      fetchSchoolSpecificGrades(selectedSchoolId);
       fetchClassrooms({
         school_id: selectedSchoolId,
         grade_level_id: selectedGradeFilter || undefined,
-        active_academic_year_id: activeAcademicYearId, // Pass the active academic year ID
+        active_academic_year_id: activeAcademicYearId,
       });
     } else {
-      // Clear data if no school is selected
       clearClassrooms();
       setAvailableGradeLevels([]);
-      setSelectedGradeFilter(""); // Reset grade filter
+      setSelectedGradeFilter("");
     }
   }, [
     selectedSchoolId,
     selectedGradeFilter,
+    activeAcademicYearId,
     fetchClassrooms,
     clearClassrooms,
-    fetchSchoolGrades,
+    fetchSchoolSpecificGrades,
   ]);
 
   // --- Handlers ---
-  const handleSchoolChange = (event: SelectChangeEvent<number>) => {
-    setSelectedSchoolId(event.target.value as number | "");
-    setSelectedGradeFilter(""); // Reset grade filter when school changes
-    // Fetching logic handled by useEffect
+  const handleSchoolChange = (value: string) => {
+    // shadcn Select returns string value
+    setSelectedSchoolId(value ? Number(value) : "");
+    setSelectedGradeFilter("");
   };
-
-  const handleGradeFilterChange = (event: SelectChangeEvent<number>) => {
-    setSelectedGradeFilter(event.target.value as number | "");
-    // Fetching logic handled by useEffect
+  const handleGradeFilterChange = (value: string) => {
+    setSelectedGradeFilter(value ? Number(value) : "");
   };
-
   const handleOpenForm = (classroom?: Classroom) => {
-    // For create mode, ensure a grade level is selected first
-    if (!isEditMode && !selectedGradeFilter) {
-      enqueueSnackbar("الرجاء تحديد المرحلة الدراسية أولاً لإضافة فصل.", {
-        variant: "warning",
-      });
+    if (!selectedSchoolId || !selectedGradeFilter) {
+      // For create, grade must be selected
+      enqueueSnackbar(
+        "الرجاء تحديد المدرسة والمرحلة الدراسية أولاً لإضافة فصل.",
+        { variant: "warning" }
+      );
       return;
     }
     setEditingClassroom(classroom || null);
     setFormOpen(true);
   };
-  const isEditMode = !!editingClassroom; // Recalculate based on state
-
-  const handleCloseForm = (refetch = false) => {
+  const handleFormSuccess = () => {
     setFormOpen(false);
     setEditingClassroom(null);
-    if (refetch && selectedSchoolId) {
+    if (selectedSchoolId && activeAcademicYearId) {
+      // Refetch classrooms for the current school
       fetchClassrooms({
         school_id: selectedSchoolId,
         grade_level_id: selectedGradeFilter || undefined,
-        active_academic_year_id: activeAcademicYearId, // Pass the active academic year ID
+        active_academic_year_id: activeAcademicYearId,
       });
     }
   };
-
   const handleOpenDeleteDialog = (classroom: Classroom) => {
-    /* ... */ setClassroomToDelete(classroom);
+    setClassroomToDelete(classroom);
     setDeleteDialogOpen(true);
   };
-  const handleCloseDeleteDialog = () => {
-    /* ... */ setClassroomToDelete(null);
-    setDeleteDialogOpen(false);
+  const handleDeleteConfirm = async () => {
+    if (!classroomToDelete) return;
+    try {
+      await deleteClassroom(classroomToDelete.id);
+      enqueueSnackbar('تم حذف الفصل بنجاح', { variant: 'success' });
+      setDeleteDialogOpen(false);
+      setClassroomToDelete(null);
+      // Refetch classrooms
+      if (selectedSchoolId && activeAcademicYearId) {
+        fetchClassrooms({
+          school_id: selectedSchoolId,
+          grade_level_id: selectedGradeFilter || undefined,
+          active_academic_year_id: activeAcademicYearId,
+        });
+      }
+    } catch (error) {
+      console.error('Delete classroom error:', error);
+      enqueueSnackbar('فشل حذف الفصل', { variant: 'error' });
+    }
   };
 
-  // --- Render ---
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }} dir="rtl">
-      {/* Header & Filters */}
-      <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
-        <NavLink  to={'..'}><ArrowBack/></NavLink>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems="center"
-          flexWrap="wrap"
-        >
-          <Typography variant="h5" component="h1">
-            إدارة الفصول الدراسية
-          </Typography>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1.5}
-            alignItems="center"
-          >
-            {/* School Filter */}
-            <FormControl sx={{ minWidth: 180 }} size="small" required>
-              <InputLabel id="classroom-school-filter-label">
-                المدرسة *
-              </InputLabel>
-              <Select
-                labelId="classroom-school-filter-label"
-                label="المدرسة *"
-                value={selectedSchoolId}
-                onChange={handleSchoolChange}
-                disabled={schoolsLoading}
-              >
-                <MenuItem value="" disabled>
-                  <em>اختر مدرسة...</em>
-                </MenuItem>
-                {schoolsLoading ? (
-                  <MenuItem disabled>...</MenuItem>
-                ) : (
-                  schools.map((s) => (
-                    <MenuItem key={s.id} value={s.id}>
-                      {s.name}
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
-            {/* Grade Level Filter (Uses school-specific grades) */}
-            <FormControl
-              sx={{ minWidth: 180 }}
-              size="small"
-              disabled={!selectedSchoolId || loadingGradeLevels}
-            >
-              <InputLabel id="classroom-grade-filter-label">
-                المرحلة الدراسية
-              </InputLabel>
-              <Select
-                labelId="classroom-grade-filter-label"
-                label="المرحلة الدراسية"
-                value={selectedGradeFilter}
-                onChange={handleGradeFilterChange}
-              >
-                <MenuItem value="">
-                  <em>(جميع المراحل)</em>
-                </MenuItem>
-                {loadingGradeLevels ? (
-                  <MenuItem disabled>
-                    <em>جاري التحميل...</em>
-                  </MenuItem>
-                ) : availableGradeLevels.length === 0 ? (
-                  <MenuItem disabled>
-                    <em>(لا مراحل لهذه المدرسة)</em>
-                  </MenuItem>
-                ) : (
-                  availableGradeLevels.map((gl) => (
-                    <MenuItem key={gl.id} value={gl.id}>
-                      {gl.name}
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
-            {/* Add Classroom Button */}
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenForm()}
-              // Disable if no school OR no grade is selected
-              disabled={
-                !selectedSchoolId || !selectedGradeFilter || loadingGradeLevels
-              }
-              size="medium"
-              title={
-                !selectedSchoolId || !selectedGradeFilter
-                  ? "اختر المدرسة والمرحلة أولاً"
-                  : "إضافة فصل جديد لهذه المرحلة"
-              }
-            >
-              إضافة فصل
-            </Button>
-          </Stack>
-        </Stack>
-      </Paper>
+  // --- Animation Variants (Optional) ---
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 },
+  };
 
-      {/* Loading/Error/Info */}
+  // --- Render Skeletons ---
+  if (schoolsLoading) {
+    return (
+      <div className="container max-w-screen-lg mx-auto py-6 px-4" dir="rtl">
+        <Skeleton className="h-10 w-48 mb-6" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-screen-lg mx-auto py-6 px-4" dir="rtl">
+      {/* Header & Filters */}
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+          <h1 className="text-2xl font-semibold text-foreground">
+            إدارة الفصول الدراسية
+          </h1>
+          <Button
+            onClick={() => handleOpenForm()}
+            disabled={
+              !selectedSchoolId || !selectedGradeFilter || loadingSchoolGrades
+            }
+          >
+            <PlusCircle className="ml-2 h-4 w-4" /> إضافة فصل
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-card">
+          <div>
+            <Label htmlFor="school-filter">المدرسة *</Label>
+            <Select
+              value={selectedSchoolId ? String(selectedSchoolId) : ""}
+              onValueChange={handleSchoolChange}
+              disabled={schoolsLoading}
+            >
+              <SelectTrigger id="school-filter" className="w-full">
+                <SelectValue placeholder="اختر مدرسة..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value=" " disabled>
+                  <em>اختر مدرسة...</em>
+                </SelectItem>
+                {schools.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="grade-filter">المرحلة الدراسية</Label>
+            <Select
+              value={selectedGradeFilter ? String(selectedGradeFilter) : ""}
+              onValueChange={handleGradeFilterChange}
+              disabled={!selectedSchoolId || loadingSchoolGrades}
+            >
+              <SelectTrigger id="grade-filter" className="w-full">
+                <SelectValue
+                  placeholder={
+                    loadingSchoolGrades
+                      ? "جاري تحميل المراحل..."
+                      : "اختر مرحلة (أو الكل)"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value=" ">
+                  <em>(جميع المراحل)</em>
+                </SelectItem>
+                {availableGradeLevels.length === 0 && !loadingSchoolGrades && (
+                  <SelectItem value=" " disabled>
+                    <em>لا مراحل لهذه المدرسة</em>
+                  </SelectItem>
+                )}
+                {availableGradeLevels.map((gl) => (
+                  <SelectItem key={gl.id} value={String(gl.id)}>
+                    {gl.name} ({gl.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Loading/Error/Info for Table */}
       {loading && (
-        <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center py-5">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
       )}
       {!loading && error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>خطأ</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {!loading && !selectedSchoolId && (
-        <Alert severity="info">الرجاء اختيار مدرسة لعرض الفصول الدراسية.</Alert>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>تنبيه</AlertTitle>
+          <AlertDescription>الرجاء اختيار مدرسة لعرض الفصول.</AlertDescription>
+        </Alert>
       )}
 
       {/* Table */}
       {!loading && !error && selectedSchoolId && (
-        <Paper elevation={2} sx={{ overflow: "hidden" }}>
-          <TableContainer>
-            <Table
-              sx={{ minWidth: 750 }}
-              aria-label="classrooms table"
-              size="small"
-            >
-              <TableHead sx={{ bgcolor: "action.hover" }}>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+        >
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: "bold" }}>اسم الفصل</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>
+                  <TableHead className="text-center">اسم الفصل</TableHead>
+                  <TableHead className="hidden sm:table-cell text-center">
                     المرحلة (الصف)
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>مدرس الفصل</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }} align="center">
-                    السعة
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }} align="right">
-                    إجراءات
-                  </TableCell>
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell text-center">
+                    مدرس الفصل
+                  </TableHead>
+                  <TableHead className="text-center">السعة</TableHead>
+                  <TableHead className=" w-[80px] text-center">إجراءات</TableHead>
                 </TableRow>
-              </TableHead>
+              </TableHeader>
               <TableBody>
                 {classrooms.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                      لا توجد فصول دراسية لعرضها حسب الفلتر المحدد.
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      لا توجد فصول دراسية حسب الفلتر المحدد.
                     </TableCell>
                   </TableRow>
                 ) : (
                   classrooms.map((classroom) => (
-                    <TableRow key={classroom.id} hover>
-                      <TableCell component="th" scope="row">
+                    <motion.tr
+                      key={classroom.id}
+                      variants={itemVariants}
+                      className="hover:bg-muted/50"
+                    >
+                      <TableCell  className="font-medium text-center">
                         {classroom.name}
                       </TableCell>
-                      <TableCell>
-                        {classroom.grade_level?.name ?? "-"}
+                      <TableCell className="hidden sm:table-cell text-center">
+                        {classroom.grade_level?.name || "-"}
                       </TableCell>
-                      <TableCell>
-                        {classroom.homeroom_teacher?.name ?? (
-                          <Box component="em" sx={{ color: "text.disabled" }}>
-                            غير محدد
-                          </Box>
+                      <TableCell className="hidden md:table-cell text-center">
+                        {classroom.homeroom_teacher?.name || (
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell align="center">{classroom.capacity}</TableCell>
-                      <TableCell align="right">
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          justifyContent="flex-end"
-                        >
-                          <Tooltip title="تعديل الفصل">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleOpenForm(classroom)}
-                            >
-                              <EditIcon fontSize="inherit" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="حذف الفصل">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleOpenDeleteDialog(classroom)}
-                            >
-                              <DeleteIcon fontSize="inherit" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
+                      <TableCell className="text-center">
+                        {classroom.capacity}
                       </TableCell>
-                    </TableRow>
+                      <TableCell className="text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-[160px]"
+                          >
+                            <DropdownMenuItem
+                              onSelect={() => handleOpenForm(classroom)}
+                            >
+                              <Edit3 className="ml-2 h-4 w-4" /> تعديل
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onSelect={() => handleOpenDeleteDialog(classroom)}
+                              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                            >
+                              <Trash2 className="ml-2 h-4 w-4" /> حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </motion.tr>
                   ))
                 )}
               </TableBody>
             </Table>
-          </TableContainer>
-        </Paper>
+          </div>
+        </motion.div>
       )}
 
       {/* Form Dialog */}
-      {/* Pass selectedSchoolId and selectedGradeFilter for Create mode context */}
       <ClassroomFormDialog
         open={formOpen}
-        onClose={(refetch) => handleCloseForm(refetch)}
+        onOpenChange={setFormOpen} // For shadcn dialog control
+        onSuccess={handleFormSuccess} // Custom success handler
         initialData={editingClassroom}
-        // Pass the REQUIRED context for creating
-        // Ensure IDs are numbers or handle potential '' value in the dialog
-        schoolId={Number(selectedSchoolId) || null}
-        gradeLevelId={Number(selectedGradeFilter) || null}
+        schoolId={selectedSchoolId ? Number(selectedSchoolId) : null}
+        gradeLevelId={selectedGradeFilter ? Number(selectedGradeFilter) : null} // Pass selected grade for create
       />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
+      <ShadcnDialog
         open={deleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-        dir="rtl"
+        onOpenChange={setDeleteDialogOpen}
       >
-        {/* ... Delete Dialog content ... */}
-      </Dialog>
-    </Container>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من حذف الفصل الدراسي "{classroomToDelete?.name}"؟
+              <br />
+              <span className="text-destructive font-medium text-sm">
+                (تحذير: لا يمكن حذف الفصل إذا كان هناك طلاب مسجلون به.)
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-start">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                إلغاء
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+            >
+              تأكيد الحذف
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </ShadcnDialog>
+    </div>
   );
 };
 

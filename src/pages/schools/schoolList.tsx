@@ -1,99 +1,349 @@
 // src/pages/schools/SchoolList.tsx
-import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion"; // Optional: for page/row animations
+
+// shadcn/ui components
 import {
-    Box, Button, Container, Typography, CircularProgress, Alert, IconButton, Tooltip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Avatar
-} from '@mui/material';
-import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as ViewIcon } from '@mui/icons-material';
-import BusinessIcon from '@mui/icons-material/Business'; // Placeholder Icon
-import { useSchoolStore } from '@/stores/schoolStore';
-import { useSnackbar } from 'notistack';
-import { School } from '@/types/school';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // shadcn Alert
+import { Input } from "@/components/ui/input"; // For potential search
+
+// lucide-react icons
+import {
+  PlusCircle,
+  MoreHorizontal,
+  Edit3,
+  Trash2,
+  Eye,
+  Building,
+  AlertCircle,
+} from "lucide-react";
+
+import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
+import { School } from "@/types/school"; // Adjust path
+import { useSnackbar } from "notistack"; // Still useful for general notifications
+// Removed MUI Pagination, DataGrid, Tooltip, etc.
 
 const SchoolList: React.FC = () => {
-    const navigate = useNavigate();
-    const { enqueueSnackbar } = useSnackbar();
-    const { schools, loading, error, pagination, fetchSchools, deleteSchool } = useSchoolStore();
-    const [page, setPage] = useState(0); // DataGrid 0-based index
-    const [pageSize, setPageSize] = useState(15);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
-    useEffect(() => {
-        fetchSchools(page + 1); // API 1-based index
-    }, [page, fetchSchools]);
+  // --- Store Data & Actions ---
+  // Assuming useSchoolStore doesn't use pagination for schools as per previous request
+  const { schools, loading, error, fetchSchools, deleteSchool } =
+    useSchoolStore();
 
-    const handleOpenDeleteDialog = (school: School) => {
-        setSchoolToDelete(school);
-        setDeleteDialogOpen(true);
-    };
-    const handleCloseDeleteDialog = () => { /* ... close dialog ... */ setSchoolToDelete(null); setDeleteDialogOpen(false);};
-    const handleDeleteConfirm = async () => {
-         if (schoolToDelete) {
-             const success = await deleteSchool(schoolToDelete.id);
-             if (success) enqueueSnackbar('تم حذف المدرسة بنجاح', { variant: 'success' });
-             handleCloseDeleteDialog();
-         }
-     };
+  // --- Local State ---
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+  const [searchTerm, setSearchTerm] = useState(""); // For local search/filter
 
-    const columns: GridColDef<School>[] = [ // Explicit type for row
-        {
-            field: 'logo_url', headerName: 'الشعار', width: 80, sortable: false, filterable: false,
-            renderCell: (params) => (
-                <Avatar src={params.value || undefined} variant="rounded">
-                    <BusinessIcon /> {/* Placeholder */}
-                </Avatar>
-            )
-        },
-        { field: 'id', headerName: 'الكود', width: 200 },
-        { field: 'name', headerName: 'اسم المدرسة', width: 200 },
-        { field: 'code', headerName: 'الرمز', width: 100 },
-        { field: 'email', headerName: 'البريد الإلكتروني', width: 220 },
-        { field: 'phone', headerName: 'الهاتف', width: 130, sortable: false },
-        { field: 'principal_name', headerName: 'اسم المدير', width: 180 },
-        // Add 'is_active' column if needed later
-        {
-            field: 'actions', type: 'actions', headerName: 'إجراءات', width: 150,
-            getActions: ({ id, row }) => [
-                <GridActionsCellItem icon={<ViewIcon />} label="عرض" onClick={() => navigate(`/schools/${id}`)} />,
-                <GridActionsCellItem icon={<EditIcon />} label="تعديل" onClick={() => navigate(`/schools/${id}/edit`)} color="primary" />,
-                <GridActionsCellItem icon={<DeleteIcon />} label="حذف" onClick={() => handleOpenDeleteDialog(row)} color="error" />,
-            ],
-        },
-    ];
+  // --- Effects ---
+  useEffect(() => {
+    fetchSchools(); // Fetches all schools
+  }, [fetchSchools]);
 
-    if (error) return <Container sx={{ mt: 4 }}><Alert severity="error">{error}</Alert></Container>;
+  // --- Handlers ---
+  const handleOpenDeleteDialog = (school: School) => {
+    setSchoolToDelete(school);
+    setDeleteDialogOpen(true);
+  };
+  const handleCloseDeleteDialog = () => {
+    setSchoolToDelete(null);
+    setDeleteDialogOpen(false);
+  };
+  const handleDeleteConfirm = async () => {
+    if (schoolToDelete) {
+      const success = await deleteSchool(schoolToDelete.id);
+      if (success) {
+        enqueueSnackbar("تم حذف المدرسة بنجاح", { variant: "success" });
+      } else {
+        // Error message from store or fallback
+        enqueueSnackbar(useSchoolStore.getState().error || "فشل حذف المدرسة", {
+          variant: "error",
+        });
+      }
+      handleCloseDeleteDialog();
+    }
+  };
 
-    return (
-        <Container style={{direction:'rtl'}} maxWidth="xl" sx={{ mt: 4, mb: 4, direction: 'rtl' }}>
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1">قائمة المدارس</Typography>
-                <Button variant="contained" startIcon={<AddIcon />} component={RouterLink} to="/schools/create">إضافة مدرسة</Button>
-            </Box>
-            {/* DataGrid */}
-            <Box sx={{ height: 650, width: '100%' }}>
-                <DataGrid
-                    rows={schools} columns={columns} loading={loading}
-                    paginationMode="server" rowCount={pagination?.total || 0}
-                    pageSizeOptions={[15]} paginationModel={{ page, pageSize }}
-                    onPaginationModelChange={(model) => setPage(model.page)}
-                    getRowId={(row) => row.id}
-                    sx={{ /* Optional styling */ }}
-                />
-            </Box>
-            {/* Delete Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-                <DialogTitle>تأكيد الحذف</DialogTitle>
-                <DialogContent><DialogContentText>هل أنت متأكد من حذف المدرسة "{schoolToDelete?.name}"؟</DialogContentText></DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDeleteDialog}>إلغاء</Button>
-                    <Button onClick={handleDeleteConfirm} color="error" disabled={loading}>{loading ? <CircularProgress size={20}/> : 'حذف'}</Button>
-                </DialogActions>
-            </Dialog>
-        </Container>
+  // --- Filtered Schools for Display ---
+  const filteredSchools = React.useMemo(() => {
+    if (!searchTerm) return schools;
+    return schools.filter(
+      (school) =>
+        school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        school.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (school.email &&
+          school.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+  }, [schools, searchTerm]);
+
+  // --- Animation Variants (Optional) ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  // --- Render Skeletons for Loading ---
+  if (loading) {
+    return (
+      <div
+        className="container max-w-screen-xl mx-auto py-6 px-4 md:py-8 md:px-6"
+        dir="rtl"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-12 w-full mb-4" /> {/* For search input */}
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {[...Array(6)].map((_, i) => (
+                  <TableHead key={i}>
+                    <Skeleton className="h-5 w-full" />
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  {[...Array(6)].map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Render Error State ---
+  if (error) {
+    return (
+      <div
+        className="container max-w-screen-xl mx-auto py-6 px-4 md:py-8 md:px-6"
+        dir="rtl"
+      >
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>خطأ</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <Button onClick={() => fetchSchools()} variant="outline">
+          إعادة المحاولة
+        </Button>
+      </div>
+    );
+  }
+
+  // --- Main Render ---
+  return (
+    <div
+      className="container max-w-screen-xl mx-auto py-6 px-4 md:py-8 md:px-6"
+      dir="rtl"
+    >
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h1 className="text-2xl font-semibold text-foreground">
+          قائمة المدارس
+        </h1>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Input
+            type="text"
+            placeholder="بحث بالاسم, الرمز, أو البريد..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-xs w-full"
+          />
+          <Button
+            onClick={() => navigate("/schools/create")}
+            className="whitespace-nowrap"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" /> إضافة مدرسة
+          </Button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[60px] text-center">الشعار</TableHead>
+              <TableHead>اسم المدرسة</TableHead>
+              <TableHead className="hidden sm:table-cell">الرمز</TableHead>
+              <TableHead className="hidden md:table-cell">
+                البريد الإلكتروني
+              </TableHead>
+              <TableHead className="hidden md:table-cell">الهاتف</TableHead>
+              <TableHead className="hidden lg:table-cell">اسم المدير</TableHead>
+              <TableHead className="w-[80px] text-center">إجراءات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredSchools.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  {searchTerm
+                    ? "لم يتم العثور على مدارس تطابق بحثك."
+                    : "لا توجد مدارس لعرضها. قم بإضافة مدرسة جديدة."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredSchools.map((school) => (
+                <motion.tr
+                  key={school.id}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="hover:bg-muted/50 transition-colors"
+                >
+                  <TableCell className="text-center">
+                    <Avatar className="h-9 w-9 mx-auto">
+                      <AvatarImage
+                        src={school.logo_url ?? undefined}
+                        alt={school.name}
+                      />
+                      <AvatarFallback>
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </TableCell>
+                  <TableCell className="font-medium">{school.name}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {school.code}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {school.email || "-"}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {school.phone || "-"}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {school.principal_name || "-"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">فتح القائمة</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-[160px]"
+                        dir="rtl"
+                      >
+                        <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
+                        <DropdownMenuItem
+                          onSelect={() => navigate(`/schools/${school.id}`)}
+                        >
+                          <Eye className="ml-2 h-4 w-4" /> عرض
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            navigate(`/schools/${school.id}/edit`)
+                          }
+                        >
+                          <Edit3 className="ml-2 h-4 w-4" /> تعديل
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => handleOpenDeleteDialog(school)}
+                          className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/50"
+                        >
+                          <Trash2 className="ml-2 h-4 w-4" /> حذف
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </motion.tr>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        dir="rtl"
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من حذف المدرسة "{schoolToDelete?.name}"؟ لا يمكن
+              التراجع عن هذا الإجراء.
+              <br />
+              <span className="text-destructive font-medium text-sm">
+                (تحذير: قد يؤدي حذف المدرسة إلى حذف جميع البيانات المرتبطة بها
+                مثل الفصول، الطلاب، إلخ.)
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-start">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                إلغاء
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+            >
+              تأكيد الحذف
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 };
 
 export default SchoolList;

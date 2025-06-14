@@ -1,112 +1,71 @@
 // src/pages/students/StudentDashboard.tsx
 import React, { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import {
-    Box,
-    Button,
-    Container,
-    Typography,
-    Paper,
-    Grid,
-    Stack, // Using Stack for easier spacing of buttons/items
-    CircularProgress
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/PersonAddAlt1'; // Icon for adding student
-import ListIcon from '@mui/icons-material/FormatListBulleted'; // Icon for listing students
-import AssessmentIcon from '@mui/icons-material/Assessment'; // Example icon for stats
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { UserPlus, List, BarChart3 } from 'lucide-react';
 import { useStudentStore } from '@/stores/studentStore';
 
 // You might fetch some data here later using useStudentStore
 // import { useStudentStore } from '@/stores/studentStore';
 
 const StudentDashboard: React.FC = () => {
-    // Example: Placeholder for future stats fetching
-    const { students,fetchStudents,loading } = useStudentStore();
+    const { students, fetchStudents, loading } = useStudentStore();
     const totalStudents = students.length;
 
-    useEffect(()=>{
+    useEffect(() => {
         fetchStudents()
-    },[])
+    }, [])
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, direction: 'rtl' }}> {/* Ensure RTL direction */}
+        <div className="container mx-auto mt-8 mb-8 px-4" dir="rtl">
             {/* Header Section */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 4 // Margin bottom for spacing
-                }}
-            >
-                <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-bold">
                     إدارة شؤون الطلاب
-                </Typography>
+                </h1>
 
                 {/* Action Buttons */}
-                <Stack direction="row" spacing={2} gap={2}>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />} // Icon appears before text in RTL too
-                        component={RouterLink}
-                        to="/students/create"
-                        sx={{ py: 1.5, px: 3 }} // Custom padding
-                    >
-                        إضافة طالب جديد
+                <div className="flex gap-4">
+                    <Button asChild className="py-3 px-6">
+                        <RouterLink to="/students/create">
+                            <UserPlus className="ml-2 h-4 w-4" />
+                            إضافة طالب جديد
+                        </RouterLink>
                     </Button>
-                     <Button
-                        variant="outlined"
-                        startIcon={<ListIcon />}
-                        component={RouterLink}
-                        to="/students/list"
-                        sx={{ py: 1.5, px: 3 }}
-                    >
-                        عرض قائمة الطلاب
+                    <Button variant="outline" asChild className="py-3 px-6">
+                        <RouterLink to="/students/list">
+                            <List className="ml-2 h-4 w-4" />
+                            عرض قائمة الطلاب
+                        </RouterLink>
                     </Button>
-                </Stack>
-            </Box>
+                </div>
+            </div>
 
-            {/* Main Content Area (Example: Placeholder for Stats or Widgets) */}
-            <Grid container spacing={3}>
-                {/* Example Stat Card 1 */}
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
-                        <AssessmentIcon color="primary" sx={{ fontSize: 40, mb: 1 }}/>
-                        <Typography variant="h6">إجمالي الطلاب</Typography>
-                        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                            {/* {totalStudents || 0} Placeholder for actual count */}
-                            {loading ? <CircularProgress/> :totalStudents} {/* Example Number */}
-                        </Typography>
-                    </Paper>
-                </Grid>
+            {/* Main Content Area */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {/* Student Count Card */}
+                <Card className="text-center">
+                    <CardHeader className="pb-2">
+                        <BarChart3 className="h-10 w-10 mx-auto text-primary mb-2" />
+                        <CardTitle className="text-lg">إجمالي الطلاب</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold">
+                            {loading ? (
+                                <Skeleton className="h-10 w-16 mx-auto" />
+                            ) : (
+                                totalStudents
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
 
-                 {/* Example Stat Card 2 */}
-                 {/* <Grid item xs={12} sm={6} md={4}>
-                     <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
-                         <AddIcon color="secondary" sx={{ fontSize: 40, mb: 1 }}/>
-                         <Typography variant="h6">تسجيلات جديدة (آخر شهر)</Typography>
-                         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                             12 {/* Example Number */}
-                         {/* </Typography> */}
-                     {/* </Paper> */}
-         
-
-                 {/* Add more Grid items for other stats or quick access links */}
-
-                 {/* Optional: You could embed a simplified list view here */}
-                 {/* <Grid item xs={12}>
-                    <Paper elevation={2} sx={{ p: 2 }}>
-                        <Typography variant="h6" mb={2}>أحدث الطلاب المسجلين</Typography>
-                        {/* Embed <StudentList SimpleView={true} /> or similar component }
-                        <Typography color="text.secondary"> (قائمة الطلاب المصغرة هنا...) </Typography>
-                    </Paper>
-                 </Grid> */}
-
-            </Grid>
-
-            {/* You can add more sections or components below */}
-
-        </Container>
+                {/* Placeholder for future stats cards */}
+                {/* You can add more cards here for additional statistics */}
+            </div>
+        </div>
     );
 };
 
