@@ -209,13 +209,13 @@ const SchoolList: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[60px] text-center">الشعار</TableHead>
-              <TableHead>اسم المدرسة</TableHead>
-              <TableHead className="hidden sm:table-cell">الرمز</TableHead>
+              <TableHead className="text-center">اسم المدرسة</TableHead>
+              <TableHead className="hidden sm:table-cell text-center">الرمز</TableHead>
               <TableHead className="hidden md:table-cell">
                 البريد الإلكتروني
               </TableHead>
-              <TableHead className="hidden md:table-cell">الهاتف</TableHead>
-              <TableHead className="hidden lg:table-cell">اسم المدير</TableHead>
+              <TableHead className="hidden md:table-cell text-center">الهاتف</TableHead>
+              <TableHead className="hidden lg:table-cell text-center">اسم المدير</TableHead>
               <TableHead className="w-[80px] text-center">إجراءات</TableHead>
             </TableRow>
           </TableHeader>
@@ -251,17 +251,17 @@ const SchoolList: React.FC = () => {
                       </AvatarFallback>
                     </Avatar>
                   </TableCell>
-                  <TableCell className="font-medium">{school.name}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
+                  <TableCell className="font-medium text-center">{school.name}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-center">
                     {school.code}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="hidden md:table-cell text-center">
                     {school.email || "-"}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="hidden md:table-cell text-center">
                     {school.phone || "-"}
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell className="hidden lg:table-cell text-center">
                     {school.principal_name || "-"}
                   </TableCell>
                   <TableCell className="text-center">

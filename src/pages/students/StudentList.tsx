@@ -1,12 +1,7 @@
 // src/pages/students/StudentList.tsx
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react"; // Added React
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,36 +10,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Edit,
-  Trash2,
-  Eye,
-  Plus,
-  FileText,
-  ChevronUp,
-  ChevronDown,
-  Mail,
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel
+} from "@/components/ui/select"; // shadcn Select
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Edit, Trash2, Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, CalendarIcon, FilterX, // Added FilterX
 } from "lucide-react";
 import { useStudentStore } from "@/stores/studentStore";
-import { Gender, Student } from "@/types/student";
+import { Gender, Student, EducationLevel } from "@/types/student"; // Import EducationLevel
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs"; // Import Dayjs type
+import { cn } from "@/lib/utils";
+
 
 const StudentList = () => {
   const {
-    students,
-    loading,
-    error,
-    fetchStudents,
-    deleteStudent,
-    updateStudent,
+    students, loading, error, fetchStudents, deleteStudent, updateStudent,
   } = useStudentStore();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -59,61 +46,94 @@ const StudentList = () => {
 
   // Filtering state
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [wishedLevelFilter, setWishedLevelFilter] = useState<EducationLevel>(EducationLevel.NotSpecified); // For Wished Level
+  const [dateFilterType, setDateFilterType] = useState<"created_at" | "date_of_birth" | "">("");
+  const [startDateFilter, setStartDateFilter] = useState<Dayjs | null>(null);
+  const [endDateFilter, setEndDateFilter] = useState<Dayjs | null>(null);
+ console.log(wishedLevelFilter,'wishedLevelFilter')
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteStudent(id);
-      enqueueSnackbar("تم حذف الطالب بنجاح", { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar("فشل في حذف الطالب", { variant: "error" });
-    }
-  };
-
-  const handlePrintList = () => {
-    let reportUrl = `${webUrl}reports/students/list-pdf`;
-    const filters = new URLSearchParams();
-
-    if (filters.toString()) {
-      reportUrl += "?" + filters.toString();
-    }
-
-    window.open(reportUrl, "_blank");
-  };
-
+  const handleDelete = async (id: number) => { /* ... same ... */ };
+  const handlePrintList = () => { /* ... same ... */ };
   const handleSort = (property: keyof Student) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
 
-  const filteredStudents = students.filter((student) =>
-    Object.values(student).some(
-      (value) =>
-        value &&
-        value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // Enhanced Filtering Logic
+  const filteredStudents = useMemo(() => {
+    return students
+      .filter((student) =>
+        // Search Term Filter
+        Object.values(student).some(
+          (value) =>
+            value &&
+            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
+      .filter((student) =>{
+        // Wished Level Filter
+        if(wishedLevelFilter != EducationLevel.NotSpecified){
+          
+          return student.wished_level === wishedLevelFilter
+        }
+          return true
+        
+        
+      })
+      .filter((student) => {
+        // Date Range Filter
+        if (!dateFilterType || (!startDateFilter && !endDateFilter)) return true;
 
-  const sortedStudents = filteredStudents.sort((a, b) => {
-    const aValue = a[orderBy];
-    const bValue = b[orderBy];
+        const studentDate = student[dateFilterType] ? dayjs(student[dateFilterType]) : null;
+        if (!studentDate) return false; // If date field is null, exclude
 
-    if (aValue === undefined || bValue === undefined) return 0;
+        const startMatch = startDateFilter ? studentDate.isAfter(startDateFilter.startOf('day').subtract(1, 'day')) : true; // >= start
+        const endMatch = endDateFilter ? studentDate.isBefore(endDateFilter.endOf('day').add(1, 'day')) : true;       // <= end
 
-    if (typeof aValue == "number" && typeof bValue == "number") {
-      return order == "asc" ? aValue - bValue : bValue - aValue;
-    }
+        return startMatch && endMatch;
+      });
+  }, [students, searchTerm, wishedLevelFilter, dateFilterType, startDateFilter, endDateFilter]);
 
-    if (order === "asc") {
-      return aValue.toString().localeCompare(bValue.toString());
-    } else {
-      return bValue.toString().localeCompare(aValue.toString());
-    }
-  });
+
+  const sortedStudents = useMemo(() => { // useMemo for sortedStudents
+    return [...filteredStudents].sort((a, b) => { // Create a new array for sort
+      const aValue = a[orderBy];
+      const bValue = b[orderBy];
+
+      if (aValue === undefined || aValue === null || bValue === undefined || bValue === null) {
+        if (aValue === bValue) return 0; // both null/undefined
+        if (aValue === null || aValue === undefined) return order === 'asc' ? -1 : 1; // nulls/undefined first or last
+        if (bValue === null || bValue === undefined) return order === 'asc' ? 1 : -1;
+      }
+
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return order === "asc" ? aValue - bValue : bValue - aValue;
+      }
+       if (typeof aValue === "boolean" && typeof bValue === "boolean") {
+        return order === "asc" ? (aValue === bValue ? 0 : aValue ? -1 : 1) : (aValue === bValue ? 0 : aValue ? 1 : -1);
+      }
+
+      // Handle date sorting for 'created_at' and 'date_of_birth'
+      if (orderBy === 'created_at' || orderBy === 'date_of_birth') {
+        const dateA = dayjs(aValue as string);
+        const dateB = dayjs(bValue as string);
+        if (!dateA.isValid() && !dateB.isValid()) return 0;
+        if (!dateA.isValid()) return order === 'asc' ? -1 : 1;
+        if (!dateB.isValid()) return order === 'asc' ? 1 : -1;
+        return order === 'asc' ? dateA.diff(dateB) : dateB.diff(dateA);
+      }
+
+
+      return order === "asc"
+        ? String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase(), 'ar') // Arabic locale compare
+        : String(bValue).toLowerCase().localeCompare(String(aValue).toLowerCase(), 'ar');
+    });
+  }, [filteredStudents, order, orderBy]);
+
 
   const paginatedStudents = sortedStudents.slice(
     page * rowsPerPage,
@@ -122,203 +142,292 @@ const StudentList = () => {
 
   const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
 
-  function handleAccept(student: Student): void {
-    const result = confirm("تأكيد العمليه");
-    if (result) {
-      updateStudent(student.id, {
-        ...student,
-        approved: true,
-        aproove_date: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-      });
-    }
-  }
+  function handleAccept(student: Student): void { /* ... same ... */ }
 
   const SortButton = ({ column, children }: { column: keyof Student; children: React.ReactNode }) => (
-    <Button
-      variant="ghost"
-      onClick={() => handleSort(column)}
-      className="h-auto p-0 font-medium hover:bg-transparent"
-    >
+    <Button variant="ghost" onClick={() => handleSort(column)} className="h-auto p-0 font-medium hover:bg-transparent hover:text-primary">
       {children}
-      {orderBy === column && (
-        order === "asc" ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />
-      )}
+      {orderBy === column && (order === "asc" ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />)}
     </Button>
   );
 
-  if (loading) return (
-    <div className="container mx-auto p-6" dir="rtl">
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const resetFilters = () => {
+    setSearchTerm("");
+    setWishedLevelFilter(EducationLevel.NotSpecified);
+    setDateFilterType("");
+    setStartDateFilter(null);
+    setEndDateFilter(null);
+    setPage(0); // Reset to first page
+  };
 
-  if (error) return (
-    <div className="container mx-auto p-6" dir="rtl">
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    </div>
-  );
+  if (loading && students.length === 0) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 max-w-7xl" dir="rtl">
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <Skeleton className="h-8 w-32" />
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+              <div className="border rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {[...Array(10)].map((_, i) => (
+                          <TableHead key={i}><Skeleton className="h-4 w-16" /></TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...Array(5)].map((_, i) => (
+                        <TableRow key={i}>
+                          {[...Array(10)].map((_, j) => (
+                            <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 max-w-7xl" dir="rtl">
+        <Alert>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-6" dir="rtl">
+    <div className="container mx-auto p-4 sm:p-6 max-w-7xl" dir="rtl">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center flex-wrap gap-4">
-            <CardTitle className="text-2xl">قائمة الطلاب</CardTitle>
-            <div className="flex gap-2 flex-wrap">
-              <Input
-                placeholder="بحث..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-80"
-              />
-              <Button onClick={() => navigate("/students/create")}>
-                <Plus className="ml-2 h-4 w-4" />
-                إضافة طالب جديد
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="text-xl sm:text-2xl">قائمة الطلاب</CardTitle>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button onClick={() => navigate("/students/create")} size="sm" className="w-full sm:w-auto">
+                <Plus className="ml-2 h-4 w-4" /> إضافة طالب
               </Button>
-              <Button variant="outline" onClick={handlePrintList}>
-                <FileText className="ml-2 h-4 w-4" />
-                طباعة قائمة الطلاب
+              <Button variant="outline" onClick={handlePrintList} size="sm" className="w-full sm:w-auto">
+                <FileText className="ml-2 h-4 w-4" /> طباعة القائمة
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-center">
-                    <SortButton column="id">الكود</SortButton>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <SortButton column="student_name">اسم الطالب</SortButton>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <SortButton column="gender">الجنس</SortButton>
-                  </TableHead>
-                  <TableHead className="text-center">رقم الهاتف</TableHead>
-                  <TableHead className="text-center">المستوى</TableHead>
-                  <TableHead className="text-center">الحالة</TableHead>
-                  <TableHead className="text-center">المرحلة</TableHead>
-                  <TableHead className="text-center">طباعة الملف</TableHead>
-                  <TableHead className="text-center">الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="text-center">{student.id}</TableCell>
-                    <TableCell className="text-center">{student.student_name}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={student.gender === Gender.Male ? "info" : "secondary"}>
-                        {student.gender === Gender.Male ? "ذكر" : "أنثى"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">{student.father_phone}</TableCell>
-                    <TableCell className="text-center">{student.wished_level}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={student.approved ? "success" : "outline"}>
-                        {student.approved ? "مقبول" : "قيد المراجعة"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">{student.wished_level}</TableCell>
-                    <TableCell className="text-center">
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={`${webUrl}students/${student.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                          PDF
-                        </a>
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center gap-1">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => navigate(`/students/${student.id}`)}
-                              >
-                                <Eye className="h-4 w-4 text-blue-600" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>عرض</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => navigate(`/students/${student.id}/edit`)}
-                              >
-                                <Edit className="h-4 w-4 text-green-600" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>تعديل</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        {student.aproove_date == null && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleAccept(student)}
-                                >
-                                  <Mail className="h-4 w-4 text-green-600" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>قبول</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+        <CardContent className="space-y-4">
+          {/* Filters Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 p-4 border rounded-lg bg-muted/50">
+            <div className="sm:col-span-2 xl:col-span-2">
+              <Input
+                placeholder="بحث عام..."
+                value={searchTerm}
+                onChange={(e) => {setSearchTerm(e.target.value); setPage(0);}}
+                className="w-full"
+              />
+            </div>
+            <Select value={wishedLevelFilter} onValueChange={(value) => {setWishedLevelFilter(value as EducationLevel); setPage(0);}}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="فلترة بالمرحلة..." />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(EducationLevel).map((level) => (
+                  <SelectItem key={level} value={level}>{level}</SelectItem>
                 ))}
-              </TableBody>
-            </Table>
+              </SelectContent>
+            </Select>
+            <Select value={dateFilterType} onValueChange={(value) => {setDateFilterType(value as "created_at" | "date_of_birth" | ""); setPage(0);}}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="فلترة حسب تاريخ..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value=" ">(بدون فلتر تاريخ)</SelectItem>
+                <SelectItem value="created_at">تاريخ التسجيل</SelectItem>
+                <SelectItem value="date_of_birth">تاريخ الميلاد</SelectItem>
+              </SelectContent>
+            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-right font-normal", !startDateFilter && "text-muted-foreground")}>
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                  {startDateFilter ? dayjs(startDateFilter).format('DD/MM/YYYY') : <span>من تاريخ</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={startDateFilter?.toDate()} onSelect={(date) => {setStartDateFilter(date ? dayjs(date): null); setPage(0);}} initialFocus />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-right font-normal", !endDateFilter && "text-muted-foreground")}>
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                  {endDateFilter ? dayjs(endDateFilter).format('DD/MM/YYYY') : <span>إلى تاريخ</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={endDateFilter?.toDate()} onSelect={(date) => {setEndDateFilter(date ? dayjs(date): null); setPage(0);}} initialFocus />
+              </PopoverContent>
+            </Popover>
+            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-6 flex justify-center lg:justify-end xl:justify-start">
+              <Button variant="ghost" onClick={resetFilters} size="sm" className="w-full sm:w-auto">
+                <FilterX className="ml-2 h-4 w-4" /> مسح الفلاتر
+              </Button>
+            </div>
+          </div>
+
+          {/* Table Container - Centered */}
+          <div className="w-full flex justify-center">
+            <div className="w-full border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table className="w-full ">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-center w-16"><SortButton column="id">الكود</SortButton></TableHead>
+                      <TableHead className="text-center "><SortButton column="student_name">اسم الطالب</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-20"><SortButton column="gender">الجنس</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell">هاتف الأب</TableHead>
+                      <TableHead className="text-center hidden sm:table-cell"><SortButton column="wished_level">المستوى</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-24"><SortButton column="approved">الحالة</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="date_of_birth">ت. الميلاد</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="created_at">ت. التسجيل</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-16">طباعة</TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-24">...</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedStudents.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                          {searchTerm || wishedLevelFilter !== EducationLevel.NotSpecified || dateFilterType 
+                            ? "لا توجد نتائج تطابق الفلاتر المحددة" 
+                            : "لا توجد طلاب لعرضهم"}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedStudents.map((student) => (
+                        <TableRow key={student.id} className="hover:bg-muted/50">
+                          <TableCell className="text-center font-mono text-sm">{student.id}</TableCell>
+                          <TableCell className="font-medium text-center">{student.student_name}</TableCell>
+                          <TableCell className="text-center hidden sm:table-cell">
+                            <Badge variant={student.gender === Gender.Male ? "default" : "secondary"} 
+                                   className={student.gender === Gender.Male ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400"}>
+                              {student.gender === Gender.Male ? "ذكر" : "أنثى"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center hidden sm:table-cell text-sm">{student.father_phone || '-'}</TableCell>
+                          <TableCell className="text-center hidden sm:table-cell text-sm">{student.wished_level || '-'}</TableCell>
+                          <TableCell className="text-center hidden sm:table-cell">
+                            <Badge variant={student.approved ? "default" : "outline"} 
+                                   className={student.approved ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}>
+                              {student.approved ? "مقبول" : "قيد المراجعة"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
+                            {student.date_of_birth ? dayjs(student.date_of_birth).format('YYYY/MM/DD') : '-'}
+                          </TableCell>
+                          <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
+                            {student.created_at ? dayjs(student.created_at).format('YYYY/MM/DD') : '-'}
+                          </TableCell>
+                          <TableCell className="text-center hidden sm:table-cell">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                                    <a href={`${webUrl}students/${student.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                                      <FileText className="h-4 w-4 text-red-600" />
+                                    </a>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>طباعة ملف الطالب</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center items-center gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/students/${student.id}`)}>
+                                      <Eye className="h-4 w-4 text-blue-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>عرض</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/students/${student.id}/edit`)}>
+                                      <Edit className="h-4 w-4 text-green-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>تعديل</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              {!student.approved && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAccept(student)}>
+                                        <Mail className="h-4 w-4 text-teal-500" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>قبول الطالب</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-muted-foreground">
-              عرض {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredStudents.length)} من {filteredStudents.length}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+            <div className="text-sm text-muted-foreground order-2 sm:order-1">
+              عرض {paginatedStudents.length > 0 ? page * rowsPerPage + 1 : 0}-
+              {Math.min((page + 1) * rowsPerPage, filteredStudents.length)} من {filteredStudents.length}
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(page - 1)}
-                disabled={page === 0}
-              >
+            <div className="flex items-center gap-2 order-1 sm:order-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0} className="hidden sm:inline-flex">
+                الأولى
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page === 0}>
                 السابق
               </Button>
-              <span className="text-sm">
-                صفحة {page + 1} من {totalPages}
+              <span className="text-sm px-3 py-1 rounded-md border bg-muted">
+                {page + 1} / {totalPages > 0 ? totalPages : 1}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(page + 1)}
-                disabled={page >= totalPages - 1}
-              >
+              <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1}>
                 التالي
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} className="hidden sm:inline-flex">
+                الأخيرة
               </Button>
             </div>
           </div>

@@ -27,12 +27,10 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
     { label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard },
     { label: 'إدارة المدارس', href: '/schools/list', icon: Building2 },
+    { label: 'شؤون المعلمين', href: '/teachers/list', icon: GraduationCap },
     { label: 'شؤون الطلاب', href: '/students', icon: Users },
-    { label: 'شؤون المعلمين', href: '/settings/teachers/list', icon: GraduationCap },
-    { label: 'تسجيل الطلاب', href: '/enrollments', icon: UserCheck },
-    { label: 'النقل المدرسي', href: '/transport/routes', icon: Car },
-    { label: 'الامتحانات', href: '/settings/exams', icon: ClipboardCheck },
-    { label: 'المناهج', href: '/settings/curriculum', icon: MenuBook },
+    { label: 'الامتحانات', href: '/exams', icon: ClipboardCheck },
+    { label: 'المناهج', href: '/curriculum', icon: MenuBook },
 ];
 
 const settingsNavItems: NavItem[] = [

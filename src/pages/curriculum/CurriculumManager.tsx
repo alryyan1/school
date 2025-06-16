@@ -1,43 +1,51 @@
 // src/pages/curriculum/CurriculumManager.tsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
 import {
-  Box,
-  Button,
-  Container,
-  Typography,
-  CircularProgress,
-  Alert,
-  Paper,
-  TableContainer,
   Table,
-  TableHead,
-  TableRow,
-  TableCell,
   TableBody,
-  Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Tooltip,
-  Autocomplete,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
-} from "@mui/material";
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
-  Add as AddIcon,
-  ArrowBack,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-} from "@mui/icons-material";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import {
+  Plus,
+  ArrowLeft,
+  Trash2,
+  Edit,
+  MoreHorizontal,
+  Loader2,
+} from "lucide-react";
 import { useAcademicYearStore } from "@/stores/academicYearStore";
-import { useSubjectStore } from "@/stores/subjectStore"; // To get available subjects
-import { useTeacherStore } from "@/stores/teacherStore"; // To get available teachers
+import { useSubjectStore } from "@/stores/subjectStore";
+import { useTeacherStore } from "@/stores/teacherStore";
 import { useAcademicYearSubjectStore } from "@/stores/academicYearSubjectStore";
 import { AcademicYearSubject } from "@/types/academicYearSubject";
 import { useSnackbar } from "notistack";
@@ -50,9 +58,9 @@ const CurriculumManager: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   // --- Settings Store
-  const { activeSchoolId,activeAcademicYearId } = useSettingsStore();
+  const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
   // --- State for selections ---
-  const [selectedYearId, setSelectedYearId] = useState<number | "">( activeAcademicYearId?? "");
+  const [selectedYearId, setSelectedYearId] = useState<number | "">( activeAcademicYearId ?? "");
   const [selectedGradeId, setSelectedGradeId] = useState<number | "">("");
   const [selectedSchool, setSelectedSchool] = useState<number | string>(
     activeSchoolId ?? ""
@@ -60,9 +68,8 @@ const CurriculumManager: React.FC = () => {
 
   // --- Fetch data from stores ---
   const { academicYears, fetchAcademicYears } = useAcademicYearStore();
-  //   const { gradeLevels, fetchGradeLevels } = useGradeLevelStore();
-  const { subjects, fetchSubjects } = useSubjectStore(); // All subjects
-  const { teachers, fetchTeachers: fetchAllTeachers } = useTeacherStore(); // All teachers
+  const { subjects, fetchSubjects } = useSubjectStore();
+  const { teachers, fetchTeachers: fetchAllTeachers } = useTeacherStore();
   const {
     assignments,
     loading,
@@ -80,16 +87,12 @@ const CurriculumManager: React.FC = () => {
   const [editTeacherDialogOpen, setEditTeacherDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentAssignment, setCurrentAssignment] =
-    useState<AcademicYearSubject | null>(null); // For edit/delete
+    useState<AcademicYearSubject | null>(null);
 
   // --- State for Assign Dialog Form ---
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | "">("");
-  const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(
-    null
-  ); // Can be null
-  const [assignedSchoolGradeLevels, setAssignedSchoolGradeLevels] = useState(
-    []
-  );
+  const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null);
+  const [assignedSchoolGradeLevels, setAssignedSchoolGradeLevels] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
@@ -97,9 +100,8 @@ const CurriculumManager: React.FC = () => {
   useEffect(() => {
     fetchSchools();
     fetchAcademicYears();
-    // fetchGradeLevels();
     fetchSubjects();
-    fetchAllTeachers(); // Fetch all teachers for dropdowns
+    fetchAllTeachers();
   }, [fetchAcademicYears, fetchSubjects, fetchAllTeachers]);
 
   const fetchSchoolGradeLevelsCallback = useCallback(async () => {
@@ -107,26 +109,22 @@ const CurriculumManager: React.FC = () => {
       const response = await SchoolApi.getAssignedGradeLevels(
         selectedSchool as number
       );
-      console.log(response.data.data,'response')
       setAssignedSchoolGradeLevels(response.data.data);
     } catch (error) {
       console.log(error);
-      enqueueSnackbar({
-        variant: "error",
-        message: "فشل في جلب مستويات المدرسه المحدده",
-      });
+      enqueueSnackbar("فشل في جلب مستويات المدرسه المحدده", { variant: "error" });
     }
-  }, [selectedSchool]);
+  }, [selectedSchool, enqueueSnackbar]);
+
   // --- Fetch assignments when year/grade changes ---
   useEffect(() => {
-      fetchSchoolGradeLevelsCallback();
+    fetchSchoolGradeLevelsCallback();
     if (selectedYearId && selectedGradeId) {
-    
       fetchAssignments(selectedYearId, selectedGradeId);
     } else {
-      clearAssignments(); // Clear if selection is incomplete
+      clearAssignments();
     }
-  }, [selectedYearId, selectedGradeId, fetchAssignments, clearAssignments,fetchSchoolGradeLevelsCallback]);
+  }, [selectedYearId, selectedGradeId, fetchAssignments, clearAssignments, fetchSchoolGradeLevelsCallback]);
 
   // --- Calculate available subjects for Assign Dialog ---
   const availableSubjects = useMemo(() => {
@@ -136,7 +134,7 @@ const CurriculumManager: React.FC = () => {
 
   // --- Dialog Open/Close Handlers ---
   const handleOpenAssignDialog = () => {
-    setSelectedSubjectId(""); // Reset form state
+    setSelectedSubjectId("");
     setSelectedTeacherId(null);
     setAssignError(null);
     setAssignDialogOpen(true);
@@ -145,7 +143,7 @@ const CurriculumManager: React.FC = () => {
 
   const handleOpenEditTeacherDialog = (assignment: AcademicYearSubject) => {
     setCurrentAssignment(assignment);
-    setSelectedTeacherId(assignment.teacher_id); // Pre-fill teacher
+    setSelectedTeacherId(assignment.teacher_id);
     setAssignError(null);
     setEditTeacherDialogOpen(true);
   };
@@ -170,12 +168,12 @@ const CurriculumManager: React.FC = () => {
         academic_year_id: selectedYearId,
         grade_level_id: selectedGradeId,
         subject_id: selectedSubjectId,
-        teacher_id: selectedTeacherId, // Send null if no teacher selected
+        teacher_id: selectedTeacherId,
       });
       enqueueSnackbar("تم تعيين المادة بنجاح", { variant: "success" });
       handleCloseAssignDialog();
-    } catch (error: any) {
-      setAssignError(error.message || "فشل تعيين المادة.");
+    } catch (error: unknown) {
+      setAssignError((error as any).message || "فشل تعيين المادة.");
     } finally {
       setAssignLoading(false);
     }
@@ -183,14 +181,14 @@ const CurriculumManager: React.FC = () => {
 
   const handleUpdateTeacher = async () => {
     if (!currentAssignment) return;
-    setAssignLoading(true); // Reuse loading state
+    setAssignLoading(true);
     setAssignError(null);
     try {
       await updateTeacherAssignment(currentAssignment.id, selectedTeacherId);
       enqueueSnackbar("تم تحديث المعلم بنجاح", { variant: "success" });
       handleCloseEditTeacherDialog();
-    } catch (error: any) {
-      setAssignError(error.message || "فشل تحديث المعلم.");
+    } catch (error: unknown) {
+      setAssignError((error as any).message || "فشل تحديث المعلم.");
     } finally {
       setAssignLoading(false);
     }
@@ -216,320 +214,324 @@ const CurriculumManager: React.FC = () => {
   }, [academicYears, selectedSchool]);
 
   return (
-    <Container style={{direction:'rtl'}} maxWidth="xl" sx={{ mt: 4, mb: 4, direction: "rtl" }}>
-                  <NavLink to={'..'}><ArrowBack/></NavLink>
+    <div className="container mx-auto p-4 sm:p-6 max-w-7xl" dir="rtl">
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" asChild>
+          <NavLink to={'..'}><ArrowLeft className="w-4 h-4 ml-2" />العودة</NavLink>
+        </Button>
+      </div>
       
-      {/* Header and Filters */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Typography variant="h4" component="h1">
-          إدارة المناهج الدراسية (المواد والمعلمين)
-        </Typography>
-        <Stack direction="row" spacing={2} alignItems="center" gap={1}>
-          <FormControl sx={{ minWidth: 200 }} size="small">
-            <InputLabel id="ay-select-label">العام الدراسي</InputLabel>
-            <Select
-              labelId="ay-select-label"
-              label="العام الدراسي"
-              value={selectedYearId}
-              onChange={(e) => setSelectedYearId(e.target.value as number)}
-            >
-              <MenuItem value="" disabled>
-                <em>اختر عاماً...</em>
-              </MenuItem>
-              {filteredAcademicYearsMemo.map((ay) => (
-                <MenuItem key={ay.id} value={ay.id}>
-                  {ay.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ minWidth: "200px" }}>
-            <InputLabel id="school-label">المدرسه</InputLabel>
-            <Select
-              label="المدرسه"
-              size="small"
-              disabled={schoolIsLoading}
-              labelId="school-label"
-              value={selectedSchool}
-              onChange={(e) => setSelectedSchool(e.target.value)}
-            >
-              <MenuItem value="" disabled>
-                <em>...اختر مدرسه</em>
-              </MenuItem>
-              {schools.map((school) => (
-                <MenuItem key={school.id} value={school.id}>
-                  {school.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ minWidth: 200 }} size="small">
-            <InputLabel id="gl-select-label">المرحلة الدراسية</InputLabel>
-            <Select
-              labelId="gl-select-label"
-              label="المرحلة الدراسية"
-              value={selectedGradeId}
-              onChange={(e) => setSelectedGradeId(e.target.value as number)}
-            >
-              <MenuItem value="" disabled>
-                <em>اختر مرحلة...</em>
-              </MenuItem>
-              {assignedSchoolGradeLevels.map((gl) => (
-                <MenuItem key={gl.id} value={gl.id}>
-                  {gl.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenAssignDialog}
-            disabled={!selectedYearId || !selectedGradeId} // Enable only when year/grade selected
-          >
-            تعيين مادة
-          </Button>
-        </Stack>
-      </Box>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl sm:text-2xl">
+            إدارة المناهج الدراسية (المواد والمعلمين)
+          </CardTitle>
+          
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+            <div className="space-y-2">
+              <Label>المدرسة</Label>
+              <Select 
+                value={selectedSchool.toString()} 
+                onValueChange={(value) => setSelectedSchool(value)}
+                disabled={schoolIsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مدرسة..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {schools.map((school) => (
+                    <SelectItem key={school.id} value={school.id.toString()}>
+                      {school.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Loading and Error States for Assignments */}
-      {loading && (
-        <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
-          <CircularProgress />
-        </Box>
-      )}
-      {!loading && error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      {!loading && !selectedYearId && !selectedGradeId && (
-        <Alert severity="info">
-          الرجاء تحديد العام الدراسي والمرحلة لعرض المواد المعينة.
-        </Alert>
-      )}
+            <div className="space-y-2">
+              <Label>العام الدراسي</Label>
+              <Select 
+                value={selectedYearId.toString()} 
+                onValueChange={(value) => setSelectedYearId(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر عاماً..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredAcademicYearsMemo.map((ay) => (
+                    <SelectItem key={ay.id} value={ay.id.toString()}>
+                      {ay.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Table of Assigned Subjects/Teachers */}
-      {!loading && !error && selectedYearId && selectedGradeId && (
-        <Paper elevation={2}>
-          <TableContainer>
-            <Table sx={{ minWidth: 650 }} aria-label="assigned subjects table">
-              <TableHead sx={{ bgcolor: "grey.100" }}>
-                <TableRow>
-                  <TableCell>المادة الدراسية</TableCell>
-                  <TableCell>الرمز</TableCell>
-                  <TableCell>المعلم المسؤول</TableCell>
-                  <TableCell align="right">إجراءات</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {assignments.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      لا توجد مواد معينة لهذه المرحلة في هذا العام.
-                    </TableCell>
-                  </TableRow>
-                )}
-                {assignments.map((assignment) => (
-                  <TableRow key={assignment.id} hover>
-                    <TableCell>{assignment.subject?.name ?? "N/A"}</TableCell>
-                    <TableCell>{assignment.subject?.code ?? "N/A"}</TableCell>
-                    <TableCell>
-                      {assignment.teacher?.name ?? (
-                        <Typography component="em" color="text.secondary">
-                          غير محدد
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        justifyContent="flex-end"
-                      >
-                        <Tooltip title="تغيير المعلم">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() =>
-                              handleOpenEditTeacherDialog(assignment)
-                            }
-                          >
-                            <EditIcon fontSize="inherit" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="إلغاء تعيين المادة">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleOpenDeleteDialog(assignment)}
-                          >
-                            <DeleteIcon fontSize="inherit" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      )}
+            <div className="space-y-2">
+              <Label>المرحلة الدراسية</Label>
+              <Select 
+                value={selectedGradeId.toString()} 
+                onValueChange={(value) => setSelectedGradeId(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مرحلة..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignedSchoolGradeLevels.map((gl: any) => (
+                    <SelectItem key={gl.id} value={gl.id.toString()}>
+                      {gl.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* --- Dialogs --- */}
+            <div className="flex items-end">
+              <Button
+                onClick={handleOpenAssignDialog}
+                disabled={!selectedYearId || !selectedGradeId}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 ml-2" />
+                تعيين مادة
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
 
-      {/* Assign Subject Dialog */}
-      <Dialog
-        open={assignDialogOpen}
-        onClose={handleCloseAssignDialog}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>تعيين مادة جديدة</DialogTitle>
-        <DialogContent>
-          {assignError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {assignError}
+        <CardContent>
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center p-8">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+          )}
+
+          {/* Error State */}
+          {!loading && error && (
+            <Alert className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Stack spacing={3} sx={{ pt: 1 }}>
-            <FormControl fullWidth error={!selectedSubjectId && assignLoading}>
-              {" "}
-              {/* Basic validation indicator */}
-              <InputLabel id="assign-subject-label">
-                المادة الدراسية *
-              </InputLabel>
-              <Select
-                labelId="assign-subject-label"
-                label="المادة الدراسية *"
-                value={selectedSubjectId}
-                onChange={(e) => setSelectedSubjectId(e.target.value as number)}
+
+          {/* Info State */}
+          {!loading && !selectedYearId && !selectedGradeId && (
+            <Alert className="mb-4">
+              <AlertDescription>
+                الرجاء تحديد العام الدراسي والمرحلة لعرض المواد المعينة.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Table */}
+          {!loading && !error && selectedYearId && selectedGradeId && (
+            <div className="w-full flex justify-center">
+              <div className="w-full border rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table className="w-full min-w-[600px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px] text-center">المادة الدراسية</TableHead>
+                        <TableHead className="w-24 text-center">الرمز</TableHead>
+                        <TableHead className="min-w-[150px] text-center">المعلم المسؤول</TableHead>
+                        <TableHead className="w-24 text-center">إجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {assignments.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            لا توجد مواد معينة لهذه المرحلة في هذا العام.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {assignments.map((assignment) => (
+                        <TableRow key={assignment.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium text-center">
+                            {assignment.subject?.name ?? "N/A"}
+                          </TableCell>
+                          <TableCell className="text-sm font-mono">
+                            {assignment.subject?.code ?? "N/A"}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {assignment.teacher?.name ?? (
+                              <span className="text-muted-foreground italic">غير محدد</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenEditTeacherDialog(assignment)}>
+                                  <Edit className="w-4 h-4 ml-2" />
+                                  تغيير المعلم
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleOpenDeleteDialog(assignment)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 ml-2" />
+                                  إلغاء التعيين
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Assign Subject Dialog */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تعيين مادة جديدة</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {assignError && (
+              <Alert>
+                <AlertDescription>{assignError}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="subject">المادة الدراسية *</Label>
+              <Select 
+                value={selectedSubjectId.toString()} 
+                onValueChange={(value) => setSelectedSubjectId(Number(value))}
               >
-                <MenuItem value="" disabled>
-                  <em>اختر مادة...</em>
-                </MenuItem>
-                {availableSubjects.map((s) => (
-                  <MenuItem key={s.id} value={s.id}>
-                    {s.name} ({s.code})
-                  </MenuItem>
-                ))}
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مادة..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubjects.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name} ({s.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-            <Autocomplete
-              options={teachers}
-              getOptionLabel={(option) => option.name}
-              value={teachers.find((t) => t.id === selectedTeacherId) || null}
-              onChange={(event, newValue) => {
-                setSelectedTeacherId(newValue ? newValue.id : null);
-              }}
-              renderInput={(params) => (
-                <TextField {...params} label="المعلم المسؤول (اختياري)" />
-              )}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              noOptionsText="لا يوجد معلمون"
-            />
-          </Stack>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="teacher">المعلم المسؤول (اختياري)</Label>
+              <Select 
+                value={selectedTeacherId?.toString() || ""} 
+                onValueChange={(value) => setSelectedTeacherId(value ? Number(value) : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر معلم..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=" ">بدون معلم</SelectItem>
+                  {teachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseAssignDialog} disabled={assignLoading}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleAssignSubject} 
+              disabled={assignLoading || !selectedSubjectId}
+            >
+              {assignLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+              تعيين
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleCloseAssignDialog}
-            color="inherit"
-            disabled={assignLoading}
-          >
-            إلغاء
-          </Button>
-          <Button
-            onClick={handleAssignSubject}
-            variant="contained"
-            color="primary"
-            disabled={assignLoading || !selectedSubjectId}
-          >
-            {assignLoading ? <CircularProgress size={22} /> : "تعيين"}
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Edit Teacher Dialog */}
-      <Dialog
-        open={editTeacherDialogOpen}
-        onClose={handleCloseEditTeacherDialog}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>
-          تغيير المعلم للمادة "{currentAssignment?.subject?.name}"
-        </DialogTitle>
-        <DialogContent>
-          {assignError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {assignError}
-            </Alert>
-          )}
-          <Autocomplete
-            sx={{ pt: 1 }} // Add some padding top
-            options={teachers}
-            getOptionLabel={(option) => option.name}
-            value={teachers.find((t) => t.id === selectedTeacherId) || null} // Controlled component
-            onChange={(event, newValue) => {
-              setSelectedTeacherId(newValue ? newValue.id : null); // Update state on change
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="المعلم المسؤول (اتركه فارغاً لإلغاء التعيين)"
-              />
+      <Dialog open={editTeacherDialogOpen} onOpenChange={setEditTeacherDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>
+              تغيير المعلم للمادة "{currentAssignment?.subject?.name}"
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {assignError && (
+              <Alert>
+                <AlertDescription>{assignError}</AlertDescription>
+              </Alert>
             )}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            noOptionsText="لا يوجد معلمون"
-          />
+            
+            <div className="space-y-2">
+              <Label htmlFor="teacher">المعلم المسؤول</Label>
+              <Select 
+                value={selectedTeacherId?.toString() || ""} 
+                onValueChange={(value) => setSelectedTeacherId(value ? Number(value) : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر معلم أو اتركه فارغاً..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=" ">بدون معلم</SelectItem>
+                  {teachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseEditTeacherDialog} disabled={assignLoading}>
+              إلغاء
+            </Button>
+            <Button onClick={handleUpdateTeacher} disabled={assignLoading}>
+              {assignLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+              حفظ التغيير
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleCloseEditTeacherDialog}
-            color="inherit"
-            disabled={assignLoading}
-          >
-            إلغاء
-          </Button>
-          <Button
-            onClick={handleUpdateTeacher}
-            variant="contained"
-            color="primary"
-            disabled={assignLoading}
-          >
-            {assignLoading ? <CircularProgress size={22} /> : "حفظ التغيير"}
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-        <DialogTitle>تأكيد إلغاء التعيين</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            هل أنت متأكد من إلغاء تعيين المادة "
-            {currentAssignment?.subject?.name}" من هذه المرحلة الدراسية لهذا
-            العام؟
-          </DialogContentText>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تأكيد إلغاء التعيين</DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من إلغاء تعيين المادة "
+              {currentAssignment?.subject?.name}" من هذه المرحلة الدراسية لهذا
+              العام؟
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDeleteDialog}>
+              إلغاء
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              تأكيد الإلغاء
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteDialog}>إلغاء</Button>
-          <Button onClick={handleDeleteConfirm} color="error">
-            تأكيد الإلغاء
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Container>
+    </div>
   );
 };
 

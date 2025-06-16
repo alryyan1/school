@@ -1,81 +1,237 @@
-import { Navigate, Outlet, RouteObject } from "react-router-dom";
-import SchoolList from "./pages/schools/schoolList";
-import SchoolForm from "./pages/schools/schoolForm";
-import SchoolView from "./pages/schools/schoolView";
-import AcademicYearList from "./components/settings/academicYearList";
-import GradeLevelList from "./components/settings/GradeLevelList";
-import SettingsDashboard from "./components/settings/SettingsDashboard";
-import SubjectList from "./components/settings/SubjectList";
-import CurriculumManager from "./pages/curriculum/CurriculumManager";
-import ClassroomList from "./components/settings/ClassroomList";
-import ExamList from "./components/exams/ExamList";
-import SchoolGradeLevelManager from "./pages/settings/SchoolGradeLevelManager";
-import UserList from "./components/users/UserList";
-import ExamSchedulePage from "./components/exams/ExamSchedulePage";
-import GeneralSettingsPage from "./pages/settings/GeneralSettingsPage";
-import TeacherList from "./pages/teachers/TeacherList";
-import TeacherForm from "./components/teachers/TeacherForm";
-import TeacherView from "./components/teachers/TeacherView";
-import ProtectedRoute from "./components/ProtectedRoute";
-  
-export const schoolRoutes: RouteObject = {
-  path: "schools", // Base path for schools
-  element: <Outlet />, // Renders nested school routes
-  children: [
-    { index: true, element: <Navigate to="/schools/list" replace /> }, // Default to list
-    { path: "list", element: <SchoolList /> },
-    { path: "create", element: <SchoolForm /> }, // SchoolForm handles create mode
-    { path: ":id", element: <SchoolView /> },
-    { path: ":id/edit", element: <SchoolForm /> }, // SchoolForm handles edit mode
-  ],
+// src/router.tsx
+import React from 'react'; // Needed for JSX elements
+import {
+    createBrowserRouter,
+    Navigate,
+    Outlet,
+    useLocation, // Keep useLocation if ProtectedRoute is defined here
+} from 'react-router-dom';
+
+// --- Layouts ---
+import MainLayout from '@/components/layouts/MainLayout';   // Adjust path
+import AuthLayout from '@/components/AuthLayout';       // Adjust path
+
+// --- Core Pages ---
+import Dashboard from '@/pages/Dashboard';                // Adjust path
+import Login from '@/pages/Login';                      // Adjust path
+import NotFound from '@/pages/NotFound';                  // Adjust path
+import Unauthorized from '@/pages/Unauthorized';            // Adjust path
+
+// --- Student Pages & Components ---
+import StudentList from '@/pages/students/StudentList';                   // Adjust path
+import StudentDashboard from '@/pages/students/StudentDashboard';         // Adjust path
+import StudentView from '@/pages/students/StudentView';                   // Adjust path
+
+// --- Teacher Pages & Components ---
+import TeacherList from '@/pages/teachers/TeacherList';                 // Adjust path
+import TeacherView from '@/pages/teachers/TeacherView';                   // Adjust path
+import TeacherForm from '@/components/teachers/TeacherForm';               // Adjust path
+
+// --- School Pages & Components ---
+import SchoolList from '@/pages/schools/SchoolList';                   // Adjust path
+import SchoolView from '@/pages/schools/SchoolView';                     // Adjust path
+import SchoolForm from '@/components/schools/SchoolForm';                 // Adjust path
+
+// --- Settings Pages ---
+import SettingsDashboard from '@/pages/settings/SettingsDashboard';       // Adjust path
+import GeneralSettingsPage from '@/pages/settings/GeneralSettingsPage'; // Adjust path
+import AcademicYearList from '@/pages/settings/AcademicYearList';       // Adjust path
+import GradeLevelStudentAssigner from '@/components/settings/GradeLevelStudentAssigner'; // New name
+import SubjectList from '@/pages/settings/SubjectList';                 // Adjust path
+import ClassroomList from '@/pages/settings/ClassroomList';               // Adjust path
+import SchoolGradeLevelManager from '@/pages/settings/SchoolGradeLevelManager';// Adjust path
+import UserList from '@/pages/settings/UserList';                       // Adjust path
+
+// --- Finance Pages ---
+import DueInstallmentsPage from '@/pages/finances/DueInstallmentsPage';   // Adjust path
+
+// --- Exam Pages ---
+import ExamList from '@/pages/exams/ExamList';                         // Adjust path
+import ExamSchedulePage from '@/pages/exams/ExamSchedulePage';           // Adjust path
+
+
+// --- Curriculum Pages ---
+import CurriculumManager from '@/pages/curriculum/CurriculumManager';     // Adjust path
+
+// --- Enrollment Pages ---
+import StudentEnrollmentManager from '@/pages/enrollments/StudentEnrollmentManager'; // Adjust path
+
+// --- Explorer Pages ---
+import SchoolExplorerPage from '@/pages/explorer/SchoolExplorerPage';         // Adjust path
+import SchoolClassroomListPage from '@/pages/explorer/SchoolClassroomListPage'; // Adjust path
+import ClassroomStudentListPage from '@/pages/explorer/ClassroomStudentListPage'; // Adjust path
+
+
+// --- Common Components ---
+import LoadingScreen from '@/components/LoadingScreen';     // Adjust path
+
+// --- Context ---
+import { useAuth } from '@/context/authcontext';          // Adjust path
+import Register from '@/pages/Register';
+import { StudentForm } from './components/students/studentForm/StudentForm';
+
+// --- ProtectedRoute and AuthRoute (Define them here or import if they are in separate files) ---
+// It's often cleaner to keep these alongside the router if they are tightly coupled.
+
+const ProtectedRoute = ({ children, roles = [] }: { children: React.ReactNode, roles?: string[] }) => {
+    const { isAuthenticated, isLoading, userRole } = useAuth();
+    const location = useLocation();
+
+    if (isLoading) {
+        return <LoadingScreen />;
+    }
+    if (!isAuthenticated) {
+        return <Navigate to="/auth/login" state={{ from: location }} replace />;
+    }
+    const currentUserRole = userRole as string;
+    if (roles.length > 0 && !roles.includes(currentUserRole)) {
+        return <Navigate to="/unauthorized" replace />;
+    }
+    return <>{children}</>; // Use React.Fragment shorthand
 };
 
-// --- Settings Section Example ---
-export const settings: RouteObject = {
-  path: "settings", // Base path for settings
-  element: <Outlet />, // Renders nested settings routes
-  children: [
-    { index: true, element: <SettingsDashboard /> },
-    // Specific settings pages are still routed directly
-    { path: "academic-years", element: <AcademicYearList /> },
-    { path: "grade-levels", element: <GradeLevelList /> },
-      // --- Teacher Section ---
-      {
-        path: "teachers",
+const AuthRoute = ({ children }: { children: React.ReactNode }) => {
+    const { isAuthenticated, isLoading } = useAuth();
+    if (isLoading) return <LoadingScreen />;
+    if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+    return <>{children}</>; // Use React.Fragment shorthand
+};
+
+// Wrapper component to properly call useAuth hook
+const MainLayoutWrapper = () => {
+    return <MainLayout />;
+};
+
+// --- End ProtectedRoute and AuthRoute ---
+
+
+const router = createBrowserRouter([
+    // --- Main Application Layout & Routes ---
+    {
+        path: '/',
         element: (
-          <ProtectedRoute roles={["admin"]}>
-            <Outlet />
-          </ProtectedRoute>
-        ), // Parent renders Outlet for children
+            <ProtectedRoute roles={['admin']}> {/* Or adjust roles for main layout access */}
+                <MainLayoutWrapper />
+            </ProtectedRoute>
+        ),
         children: [
-          { index: true, element: <Navigate to="/teachers/list" replace /> }, // Default to list
-          // { index: true, element: <TeacherDashboard /> }, // Or use a dashboard
-          { path: "list", element: <TeacherList /> },
-          { path: "create", element: <TeacherForm /> },
-          { path: ":id", element: <TeacherView /> },
-          { path: ":id/edit", element: <TeacherForm /> },
+            { index: true, element: <Navigate to="/dashboard" replace /> },
+            { path: 'dashboard', element: <Dashboard /> },
+
+            // --- Student Section ---
+            {
+                path: 'students',
+                element: <Outlet />,
+                children: [
+                    { index: true, element: <StudentDashboard /> },
+                    { path: 'list', element: <StudentList /> },
+                    { path: 'create', element: <StudentForm /> },
+                    { path: ':id', element: <StudentView /> },
+                    { path: ':id/edit', element: <StudentForm /> },
+                ]
+            },
+
+            // --- Teacher Section ---
+            {
+                path: 'teachers',
+                element: <Outlet />,
+                children: [
+                    { index: true, element: <Navigate to="list" replace /> }, // Default to list
+                    { path: 'list', element: <TeacherList /> },
+                    { path: 'create', element: <TeacherForm /> },
+                    { path: ':id', element: <TeacherView /> },
+                    { path: ':id/edit', element: <TeacherForm /> },
+                ]
+            },
+
+            // --- School Section ---
+            {
+                path: 'schools', // Base path, often the list itself
+                element: <Outlet />,
+                children: [
+                    { index:true, element: <Navigate to="list" replace />}, // For consistency
+                    { path: 'list', element: <SchoolList />},
+                    { path: 'create', element: <SchoolForm />},
+                    { path: ':id', element: <SchoolView />},
+                    { path: ':id/edit', element: <SchoolForm />}
+                ]
+            },
+            
+            // --- Settings Section ---
+            {
+                path: 'settings',
+                element: <Outlet />,
+                children: [
+                    { index: true, element: <SettingsDashboard /> },
+                    { path: 'general', element: <GeneralSettingsPage /> },
+                    { path: 'academic-years', element: <AcademicYearList /> },
+                    { path: 'grade-levels', element: <GradeLevelStudentAssigner /> }, // Renamed page
+                    { path: 'subjects', element: <SubjectList /> },
+                    { path: 'classrooms', element: <ClassroomList /> },
+                    { path: 'school-grades', element: <SchoolGradeLevelManager /> },
+                    { path: 'users', element: <UserList /> },
+                ]
+            },
+
+            // --- Curriculum Section ---
+            {
+                path: 'curriculum',
+                element: <CurriculumManager />,
+            },
+
+            // --- Enrollments Section ---
+            {
+                path: 'enrollments',
+                element: <StudentEnrollmentManager />,
+            },
+
+            // --- Exams Section ---
+            {
+                path: 'exams',
+                element: <Outlet />,
+                children: [
+                     { index: true, element: <ExamList /> },
+                     { path: ':examId/schedule', element: <ExamSchedulePage /> },
+                ]
+            },
+
+             // --- Finance Section ---
+             {
+                  path: 'finances',
+                  element: <Outlet />,
+                  children: [
+                       { index: true, element: <Navigate to="due-installments" replace />},
+                       { path: 'due-installments', element: <DueInstallmentsPage /> },
+                  ]
+             },
+
+            // --- School Explorer Section ---
+            {
+                path: 'schools-explorer',
+                element: <Outlet />,
+                children: [
+                     { index: true, element: <SchoolExplorerPage /> },
+                     { path: ':schoolId/classrooms', element: <SchoolClassroomListPage /> },
+                     { path: ':schoolId/classrooms/:classroomId/students', element: <ClassroomStudentListPage /> }
+                     
+                ]
+            },
         ],
-      },
-    // Add routes for other settings pages linked from dashboard
-    { path: "subjects", element: <SubjectList /> },
-    // { path: 'general', element: <GeneralSettingsPage /> },
-    // Add other settings routes here (e.g., general settings, users)
-    // --- Curriculum Section ---
-    { path: "classrooms", element: <ClassroomList /> }, // <-- Add this route
-    // --- Exams Section ---
-    {
-      path: "exams", // New top-level section for exams
-      element: <ExamList />,
     },
-    { path: "general", element: <GeneralSettingsPage /> }, // <-- Add route
 
-    { path: "exams/:examId/schedule", element: <ExamSchedulePage /> }, // <-- Route for schedule page
-
+    // --- Authentication Layout & Routes ---
     {
-      path: "curriculum",
-      element: <CurriculumManager />, // Direct route to the manager page
+        path: '/auth',
+        element: <AuthLayout />,
+        children: [
+            { path: 'login', element: (<AuthRoute><Login /></AuthRoute>) },
+            { path: 'register', element: (<AuthRoute><Register /></AuthRoute>) },
+        ],
     },
-    { path: "school-grades", element: <SchoolGradeLevelManager /> }, // <-- Add this route
-    { path: "users", element: <UserList /> }, // <-- Add User List Route
-  ],
-};
+
+    // --- Standalone Pages ---
+    { path: '/unauthorized', element: <Unauthorized /> },
+    { path: '*', element: <NotFound /> }, // Catch-all 404
+]);
+
+export default router;

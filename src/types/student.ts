@@ -10,7 +10,7 @@ export enum Gender {
     Primary = 'ابتدائي',
     Intermediate = 'متوسط',
     Secondary = 'ثانوي',
-    NotSpecified = ''
+    NotSpecified = 'كل المراحل'
   }
   
   export type Student = {

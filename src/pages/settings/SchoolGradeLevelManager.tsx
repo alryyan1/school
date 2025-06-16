@@ -1,247 +1,369 @@
 // src/pages/settings/SchoolGradeLevelManager.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    Box, Button, Container, Typography, CircularProgress, Alert, Paper,
-    TableContainer, Table, TableHead, TableRow, TableCell, TableBody,
-    Stack, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent,
-    IconButton, Tooltip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-    Grid,
-    Divider
-} from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ArrowBack } from '@mui/icons-material';
+    Button
+} from "@/components/ui/button";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
+import {
+    Card, CardContent, CardFooter, CardHeader, CardTitle
+} from "@/components/ui/card";
+import {
+    Dialog as ShadcnDialog, DialogClose, DialogContent, DialogDescription,
+    DialogFooter, DialogHeader, DialogTitle
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator"; // For visual separation
+
+// lucide-react icons
+import { PlusCircle, Edit3, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion'; // For animations
+
 import { useSchoolStore } from '@/stores/schoolStore';       // Adjust path
-import { useGradeLevelStore } from '@/stores/gradeLevelStore'; // Keep for getting ALL grades for assignment dialog
-import { SchoolApi } from '@/api/schoolApi';                   // Use API directly here
+import { useGradeLevelStore } from '@/stores/gradeLevelStore'; // For ALL grades
+import { useSettingsStore } from '@/stores/settingsStore';     // Add missing import
+import { SchoolApi } from '@/api/schoolApi';                   // Adjust path
 import { GradeLevel } from '@/types/gradeLevel';             // Adjust path
 import { useSnackbar } from 'notistack';
-import { formatNumber } from '@/constants';
-import AssignGradeLevelDialog from './AssignGradeLevelDialog';
-import EditGradeFeeDialog from './EditGradeFeeDialog';
-import { NavLink } from 'react-router-dom';
+
+// --- Re-usable Dialog Components (from previous, ensure they are shadcn compliant) ---
+// AssignGradeLevelDialog.tsx (Needs to be refactored to shadcn if not already)
+// EditGradeFeeDialog.tsx (Needs to be refactored to shadcn if not already)
+// For this example, I'll provide inline mockups and you can extract them.
+
+// Mockup for AssignGradeLevelDialog (replace with your actual shadcn component)
+interface AssignGradeLevelDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSuccess: () => void;
+    schoolId: number;
+    availableGrades: GradeLevel[];
+}
+const AssignGradeLevelDialog: React.FC<AssignGradeLevelDialogProps> = ({ open, onOpenChange, onSuccess, schoolId, availableGrades }) => {
+    // ... (Internal form logic with react-hook-form and shadcn components for GradeLevel and BasicFees)
+    // On submit, call SchoolApi.attachGradeLevels
+    const [selectedGradeId, setSelectedGradeId] = useState<string>("");
+    const [basicFees, setBasicFees] = useState<string>("0");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const { enqueueSnackbar } = useSnackbar();
+
+    useEffect(() => {
+        if (open) {
+            setSelectedGradeId("");
+            setBasicFees("0");
+            setError(null);
+        }
+    }, [open]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedGradeId) {
+            setError("الرجاء اختيار المرحلة الدراسية.");
+            return;
+        }
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            await SchoolApi.attachGradeLevels(
+                schoolId,
+                Number(selectedGradeId),
+                Number(basicFees) || 0
+            );
+            enqueueSnackbar('تم تعيين المرحلة بنجاح', { variant: 'success' });
+            onSuccess();
+        } catch (err: unknown) {
+            const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
+            setError(errorObj.response?.data?.message || errorObj.message || "فشل تعيين المرحلة");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <ShadcnDialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent dir="rtl" className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>تعيين مرحلة دراسية للمدرسة</DialogTitle>
+                    <DialogDescription>اختر المرحلة وحدد الرسوم الأساسية لها في هذه المدرسة.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+                        <div className="space-y-2">
+                            <Label htmlFor="grade-level-assign">المرحلة الدراسية *</Label>
+                            <Select value={selectedGradeId} onValueChange={setSelectedGradeId} required>
+                                <SelectTrigger id="grade-level-assign"><SelectValue placeholder="اختر مرحلة..." /></SelectTrigger>
+                                <SelectContent>
+                                    {availableGrades.length === 0 && <SelectItem value=" " disabled><em>(لا مراحل أخرى متاحة)</em></SelectItem>}
+                                    {availableGrades.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name} ({g.code})</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="basic-fees-assign">الرسوم الأساسية *</Label>
+                            <Input id="basic-fees-assign" type="number" value={basicFees} onChange={(e) => setBasicFees(e.target.value)} required min="0" step="1" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>إلغاء</Button></DialogClose>
+                        <Button type="submit" disabled={isSubmitting || availableGrades.length === 0}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} تعيين وحفظ
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </ShadcnDialog>
+    );
+};
+
+// Mockup for EditGradeFeeDialog
+interface EditGradeFeeDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSuccess: () => void;
+    schoolId: number;
+    gradeLevel: GradeLevel | null; // Has assignment_details
+}
+const EditGradeFeeDialog: React.FC<EditGradeFeeDialogProps> = ({ open, onOpenChange, onSuccess, schoolId, gradeLevel }) => {
+    // ... (Internal form logic with react-hook-form and shadcn Input for BasicFees)
+    // On submit, call SchoolApi.updateGradeLevelFee
+    const [basicFees, setBasicFees] = useState<string>("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const { enqueueSnackbar } = useSnackbar();
+
+    useEffect(() => {
+        if (open && gradeLevel) {
+            setBasicFees(String(gradeLevel.assignment_details?.basic_fees ?? "0"));
+            setError(null);
+        }
+    }, [open, gradeLevel]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!gradeLevel) return;
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            await SchoolApi.updateGradeLevelFee(schoolId, gradeLevel.id, Number(basicFees) || 0);
+            enqueueSnackbar('تم تحديث الرسوم بنجاح', { variant: 'success' });
+            onSuccess();
+        } catch (err: unknown) {
+            const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
+            setError(errorObj.response?.data?.message || errorObj.message || "فشل تحديث الرسوم");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    if (!gradeLevel) return null;
+
+    return (
+        <ShadcnDialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent dir="rtl" className="sm:max-w-xs">
+                <DialogHeader>
+                    <DialogTitle>تعديل الرسوم الأساسية</DialogTitle>
+                    <DialogDescription>للمرحلة: {gradeLevel.name} ({gradeLevel.code})</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+                        <div className="space-y-2">
+                            <Label htmlFor="basic-fees-edit">الرسوم الأساسية *</Label>
+                            <Input id="basic-fees-edit" type="number" value={basicFees} onChange={(e) => setBasicFees(e.target.value)} required min="0" step="1" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                         <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>إلغاء</Button></DialogClose>
+                         <Button type="submit" disabled={isSubmitting}>
+                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} حفظ التعديل
+                         </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </ShadcnDialog>
+    );
+};
+
 
 const SchoolGradeLevelManager: React.FC = () => {
     const { enqueueSnackbar } = useSnackbar();
+    const initialActiveSchoolId = useSettingsStore.getState().activeSchoolId;
 
-    // --- State ---
-    const [selectedSchoolId, setSelectedSchoolId] = useState<number | ''>('');
-    const [assignedGradeLevels, setAssignedGradeLevels] = useState<GradeLevel[]>([]); // Grades assigned to selected school (with pivot fees)
+    // --- Local State ---
+    const [selectedSchoolId, setSelectedSchoolId] = useState<number | ''>(initialActiveSchoolId ?? '');
+    const [assignedGradeLevels, setAssignedGradeLevels] = useState<GradeLevel[]>([]);
     const [loadingAssigned, setLoadingAssigned] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     // Dialog States
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [editFeeDialogOpen, setEditFeeDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [currentGradeLevel, setCurrentGradeLevel] = useState<GradeLevel | null>(null); // For edit/delete context
+    const [currentGradeLevel, setCurrentGradeLevel] = useState<GradeLevel | null>(null);
 
     // --- Data from Stores ---
     const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
-    // Fetch all grades for the assignment dialog
     const { gradeLevels: allGradeLevels, fetchGradeLevels } = useGradeLevelStore();
 
     // --- Effects ---
-    // Fetch initial school and all grade level lists
-    useEffect(() => {
-        fetchSchools();
-        fetchGradeLevels(); // Fetch all possible grades
-    }, [fetchSchools, fetchGradeLevels]);
+    useEffect(() => { fetchSchools(); fetchGradeLevels(); }, [fetchSchools, fetchGradeLevels]);
 
-    // Fetch assigned grades when a school is selected
     const fetchAssigned = useCallback(async (schoolId: number) => {
-        setLoadingAssigned(true);
-        setError(null);
+        setLoadingAssigned(true); setError(null);
         try {
             const response = await SchoolApi.getAssignedGradeLevels(schoolId);
-            console.log(response,'response')
-            setAssignedGradeLevels(response.data.data ?? []);
-        } catch (err: any) {
-            console.error("Failed to fetch assigned grade levels", err);
-            setError(err.response?.data?.message || 'فشل تحميل المراحل المعينة للمدرسة');
+            setAssignedGradeLevels(response.data.data?.sort((a, b) => a.id - b.id) ?? []);
+        } catch (err: unknown) {
+            const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
+            setError(errorObj.response?.data?.message || 'فشل تحميل المراحل المعينة');
             setAssignedGradeLevels([]);
-        } finally {
-            setLoadingAssigned(false);
-        }
-    }, []); // No dependencies needed if SchoolApi is stable
+        } finally { setLoadingAssigned(false); }
+    }, []);
 
     useEffect(() => {
-        if (selectedSchoolId) {
-            fetchAssigned(selectedSchoolId);
-        } else {
-            setAssignedGradeLevels([]); // Clear if no school selected
-            setError(null);
-        }
+        if (selectedSchoolId) fetchAssigned(selectedSchoolId);
+        else { setAssignedGradeLevels([]); setError(null); }
     }, [selectedSchoolId, fetchAssigned]);
 
     // --- Handlers ---
-    const handleSchoolChange = (event: SelectChangeEvent<number>) => {
-        
-        setSelectedSchoolId(event.target.value as number );
-        // Assigned grades will be fetched by the useEffect above
-    };
+    const handleSchoolChange = (value: string) => setSelectedSchoolId(value ? Number(value) : '');
 
-    // Dialog Open/Close
     const handleOpenAssignDialog = () => setAssignDialogOpen(true);
-    const handleCloseAssignDialog = (refetch = false) => {
-        setAssignDialogOpen(false);
-        if (refetch && selectedSchoolId) fetchAssigned(selectedSchoolId);
-    };
-    const handleOpenEditFeeDialog = (gradeLevel: GradeLevel) => {
-        setCurrentGradeLevel(gradeLevel); // Set the grade with pivot data
-        setEditFeeDialogOpen(true);
-    };
-    const handleCloseEditFeeDialog = (refetch = false) => {
-        setEditFeeDialogOpen(false);
-        setCurrentGradeLevel(null);
-        if (refetch && selectedSchoolId) fetchAssigned(selectedSchoolId);
-    };
-    const handleOpenDeleteDialog = (gradeLevel: GradeLevel) => {
-        setCurrentGradeLevel(gradeLevel);
-        setDeleteDialogOpen(true);
-    };
-    const handleCloseDeleteDialog = () => {
-        setCurrentGradeLevel(null);
-        setDeleteDialogOpen(false);
-    };
+    const handleAssignSuccess = () => { setAssignDialogOpen(false); if (selectedSchoolId) fetchAssigned(selectedSchoolId); };
 
-    // Delete Action
+    const handleOpenEditFeeDialog = (gradeLevel: GradeLevel) => { setCurrentGradeLevel(gradeLevel); setEditFeeDialogOpen(true); };
+    const handleEditFeeSuccess = () => { setEditFeeDialogOpen(false); setCurrentGradeLevel(null); if (selectedSchoolId) fetchAssigned(selectedSchoolId); };
+
+    const handleOpenDeleteDialog = (gradeLevel: GradeLevel) => { setCurrentGradeLevel(gradeLevel); setDeleteDialogOpen(true); };
+    const handleCloseDeleteDialog = () => { setCurrentGradeLevel(null); setDeleteDialogOpen(false); };
+
     const handleDeleteConfirm = async () => {
         if (currentGradeLevel && selectedSchoolId) {
             try {
                 await SchoolApi.detachGradeLevel(selectedSchoolId, currentGradeLevel.id);
                 enqueueSnackbar('تم إلغاء تعيين المرحلة بنجاح', { variant: 'success' });
-                fetchAssigned(selectedSchoolId); // Refetch the list
-            } catch (err: any) {
-                console.error("Detach error", err);
-                 enqueueSnackbar(err.response?.data?.message || 'فشل إلغاء التعيين', { variant: 'error' });
-            } finally {
-                handleCloseDeleteDialog();
-            }
+                fetchAssigned(selectedSchoolId);
+            } catch (err: unknown) {
+                const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
+                enqueueSnackbar(errorObj.response?.data?.message || 'فشل إلغاء التعيين', { variant: 'error' });
+            } finally { handleCloseDeleteDialog(); }
         }
     };
 
-    // Filter out already assigned grades for the Assign dialog
-     const assignableGradeLevels = useMemo(() => {
+    const assignableGradeLevels = useMemo(() => {
          const assignedIds = new Set(assignedGradeLevels.map(gl => gl.id));
-         return allGradeLevels.filter(gl => !assignedIds.has(gl.id));
+         return allGradeLevels.filter(gl => !assignedIds.has(gl.id)).sort((a,b) => a.id - b.id);
      }, [allGradeLevels, assignedGradeLevels]);
 
-    // --- Render ---
+    // --- Animation Variants ---
+    const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
+
     return (
-        <Container maxWidth="md" sx={{ mt: 4, mb: 4 }} dir="rtl">
-            <NavLink to={'..'}><ArrowBack/></NavLink>
-            <Typography variant="h4" component="h1" gutterBottom>
-                إدارة المراحل الدراسية للمدارس
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                اختر مدرسة لعرض وتعديل المراحل الدراسية المعينة لها ورسومها الأساسية.
-            </Typography>
+        <div className="container max-w-screen-md mx-auto py-6 px-4" dir="rtl">
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                <h1 className="text-2xl font-semibold text-foreground mb-1">تعيين المراحل الدراسية للمدارس</h1>
+                <p className="text-sm text-muted-foreground mb-6">اختر مدرسة لعرض وتعديل المراحل الدراسية المعينة لها ورسومها الأساسية.</p>
+            </motion.div>
 
-            <Paper elevation={2} sx={{ p: {xs: 2, sm: 3} }}>
-                <Grid container spacing={3} alignItems="center">
-                    {/* School Selector */}
-                    <Grid item xs={12} sm={8}>
-                        <FormControl fullWidth required>
-                            <InputLabel id="manage-grades-school-label">اختر المدرسة *</InputLabel>
-                            <Select labelId="manage-grades-school-label" label="اختر المدرسة *" value={selectedSchoolId} onChange={handleSchoolChange} disabled={schoolsLoading}>
-                                <MenuItem value="" disabled><em>-- اختر المدرسة --</em></MenuItem>
-                                {schoolsLoading ? <MenuItem disabled>...</MenuItem> : schools.map(school => <MenuItem key={school.id} value={school.id}>{school.name}</MenuItem>)}
+            <Card>
+                <CardContent className="p-4 sm:p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="school-select">اختر المدرسة *</Label>
+                            <Select value={selectedSchoolId ? String(selectedSchoolId) : ""} onValueChange={handleSchoolChange} disabled={schoolsLoading}>
+                                <SelectTrigger id="school-select"><SelectValue placeholder={schoolsLoading ? "جاري التحميل..." : "اختر مدرسة..."} /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value=" " disabled><em>اختر مدرسة...</em></SelectItem>
+                                    {schools.map(school => <SelectItem key={school.id} value={String(school.id)}>{school.name}</SelectItem>)}
+                                </SelectContent>
                             </Select>
-                        </FormControl>
-                    </Grid>
-                    {/* Assign Button */}
-                    <Grid item xs={12} sm={4} sx={{ textAlign: { xs:'left', sm:'right'} }}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAssignDialog} disabled={!selectedSchoolId || assignableGradeLevels.length === 0}>
-                            تعيين مرحلة جديدة
+                        </div>
+                        <Button onClick={handleOpenAssignDialog} disabled={!selectedSchoolId || assignableGradeLevels.length === 0 || loadingAssigned} className="w-full md:w-auto">
+                            <PlusCircle className="ml-2 h-4 w-4" /> تعيين مرحلة جديدة
                         </Button>
-                    </Grid>
+                    </div>
 
-                    {/* Assigned Grades Table */}
-                    <Grid item xs={12}>
-                         <Divider sx={{ my: 2 }} />
-                         <Typography variant="h6" sx={{ mb: 2 }}>المراحل المعينة حالياً:</Typography>
-                         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                         {loadingAssigned && <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}><CircularProgress /></Box>}
-                         {!loadingAssigned && !error && !selectedSchoolId && <Alert severity="info">اختر مدرسة لعرض المراحل.</Alert>}
-                         {!loadingAssigned && !error && selectedSchoolId && (
-                            <TableContainer component={Paper} elevation={1} variant="outlined">
-                                <Table size="small">
-                                    <TableHead sx={{ bgcolor: 'action.hover' }}>
-                                        <TableRow>
-                                            <TableCell>المرحلة الدراسية</TableCell>
-                                            <TableCell>الرمز</TableCell>
-                                            <TableCell align="right">الرسوم الأساسية</TableCell>
-                                            <TableCell align="center">إجراءات</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {assignedGradeLevels.length === 0 ? (
-                                             <TableRow><TableCell colSpan={4} align="center" sx={{ py: 3 }}>لا توجد مراحل معينة لهذه المدرسة.</TableCell></TableRow>
-                                        ) : (
-                                            assignedGradeLevels.map((grade) => (
-                                                <TableRow key={grade.id} hover>
-                                                    <TableCell>{grade.name}</TableCell>
-                                                    <TableCell>{grade.code}</TableCell>
-                                                    <TableCell align="right">{formatNumber(grade.assignment_details?.basic_fees)}</TableCell>
-                                                    <TableCell align="center">
-                                                        <Tooltip title="تعديل الرسوم">
-                                                            <IconButton size="small" color="primary" onClick={() => handleOpenEditFeeDialog(grade)}>
-                                                                <EditIcon fontSize='small' />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="إلغاء تعيين المرحلة">
-                                                            <IconButton size="small" color="error" onClick={() => handleOpenDeleteDialog(grade)}>
-                                                                <DeleteIcon fontSize='small' />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                         )}
-                    </Grid>
-                </Grid>
-            </Paper>
+                    <Separator className="my-6" />
 
-             {/* Dialogs */}
-             {selectedSchoolId && (
+                    <div>
+                        <h2 className="text-lg font-medium mb-3 text-foreground">المراحل المعينة حالياً للمدرسة المختارة:</h2>
+                        {loadingAssigned && <div className="flex justify-center py-5"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
+                        {!loadingAssigned && error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+                        {!loadingAssigned && !error && !selectedSchoolId && <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300"><AlertCircle className="h-4 w-4" /><AlertDescription>الرجاء اختيار مدرسة لعرض المراحل الدراسية المعينة.</AlertDescription></Alert>}
+                        {!loadingAssigned && !error && selectedSchoolId && assignedGradeLevels.length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">لا توجد مراحل دراسية معينة لهذه المدرسة حتى الآن.</p>
+                        )}
+
+                        {!loadingAssigned && !error && selectedSchoolId && assignedGradeLevels.length > 0 && (
+                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
+                                {assignedGradeLevels.map((grade) => (
+                                    <motion.div key={grade.id} variants={itemVariants}>
+                                        <Card className="h-full flex flex-col">
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-md">{grade.name} <span className="text-xs text-muted-foreground">({grade.code})</span></CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="flex-grow">
+                                                <p className="text-sm text-muted-foreground">الرسوم الأساسية:</p>
+                                                <p className="text-lg font-semibold text-primary">{grade.assignment_details?.basic_fees || 0} </p>
+                                            </CardContent>
+                                            <CardFooter className="flex justify-end gap-2 pt-3 border-t">
+                                                {/* <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(grade)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                                    <Trash2 className="ml-1.5 h-3.5 w-3.5" />  
+                                                </Button> */}
+                                                <Button variant="outline" size="sm" onClick={() => handleOpenEditFeeDialog(grade)}>
+                                                    <Edit3 className="ml-1.5 h-3.5 w-3.5" /> تعديل الرسوم
+                                                </Button>
+                                            </CardFooter>
+                                        </Card>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Dialogs */}
+            {selectedSchoolId && (
                  <AssignGradeLevelDialog
                      open={assignDialogOpen}
-                     onClose={(refetch) => handleCloseAssignDialog(refetch)}
+                     onOpenChange={setAssignDialogOpen}
+                     onSuccess={handleAssignSuccess}
                      schoolId={selectedSchoolId}
-                     availableGrades={assignableGradeLevels} // Pass only grades not already assigned
-                     allGrades={allGradeLevels} // Pass all for potential future use? Maybe not needed
+                     availableGrades={assignableGradeLevels}
                  />
              )}
 
              {selectedSchoolId && currentGradeLevel && (
                  <EditGradeFeeDialog
                       open={editFeeDialogOpen}
-                      onClose={(refetch) => handleCloseEditFeeDialog(refetch)}
+                      onOpenChange={setEditFeeDialogOpen}
+                      onSuccess={handleEditFeeSuccess}
                       schoolId={selectedSchoolId}
-                      gradeLevel={currentGradeLevel} // Pass the grade level with its current pivot data
+                      gradeLevel={currentGradeLevel}
                  />
              )}
 
-
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog} dir="rtl">
-                 <DialogTitle>تأكيد إلغاء التعيين</DialogTitle>
-                 <DialogContent><DialogContentText>
-                      هل أنت متأكد من إلغاء تعيين المرحلة "{currentGradeLevel?.name}" من هذه المدرسة؟
-                      <br/>
-                       <Typography variant="caption" color="error">
-                           (تحذير: قد يؤثر هذا على الفصول أو تسجيلات الطلاب المرتبطة - تأكد من منطق الحذف في الخلفية)
-                       </Typography>
-                 </DialogContentText></DialogContent>
-                 <DialogActions>
-                     <Button onClick={handleCloseDeleteDialog}>إلغاء</Button>
-                     <Button onClick={handleDeleteConfirm} color="error">إلغاء التعيين</Button>
-                 </DialogActions>
-             </Dialog>
-
-        </Container>
+            <ShadcnDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent className="sm:max-w-md" dir="rtl">
+                    <DialogHeader>
+                        <DialogTitle>تأكيد إلغاء التعيين</DialogTitle>
+                        <DialogDescription>
+                             هل أنت متأكد من إلغاء تعيين المرحلة "{currentGradeLevel?.name}" من هذه المدرسة؟
+                             <br/>
+                             <span className="text-destructive font-medium text-sm">(تحذير: قد يؤثر هذا على الفصول الدراسية أو تسجيلات الطلاب.)</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:justify-start">
+                         <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                         <Button type="button" variant="destructive" onClick={handleDeleteConfirm}>إلغاء التعيين</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </ShadcnDialog>
+        </div>
     );
 };
 

@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
     // Use Tailwind color classes now
     const dashboardItems: DashboardItem[] = [
         {
-            title: 'التسجيل ( الاولي )',
+            title: 'التسجيل',
             icon: Users,
             link: '/students/list',
             description: 'إدارة سجلات الطلاب الاساسيه.',
@@ -86,14 +86,7 @@ const Dashboard: React.FC = () => {
             iconColor: "text-emerald-600 dark:text-emerald-400",
             bgColor: "bg-emerald-100/80 dark:bg-emerald-900/30",
         },
-        {
-            title: 'النقل المدرسي',
-            icon: Car,
-            link: '/transport/routes',
-            description: 'إدارة مسارات النقل وتسجيل الطلاب.',
-            iconColor: "text-cyan-600 dark:text-cyan-400",
-            bgColor: "bg-cyan-100/80 dark:bg-cyan-900/30",
-        },
+     
         {
             title: 'اقساط    خلال شهر',
             icon: Car,
@@ -164,7 +157,7 @@ const Dashboard: React.FC = () => {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-5 lg:gap-6" // Adjusted grid columns and gaps
+                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 sm:gap-5 lg:gap-6" // Adjusted grid columns and gaps
                 >
                     {dashboardItems.map((item) => {
                         const IconComponent = item.icon;

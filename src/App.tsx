@@ -1,180 +1,83 @@
 // src/App.tsx
-import {
-  createHashRouter,
-  RouterProvider,
-  Navigate,
-  Outlet, // Ensure Outlet is imported if layouts need it
-} from "react-router-dom";
+import React from "react"; // Keep React for JSX if needed (though less so now)
+import { RouterProvider } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { SnackbarProvider } from "notistack";
+import { SnackbarProvider } from "notistack"; // If using MUI Snackbar
 import "react-toastify/dist/ReactToastify.css";
 
-// --- Layouts ---
-import AuthLayout from "./components/AuthLayout";
-import MainLayout from "./components/MainLayout"; // Expects <Outlet /> inside
+// --- Theme and Global Styles ---
+// If using shadcn/ui primarily, MUI ThemeProvider/CssBaseline might be optional
+// or replaced by shadcn's ThemeProvider if you have one.
+// For now, keeping MUI Theme if some components still use it.
+import {
+  ThemeProvider as MuiThemeProvider,
+  createTheme as createMuiTheme,
+} from "@mui/material/styles";
+import { CssBaseline as MuiCssBaseline } from "@mui/material";
+import { arSA } from "@mui/material/locale";
+// If you have shadcn ThemeProvider:
+// import { ThemeProvider as ShadcnThemeProvider } from "@/components/theme-provider" // Example path
 
-// --- Core Pages ---
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
-import Unauthorized from "./pages/Unauthorized";
+// --- Global Contexts ---
+import { AuthProvider } from "./context/authcontext"; // Adjust path
+// Import other global providers if any (e.g., settingsStore rehydration if not automatic)
 
-// --- Student Pages & Components ---
-// Verify these paths match your project structure
-import StudentList from "./pages/students/StudentList";
-import StudentDashboard from "./pages/students/StudentDashboard";
-import StudentView from "./pages/students/StudentView";
+// --- Router ---
 
-// --- Teacher Pages & Components ---
-// Verify these paths match your project structure
-
-// Optional: import TeacherDashboard from './pages/teachers/TeacherDashboard';
-
-// --- Common Components ---
-import { ProtectedRoute, AuthRoute } from "./components/ProtectedRoute";
-
-// --- Context ---
-import { AuthProvider } from "./context/authcontext";
-import { StudentForm } from "./components/students/studentForm/StudentForm";
-
-import Register from "./pages/Signup";
-import { schoolRoutes, settings } from "./router";
-import StudentEnrollmentManager from "./pages/enrollments/StudentEnrollmentManager";
-import TransportRouteList from "./pages/transport/TransportRouteList";
-import SchoolExplorerPage from "./pages/pages/SchoolExplorerPage";
-import SchoolClassroomListPage from "./pages/pages/SchoolClassroomListPage";
-import ClassroomStudentListPage from "./pages/pages/ClassroomStudentListPage";
-import DueInstallmentsPage from "./pages/finances/DueInstallmentsPage";
-import GradeLevelClassroomListPage from "./pages/pages/GradeLevelClassroomListPage";
+// --- Styling Constants (MUI specific, might be less relevant with full shadcn) ---
+import { CacheProvider } from "@emotion/react";
+import { cacheRtl } from "./constants"; // Assuming this is for MUI RTL
+import router from "./router";
 
 // --- Main App Component ---
 function App() {
-
-  // --- Router Configuration ---
-  const router = createHashRouter([
-    // --- Main Application Layout & Routes ---
+  // MUI Theme (keep if MUI components are still in use)
+  const muiTheme = createMuiTheme(
     {
-      path: "/",
-      element: (
-        <ProtectedRoute roles={["admin"]}>
-          {" "}
-          {/* Define roles for main app access */}
-          <MainLayout /> {/* Updated to not pass userRole */}
-        </ProtectedRoute>
-      ),
-      children: [
-        { index: true, element: <Navigate to="/dashboard" replace /> },
-        { path: "dashboard", element: <Dashboard /> },
-
-        // --- Student Section ---
-        {
-          path: "students",
-          element: <Outlet />, // Parent renders Outlet for children
-          children: [
-            { index: true, element: <StudentDashboard /> },
-            { path: "list", element: <StudentList /> },
-            { path: "create", element: <StudentForm /> },
-            { path: ":id", element: <StudentView /> },
-            { path: ":id/edit", element: <StudentForm /> },
-          ],
-        },
-        {
-          // --- Maybe add a Finance Section ---
-          path: "finance",
-          element: <Outlet />,
-          children: [
-            {
-              index: true,
-              element: <Navigate to="due-installments" replace />,
-            }, // Default finance page
-            { path: "due-installments", element: <DueInstallmentsPage /> },
-            // Add other finance related pages here later
-          ],
-        },
-        // --- School Explorer Section ---
-        {
-          path: "schools-explorer",
-          element: <Outlet />, // Use Outlet for nesting
-          children: [
-            { index: true, element: <SchoolExplorerPage /> }, // Level 1
-            {
-              path: ":schoolId/gradelevels",
-              element: <SchoolClassroomListPage />, // Level 2
-            },
-            {
-              path: ":schoolId/classrooms/:classroomId/students",
-              element: <ClassroomStudentListPage />, // Level 3
-            },
-            {
-              path:":schoolId/grade-levels/:gradeLevelId/classrooms",
-              element:<GradeLevelClassroomListPage/>
-            }
-          ],
-        },
-        // --- End Student Section ---
-
-    
-        // --- Enrollments Section ---
-        {
-          path: "enrollments", // New top-level section
-          element: <StudentEnrollmentManager />,
-        },
-        // --- End Teacher Section ---
-
-        // --- School Section ---
-        schoolRoutes,
-        settings,
-
-        // --- Other Sections (e.g., Courses, Settings) would follow the same pattern ---
-      ],
+      direction: "rtl",
+      typography: {
+        fontFamily: ["Cairo", "sans-serif"].join(","), // Base font for MUI
+      },
+      palette: {
+        primary: { main: "#1976d2" },
+        secondary: { main: "#dc004e" },
+      },
     },
+    arSA
+  );
 
-    // --- Authentication Layout & Routes ---
-    {
-      path: "/auth",
-      element: <AuthLayout />, // Specific layout for auth pages
-      children: [
-        {
-          path: "login",
-          element: (
-            <AuthRoute>
-              <Login />
-            </AuthRoute>
-          ),
-        },
-        {
-          path: "register",
-          element: (
-            <AuthRoute>
-              <Register />
-            </AuthRoute>
-          ),
-        },
-      ],
-    },
-    // --- TRANSPORT SECTION ---
-    {
-      path: "transport", // Base path
-      element: <Outlet />,
-      children: [
-        { index: true, element: <Navigate to="/transport/routes" replace /> },
-        { path: "routes", element: <TransportRouteList /> },
-        // Add other transport pages later (e.g., overview, vehicle management)
-      ],
-    },
-    // --- Standalone Pages ---
-    { path: "/unauthorized", element: <Unauthorized /> },
-    { path: "*", element: <NotFound /> }, // Catch-all 404
-  ]);
-
-  // --- Render Application ---
   return (
-    <AuthProvider> {/* Your AuthContext remains crucial */}
-    <SnackbarProvider /* ... MUI Snackbar ... */ >
-      <ToastContainer /* ... react-toastify ... */ />
-      <RouterProvider router={router} />
-    </SnackbarProvider>
-  </AuthProvider>
+    // Order of providers can matter. CacheProvider for MUI RTL should wrap MuiThemeProvider.
+    <CacheProvider value={cacheRtl}>
+      <MuiThemeProvider theme={muiTheme}>
+        {/* <ShadcnThemeProvider defaultTheme="system" storageKey="vite-ui-theme"> */}{" "}
+        {/* Example shadcn theme */}
+        <MuiCssBaseline /> {/* Apply MUI baseline styles */}
+        <AuthProvider>
+          <SnackbarProvider
+            maxSnack={3}
+            autoHideDuration={3000}
+            anchorOrigin={{ vertical: "top", horizontal: "left" }}
+            dense
+          >
+            <ToastContainer
+              position="top-left"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={true}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
+            <RouterProvider router={router} />
+          </SnackbarProvider>
+        </AuthProvider>
+        {/* </ShadcnThemeProvider> */}
+      </MuiThemeProvider>
+    </CacheProvider>
   );
 }
 

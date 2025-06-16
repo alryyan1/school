@@ -7,6 +7,8 @@ type SubjectState = {
     subjects: Subject[];
     loading: boolean;
     error: string | null;
+    gradeSpecificSubjects: Subject[]; // Subjects for a selected grade/year/school
+    loadingGradeSubjects: boolean; // Separate loading
 };
 
 type SubjectActions = {
@@ -14,9 +16,11 @@ type SubjectActions = {
     createSubject: (data: SubjectFormData) => Promise<Subject | null>;
     updateSubject: (id: number, data: Partial<SubjectFormData>) => Promise<Subject | null>;
     deleteSubject: (id: number) => Promise<boolean>;
+    fetchSubjectsForGrade: (filters: { school_id: number; academic_year_id: number; grade_level_id: number }) => Promise<void>;
+    clearGradeSpecificSubjects: () => void;
 };
 
-const initialState: SubjectState = { subjects: [], loading: false, error: null };
+const initialState: SubjectState = { subjects: [], gradeSpecificSubjects: [], loading: false, loadingGradeSubjects: false, error: null };
 
 export const useSubjectStore = create<SubjectState & SubjectActions>((set, get) => ({
     ...initialState,
@@ -90,4 +94,15 @@ export const useSubjectStore = create<SubjectState & SubjectActions>((set, get) 
             return false;
         }
     },
+    fetchSubjectsForGrade: async (filters) => {
+        set({ loadingGradeSubjects: true, error: null });
+        try {
+            const response = await SubjectApi.getSubjectsForGradeLevel(filters);
+            set({ gradeSpecificSubjects: response.data.data, loadingGradeSubjects: false });
+        } catch (err: any) {
+            console.error("Error fetching subjects for grade:", err);
+            set({ loadingGradeSubjects: false, gradeSpecificSubjects: [] });
+        }
+    },
+    clearGradeSpecificSubjects: () => set({ gradeSpecificSubjects: [] }),
 }));

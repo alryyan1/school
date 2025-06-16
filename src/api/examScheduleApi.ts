@@ -24,4 +24,17 @@ export const ExamScheduleApi = {
 
     delete: (id: number) =>
         axiosClient.delete(`/exam-schedules/${id}`),
+ quickAddSchedulesForGrade: (
+        examId: number,
+        gradeLevelId: number,
+        activeAcademicYearId: number, // <-- Add this parameter
+        defaults?: { default_start_time?: string; default_end_time?: string; default_max_marks?: string; default_pass_marks?: string } // Keep marks as string for form
+    ) => {
+        const payload = {
+            grade_level_id: gradeLevelId,
+            active_academic_year_id: activeAcademicYearId, // <-- Send it in the payload
+            ...defaults
+        };
+        return axiosClient.post<{ message: string, count: number }>(`/exams/${examId}/quick-add-schedules`, payload);
+    }
 };

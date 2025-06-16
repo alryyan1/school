@@ -46,5 +46,10 @@ export const StudentAcademicYearApi = {
 
     getAllStudentAcademicYear: ()=>{
       return  axiosClient.get<StudentAcademicYear[]>('getAllStudentAcademicYear')
-    }
+    },
+    getUnassignedForGrade: (filters: { school_id: number; academic_year_id: number; grade_level_id: number }) =>
+      axiosClient.get<CollectionResponse>('/unassigned-students-for-grade', { params: filters }),
+
+  assignToClassroom: (studentAcademicYearId: number, classroomId: number | null) =>
+      axiosClient.put<ResourceResponse>(`/student-enrollments/${studentAcademicYearId}/assign-classroom`, { classroom_id: classroomId }),
 };

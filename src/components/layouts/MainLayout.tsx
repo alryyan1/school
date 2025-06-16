@@ -1,7 +1,7 @@
 // src/components/layout/MainLayout.tsx
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import Sidebar, { SidebarContent } from './Sidebar'; // Import both Sidebar and SidebarContent
+import Sidebar, { SidebarContent } from '../Sidebar'; // Import both Sidebar and SidebarContent
 import NavbarArea from '@/components/layouts/NavbarArea';
 import { Sheet, SheetContent } from "@/components/ui/sheet"; // For mobile sidebar
 import { Button } from "@/components/ui/button";

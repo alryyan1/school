@@ -14,14 +14,16 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    roles?: string[]; // Spatie role names (from API response)
+    permissions?: string[]; // Spatie permission names (from API response)
 }
 
 // For Create/Edit form (includes passwords only for create)
-export interface UserFormData extends Omit<User, 'id' | 'email_verified_at' | 'created_at' | 'updated_at'> {
-    password?: string; // Optional for edit, required for create
-    password_confirmation?: string; // Only for create
+export interface UserFormData extends Omit<User, 'id' | 'email_verified_at' | 'created_at' | 'updated_at' | 'roles' | 'permissions'> {
+    password?: string;
+    password_confirmation?: string;
+    spatie_roles?: string[]; // Array of Spatie role NAMES to assign
 }
-
 // For Password Change form
 export interface UserPasswordFormData {
     password?: string;

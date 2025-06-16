@@ -26,4 +26,7 @@ export const SubjectApi = {
 
     delete: (id: number) =>
         axiosClient.delete(`/subjects/${id}`),
+    getSubjectsForGradeLevel: (filters: { school_id: number; academic_year_id: number; grade_level_id: number }) =>
+        axiosClient.get<SubjectCollectionResponse>('/curriculum/subjects-for-grade', { params: filters }),
+    
 };
