@@ -172,12 +172,10 @@ const ExamScheduleFormDialog: React.FC<ExamScheduleFormDialogProps> = ({
     clearClassrooms,
   ]);
 
-  // Fetch subjects for the selected grade, school, and active academic year
-  useEffect(() => {
-    console.log(selectedGradeId, "selectedGradeId", schoolId, "schoolId", activeAcademicYearId, "activeAcademicYearId")
-    if (open && selectedGradeId && schoolId && activeAcademicYearId) {
-      // alert('ss')
-      fetchSubjectsForGrade({
+      // Fetch subjects for the selected grade, school, and active academic year
+    useEffect(() => {
+      if (open && selectedGradeId && schoolId && activeAcademicYearId) {
+        fetchSubjectsForGrade({
         school_id: schoolId,
         academic_year_id: activeAcademicYearId,
         grade_level_id: Number(selectedGradeId),
@@ -368,10 +366,10 @@ const ExamScheduleFormDialog: React.FC<ExamScheduleFormDialogProps> = ({
         );
       return [initialData.subject];
     }
-    return gradeSpecificSubjects.sort((a, b) => a.name.localeCompare(b.name));
-  }, [gradeSpecificSubjects, isEditMode, initialData]);
- console.log(gradeSpecificSubjects, "gradeSpecificSubjects")
-  // Use schoolSpecificGradeLevels for the grade dropdown
+          return gradeSpecificSubjects.sort((a, b) => a.name.localeCompare(b.name));
+    }, [gradeSpecificSubjects, isEditMode, initialData]);
+
+    // Use schoolSpecificGradeLevels for the grade dropdown
   const gradeLevelOptions = schoolSpecificGradeLevels;
 
   return (
@@ -388,7 +386,7 @@ const ExamScheduleFormDialog: React.FC<ExamScheduleFormDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ScrollArea scrollbarYClassName="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" className="max-h-[65vh] p-1 pr-3">
+                     <ScrollArea className="max-h-[65vh] p-1 pr-3">
             <div className="grid gap-4 py-4">
               {formSubmitError && (
                 <Alert variant="destructive">
@@ -432,9 +430,9 @@ const ExamScheduleFormDialog: React.FC<ExamScheduleFormDialogProps> = ({
                         />
                       </SelectTrigger>
                                               <SelectContent>
-                          <SelectItem value=" " disabled>
-                            اختر مرحلة...
-                          </SelectItem>
+                                                     <SelectItem value=" " disabled>
+                              اختر مرحلة...
+                            </SelectItem>
                         {gradeLevelOptions.map((g) => (
                           <SelectItem key={g.id} value={String(g.id)}>
                             {g.name}
@@ -486,9 +484,9 @@ const ExamScheduleFormDialog: React.FC<ExamScheduleFormDialogProps> = ({
                         />
                       </SelectTrigger>
                                               <SelectContent>
-                          <SelectItem value=" " disabled>
-                            اختر مادة...
-                          </SelectItem>
+                                                     <SelectItem value=" " disabled>
+                              اختر مادة...
+                            </SelectItem>
                         {subjectOptionsToDisplay.length === 0 &&
                           !loadingGradeSubjects && (
                             <SelectItem value=" " disabled>

@@ -2,6 +2,7 @@
 import React from 'react'; // Needed for JSX elements
 import {
     createBrowserRouter,
+    createHashRouter,
     Navigate,
     Outlet,
     useLocation, // Keep useLocation if ProtectedRoute is defined here
@@ -69,6 +70,10 @@ import LoadingScreen from '@/components/LoadingScreen';     // Adjust path
 import { useAuth } from '@/context/authcontext';          // Adjust path
 import Register from '@/pages/Register';
 import { StudentForm } from './components/students/studentForm/StudentForm';
+import ExamResultsEntryPage from './pages/exams/ExamResultsEntryPage';
+import StudentExamResultsPage from './pages/students/StudentExamResultsPage';
+import GradeLevelList from './pages/settings/GradeLevelList';
+import RolePermissionManager from './pages/settings/RolePermissionManager';
 
 // --- ProtectedRoute and AuthRoute (Define them here or import if they are in separate files) ---
 // It's often cleaner to keep these alongside the router if they are tightly coupled.
@@ -105,7 +110,7 @@ const MainLayoutWrapper = () => {
 // --- End ProtectedRoute and AuthRoute ---
 
 
-const router = createBrowserRouter([
+const router = createHashRouter([
     // --- Main Application Layout & Routes ---
     {
         path: '/',
@@ -130,7 +135,10 @@ const router = createBrowserRouter([
                     { path: ':id/edit', element: <StudentForm /> },
                 ]
             },
-
+            {
+                path: 'students/:studentId/exam-results', // New route for specific student
+                element: <StudentExamResultsPage />
+            },
             // --- Teacher Section ---
             {
                 path: 'teachers',
@@ -165,11 +173,14 @@ const router = createBrowserRouter([
                     { index: true, element: <SettingsDashboard /> },
                     { path: 'general', element: <GeneralSettingsPage /> },
                     { path: 'academic-years', element: <AcademicYearList /> },
-                    { path: 'grade-levels', element: <GradeLevelStudentAssigner /> }, // Renamed page
+                    { path: 'grade-levels', element: <GradeLevelList /> }, // Renamed page
                     { path: 'subjects', element: <SubjectList /> },
                     { path: 'classrooms', element: <ClassroomList /> },
                     { path: 'school-grades', element: <SchoolGradeLevelManager /> },
                     { path: 'users', element: <UserList /> },
+                    { path: 'roles-permissions', element: <RolePermissionManager /> }, // <-- Add this
+                    
+
                 ]
             },
 
@@ -192,6 +203,7 @@ const router = createBrowserRouter([
                 children: [
                      { index: true, element: <ExamList /> },
                      { path: ':examId/schedule', element: <ExamSchedulePage /> },
+                     { path: ':examId/results', element: <ExamResultsEntryPage /> },
                 ]
             },
 

@@ -20,4 +20,6 @@ export const ExamApi = {
 
     delete: (id: number) =>
         axiosClient.delete(`/exams/${id}`),
+    getRelevantForStudent: (studentId: number) =>
+        axiosClient.get<CollectionResponse>(`/students/${studentId}/relevant-exams`), // Assuming CollectionResponse for Exam[]
 };

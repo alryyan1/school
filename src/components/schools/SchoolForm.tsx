@@ -13,15 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 // lucide-react icons
-import { CalendarIcon, Upload, Building, XCircle, Save, ArrowRight, AlertCircle, AlertCircleIcon } from 'lucide-react';
+import { Upload, Building, XCircle, Save, ArrowRight, AlertCircle, AlertCircleIcon } from 'lucide-react';
 
 import { useSchoolStore } from '@/stores/schoolStore';   // Adjust path
 import { School, SchoolFormData } from '@/types/school'; // Adjust path
@@ -158,7 +156,7 @@ const SchoolForm: React.FC = () => {
              </div>
          );
      }
-
+  console.log(currentSchool, 'currentSchool')
 
     return (
         <motion.div
@@ -249,26 +247,13 @@ const SchoolForm: React.FC = () => {
                                 <Label htmlFor="establishment_date">تاريخ التأسيس (اختياري)</Label>
                                 <Controller name="establishment_date" control={control}
                                     render={({ field }) => (
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant={"outline"}
-                                                    className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground", errors.establishment_date && "border-destructive")}
-                                                >
-                                                    <CalendarIcon className="ml-2 h-4 w-4" />
-                                                    {field.value ? dayjs(field.value).format('DD / MM / YYYY') : <span>اختر تاريخ</span>}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={field.value ? dayjs(field.value).toDate() : undefined}
-                                                    onSelect={(date) => field.onChange(date ? dayjs(date).format('YYYY-MM-DD') : null)}
-                                                    initialFocus
-                                                    dir="rtl"
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                        <Input 
+                                            id="establishment_date" 
+                                            type="date" 
+                                            {...field} 
+                                            value={field.value ?? ''} 
+                                            className={cn(errors.establishment_date && "border-destructive")} 
+                                        />
                                     )} />
                                 {errors.establishment_date && <p className="text-xs text-destructive">{errors.establishment_date.message}</p>}
                             </div>

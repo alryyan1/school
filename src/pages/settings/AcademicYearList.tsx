@@ -154,6 +154,10 @@ const AcademicYearList: React.FC = () => {
             <AcademicYearForm
                 open={formOpen}
                 onClose={handleCloseForm}
+                onSuccess={() => {
+                    handleCloseForm();
+                    fetchAcademicYears(selectedSchoolFilter || undefined);
+                }}
                 initialData={editingYear}
             />
 

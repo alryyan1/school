@@ -523,7 +523,7 @@ const StudentEnrollmentManager: React.FC = () => {
                           </TableCell>
                         )}
                         <TableCell className="font-medium text-center">
-                          {enrollment.student?.id || "-"}
+                          {enrollment?.id || "-"}
                         </TableCell>
                         <TableCell className="font-medium text-center">
                           {enrollment.student?.student_name || "-"}
@@ -565,6 +565,7 @@ const StudentEnrollmentManager: React.FC = () => {
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
+                            
                             <DropdownMenuContent
                               align="end"
                               className="w-[160px]"
@@ -577,6 +578,7 @@ const StudentEnrollmentManager: React.FC = () => {
                                 <Edit3 className="ml-2 h-4 w-4" /> تعديل التسجيل
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              
                               <DropdownMenuItem
                                 onSelect={() =>
                                   handleOpenDeleteDialog(enrollment)

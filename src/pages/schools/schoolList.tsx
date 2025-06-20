@@ -49,6 +49,7 @@ import {
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
 import { School } from "@/types/school"; // Adjust path
 import { useSnackbar } from "notistack"; // Still useful for general notifications
+import { webUrl } from "@/constants";
 // Removed MUI Pagination, DataGrid, Tooltip, etc.
 
 const SchoolList: React.FC = () => {
@@ -155,7 +156,7 @@ const SchoolList: React.FC = () => {
       </div>
     );
   }
-
+  
   // --- Render Error State ---
   if (error) {
     return (
@@ -211,7 +212,7 @@ const SchoolList: React.FC = () => {
               <TableHead className="w-[60px] text-center">الشعار</TableHead>
               <TableHead className="text-center">اسم المدرسة</TableHead>
               <TableHead className="hidden sm:table-cell text-center">الرمز</TableHead>
-              <TableHead className="hidden md:table-cell">
+              <TableHead className="hidden md:table-cell text-center  ">
                 البريد الإلكتروني
               </TableHead>
               <TableHead className="hidden md:table-cell text-center">الهاتف</TableHead>
@@ -242,8 +243,9 @@ const SchoolList: React.FC = () => {
                 >
                   <TableCell className="text-center">
                     <Avatar className="h-9 w-9 mx-auto">
+                      {/* {console.log(`${webUrl}${school.logo_url ?? undefined}`)} */}
                       <AvatarImage
-                        src={school.logo_url ?? undefined}
+                        src={`${webUrl}${school.logo_url ?? undefined}`}
                         alt={school.name}
                       />
                       <AvatarFallback>
@@ -291,12 +293,7 @@ const SchoolList: React.FC = () => {
                           <Edit3 className="ml-2 h-4 w-4" /> تعديل
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onSelect={() => handleOpenDeleteDialog(school)}
-                          className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/50"
-                        >
-                          <Trash2 className="ml-2 h-4 w-4" /> حذف
-                        </DropdownMenuItem>
+                   
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

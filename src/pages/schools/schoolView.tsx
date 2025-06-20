@@ -17,6 +17,7 @@ import { Edit3, ArrowRight, Building, Mail, Phone, User, CalendarDays, AlertCirc
 
 import { useSchoolStore } from '@/stores/schoolStore';   // Adjust path
 import dayjs from 'dayjs'; // For date formatting
+import { webUrl } from '@/constants';
 
 const displayData = (data: string | number | null | undefined, placeholder = 'غير محدد', suffix = '') => {
     return data ? `${data}${suffix}` : placeholder;
@@ -96,7 +97,7 @@ const SchoolView: React.FC = () => {
              </div>
         );
     }
-
+  console.log(currentSchool, 'currentSchool')
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -124,7 +125,7 @@ const SchoolView: React.FC = () => {
                         {/* Logo Section */}
                         <div className="md:col-span-1 flex flex-col items-center">
                             <Avatar className="h-32 w-32 rounded-md mb-4 border">
-                                <AvatarImage src={currentSchool.logo_url ?? undefined} alt={currentSchool.name} />
+                                <AvatarImage src={`${webUrl}${currentSchool.logo_url ?? undefined}`} alt={currentSchool.name} />
                                 <AvatarFallback><Building className="h-16 w-16 text-muted-foreground" /></AvatarFallback>
                             </Avatar>
                              {/* You can add other summary info here if needed */}

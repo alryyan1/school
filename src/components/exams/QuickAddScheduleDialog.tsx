@@ -157,7 +157,7 @@ const QuickAddScheduleDialog: React.FC<QuickAddScheduleDialogProps> = ({ open, o
                                     <Select value={field.value} onValueChange={field.onChange} required disabled={loadingSchoolGrades}>
                                         <SelectTrigger id="quick_add_grade_level_id" className={cn(errors.grade_level_id && "border-destructive")}><SelectValue placeholder="اختر مرحلة..." /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value=" " disabled>اختر مرحلة...</SelectItem>
+                                                                                         <SelectItem value=" " disabled>اختر مرحلة...</SelectItem>
                                             {availableGradeLevels.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>

@@ -106,7 +106,7 @@ const TeacherForm: React.FC = () => {
         setIsFetchingData(false);
         if (!teacherData) {
           enqueueSnackbar("المدرس المطلوب غير موجود", { variant: "error" });
-          navigate("/settings/teachers/list");
+          navigate("/teachers/list");
         }
       };
       fetchData();
@@ -182,7 +182,7 @@ const TeacherForm: React.FC = () => {
         enqueueSnackbar("تم إضافة المدرس بنجاح", { variant: "success" });
       }
       if (result) {
-        navigate(`/settings/teachers/${result.data.id}`); // Navigate to view page
+        navigate(`/teachers/${result.data.id}`); // Navigate to view page
       }
     } catch (error) {
       setFormSubmitError(error.message || "حدث خطأ أثناء حفظ البيانات");
@@ -241,8 +241,8 @@ const TeacherForm: React.FC = () => {
         onClick={() =>
           navigate(
             isEditMode
-              ? `/settings/teachers/${teacherId}`
-              : "/settings/teachers/list"
+              ? `/teachers/${teacherId}`
+              : "/teachers/list"
           )
         }
         className="mb-6"

@@ -1,5 +1,5 @@
 // src/pages/students/StudentView.tsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,10 @@ import { useStudentStore } from '@/stores/studentStore';
 import { imagesUrl } from '@/constants';
 import { Gender } from '@/types/student';
 import { useSnackbar } from 'notistack';
+import { motion } from 'framer-motion';
+import StudentActionPane from '@/components/students/StudentActionPane';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 
 // Helper to display data or placeholder
 const displayData = (data: string | number | null | undefined, placeholder = 'غير محدد', suffix = '') => {
@@ -111,6 +115,19 @@ const StudentView: React.FC = () => {
             setUploadError(useStudentStore.getState().error || 'فشل رفع الصورة. حاول مرة أخرى.');
         }
     };
+    const { activeAcademicYearId } = useSettingsStore.getState();
+    const { enrollments, fetchEnrollments: fetchStudentEnrollments } = useStudentEnrollmentStore();
+
+     // Find the student's enrollment for the active academic year
+     const currentEnrollmentRecord = useMemo(() => {
+        if (!currentStudent || !activeAcademicYearId) return null;
+        // This assumes 'enrollments' in useStudentEnrollmentStore is either global or fetched for this student
+        // A more robust way would be a dedicated fetch: getEnrollmentForStudentInYear(studentId, activeAcademicYearId)
+        return enrollments.find(
+            e => e.student_id === currentStudent.id && e.academic_year_id === activeAcademicYearId
+        );
+    }, [currentStudent, activeAcademicYearId, enrollments]);
+
 
     if (loading && !currentStudent) {
         return (
@@ -147,13 +164,21 @@ const StudentView: React.FC = () => {
             </div>
         );
     }
+ 
 
     const studentName = currentStudent.student_name || "الطالب";
     const imageUrl = currentStudent.image_url;
     const imagePreviewUrl = selectedFile ? URL.createObjectURL(selectedFile) : imageUrl;
 
     return (
-        <div className="container mx-auto p-6" dir="rtl">
+        <motion.div
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+        className="container max-w-screen-xl mx-auto py-6 px-4" dir="rtl" // Wider container for two columns
+    >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6"> {/* Main grid for content + action pane */}
+
+            {/* Main Content Area (Student Details) */}
+            <div className="lg:col-span-9"> {/* Takes up more space */}
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-center">
@@ -327,7 +352,13 @@ const StudentView: React.FC = () => {
                     </div>
                 </CardContent>
             </Card>
+            </div>
+             {/* Action Pane Area */}
+             <div className="lg:col-span-3">
+                    <StudentActionPane student={currentStudent} currentEnrollmentId={currentEnrollmentRecord?.id} />
+                </div>
         </div>
+        </motion.div>
     );
 };
 

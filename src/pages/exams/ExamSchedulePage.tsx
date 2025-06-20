@@ -56,6 +56,7 @@ import {
   Loader2,
   ArrowRight,
   PlusSquare,
+  BookCopy,
 } from "lucide-react";
 
 import { useExamStore } from "@/stores/examStore";
@@ -159,7 +160,7 @@ const ExamSchedulePage: React.FC = () => {
   };
   const handleDeleteConfirm = async () => {
     if (!scheduleToDelete) return;
-    
+
     try {
       await deleteSchedule(scheduleToDelete.id);
       enqueueSnackbar("تم حذف موعد الامتحان بنجاح", { variant: "success" });
@@ -182,7 +183,7 @@ const ExamSchedulePage: React.FC = () => {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 },
   };
- 
+
   // --- Grade Level Options for Filter (school-specific if exam has school) ---
   const gradeLevelOptionsForFilter = useMemo(() => {
     if (currentExam?.school_id) {
@@ -249,6 +250,15 @@ const ExamSchedulePage: React.FC = () => {
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => navigate(`/exams/${examId}/results`)}
+                  disabled={!currentExam}
+                  size="sm"
+                  variant="outline" // Or other variant
+                >
+                  <BookCopy className="ml-2 h-4 w-4" />
+                  الذهاب لصفحة رصد الدرجات
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -332,11 +342,15 @@ const ExamSchedulePage: React.FC = () => {
             <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px] text-center ">المادة</TableHead>
+                  <TableHead className="w-[180px] text-center ">
+                    المادة
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell text-center">
                     المرحلة
                   </TableHead>
-                  <TableHead className="hidden md:table-cell text-center">الفصل</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">
+                    الفصل
+                  </TableHead>
                   <TableHead className="text-center">التاريخ</TableHead>
                   <TableHead className="text-center">الوقت</TableHead>
                   <TableHead className="text-center hidden lg:table-cell ">
@@ -459,10 +473,7 @@ const ExamSchedulePage: React.FC = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <ShadcnDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-      >
+      <ShadcnDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
             <ShadcnDialogTitle>تأكيد الحذف</ShadcnDialogTitle>

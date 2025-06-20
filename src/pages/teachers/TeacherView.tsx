@@ -40,7 +40,7 @@ const TeacherView: React.FC = () => {
             getTeacherById(teacherId);
         } else {
             console.error("Invalid Teacher ID provided in URL");
-            navigate('/settings/teachers/list');
+            navigate('/teachers/list');
         }
         return () => resetCurrentTeacher(); // Cleanup
     }, [id, getTeacherById, resetCurrentTeacher, navigate]);
@@ -114,13 +114,13 @@ const TeacherView: React.FC = () => {
                 <div className="flex gap-2">
                         <Button
                         variant="outline"
-                        onClick={() => navigate('/settings/teachers/list')}
+                        onClick={() => navigate('/teachers/list')}
                     >
                         <ArrowLeft className="ml-2 h-4 w-4" />
                             العودة للقائمة
                         </Button>
                         <Button
-                        onClick={() => navigate(`/settings/teachers/${currentTeacher.data.id}/edit`)}
+                        onClick={() => navigate(`/teachers/${currentTeacher.data.id}/edit`)}
                         >
                         <Edit className="ml-2 h-4 w-4" />
                             تعديل

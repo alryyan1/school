@@ -141,7 +141,7 @@ const TeacherList: React.FC = () => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full sm:max-w-xs"
                             />
-                            <Button onClick={() => navigate('/settings/teachers/create')} className="w-full sm:w-auto whitespace-nowrap">
+                            <Button onClick={() => navigate('/teachers/create')} className="w-full sm:w-auto whitespace-nowrap">
                                 <PlusCircle className="ml-2 h-4 w-4" /> إضافة مدرس
                             </Button>
                         </div>
@@ -235,10 +235,10 @@ const TeacherList: React.FC = () => {
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end" className="w-[160px]">
                                                                 <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                                                                <DropdownMenuItem onSelect={() => navigate(`/settings/teachers/${teacher.id}`)}>
+                                                                <DropdownMenuItem onSelect={() => navigate(`/teachers/${teacher.id}`)}>
                                                                     <Eye className="ml-2 h-4 w-4" /> عرض
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onSelect={() => navigate(`/settings/teachers/${teacher.id}/edit`)}>
+                                                                <DropdownMenuItem onSelect={() => navigate(`/teachers/${teacher.id}/edit`)}>
                                                                     <Edit3 className="ml-2 h-4 w-4" /> تعديل
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />

@@ -21,7 +21,8 @@ import {
     ListOrdered,    // Example for Curriculum
     School,         // For School-Grade Assignments
     GraduationCap,  // For Teachers (already defined in settingsItems below)
-    ArrowRight,     // For Back Button
+    ArrowRight,
+    ShieldCheck,     // For Back Button
 } from 'lucide-react';
 
 // Define the structure for each settings card item
@@ -122,6 +123,14 @@ const SettingsDashboard: React.FC = () => {
             icon: Users,
             iconColor: "text-rose-600 dark:text-rose-400",
             bgColor: "bg-rose-100/70 dark:bg-rose-900/40",
+        },
+        {
+            title: 'إدارة الصلاحيات والدورات',
+            description: 'إدارة الصلاحيات والدورات.',
+            link: 'roles-permissions', // Relative
+            icon: ShieldCheck,
+            iconColor: "text-blue-600 dark:text-blue-400",
+            bgColor: "bg-blue-100/70 dark:bg-blue-900/40",
         },
          {
              title: 'الإعدادات الافتراضية',

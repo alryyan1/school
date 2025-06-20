@@ -18,7 +18,9 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Edit, Trash2, Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, CalendarIcon, FilterX, // Added FilterX
+  Edit, Trash2, Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, CalendarIcon, FilterX,
+  BookCopy,
+  Edit3, // Added FilterX
 } from "lucide-react";
 import { useStudentStore } from "@/stores/studentStore";
 import { Gender, Student, EducationLevel } from "@/types/student"; // Import EducationLevel
@@ -27,6 +29,8 @@ import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
 import dayjs, { Dayjs } from "dayjs"; // Import Dayjs type
 import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 
 
 const StudentList = () => {
@@ -363,40 +367,24 @@ const StudentList = () => {
                             </TooltipProvider>
                           </TableCell>
                           <TableCell className="text-center">
-                            <div className="flex justify-center items-center gap-1">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/students/${student.id}`)}>
-                                      <Eye className="h-4 w-4 text-blue-500" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>عرض</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/students/${student.id}/edit`)}>
-                                      <Edit className="h-4 w-4 text-green-500" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>تعديل</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                              {!student.approved && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAccept(student)}>
-                                        <Mail className="h-4 w-4 text-teal-500" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>قبول الطالب</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[180px]">
+                                <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}`)}><Eye className="ml-2 h-4 w-4" /> عرض الملف</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}/edit`)}><Edit3 className="ml-2 h-4 w-4" /> تعديل البيانات</DropdownMenuItem>
+                                {/* --- NEW MENU ITEM --- */}
+                                <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}/exam-results`)}>
+                                    <BookCopy className="ml-2 h-4 w-4" /> سجل الامتحانات والدرجات
+                                </DropdownMenuItem>
+                                {/* --------------------- */}
+                                {!student.approved && (
+                                    <DropdownMenuItem onSelect={() => handleAccept(student)}> {/* Assuming handleAccept exists */}
+                                            <Mail className="ml-2 h-4 w-4 text-teal-500" /> قبول الطالب
+                                </DropdownMenuItem>
+                            )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       ))

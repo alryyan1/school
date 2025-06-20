@@ -16,6 +16,7 @@ export const StudentAcademicYearApi = {
   getAll: (filters: {
     academic_year_id: number;
     grade_level_id?: number;
+    school_id?: number;
     classroom_id?: number;
   }) =>
     axiosClient.get<CollectionResponse>("/student-enrollments", {

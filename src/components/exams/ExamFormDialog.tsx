@@ -191,9 +191,9 @@ const ExamFormDialog: React.FC<ExamFormDialogProps> = ({
                       />
                     </SelectTrigger>
                                           <SelectContent>
-                        <SelectItem value=" " disabled>
-                          <em>اختر مدرسة...</em>
-                        </SelectItem>
+                                                 <SelectItem value="" disabled>
+                            <em>اختر مدرسة...</em>
+                          </SelectItem>
                       {schools.map((s) => (
                         <SelectItem key={s.id} value={String(s.id)}>
                           {s.name}

@@ -371,7 +371,7 @@ const CurriculumManager: React.FC = () => {
                                   <Edit className="w-4 h-4 ml-2" />
                                   تغيير المعلم
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                examResult               <DropdownMenuItem 
                                   onClick={() => handleOpenDeleteDialog(assignment)}
                                   className="text-red-600"
                                 >
