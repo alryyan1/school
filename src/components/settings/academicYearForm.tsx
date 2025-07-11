@@ -1,8 +1,8 @@
 // src/components/settings/AcademicYearForm.tsx
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
-    Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"; // shadcn Dialog
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,13 +10,10 @@ import { Label } from "@/components/ui/label";
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select"; // shadcn Select
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch"; // shadcn Switch
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { Loader2, AlertCircle, CalendarIcon } from 'lucide-react'; // Icons
+import { Loader2, AlertCircle } from 'lucide-react'; // Icons
 import dayjs from 'dayjs';
 import 'dayjs/locale/ar';
 dayjs.locale('ar');
@@ -65,13 +62,13 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
 
             reset({
                 name: '',
-                school_id: defaultSchool, // Use default from settings if creating and available
+                school_id: defaultSchool ? Number(defaultSchool) : 0, // Convert to number for form data
                 start_date: dayjs().startOf('year').format('YYYY-MM-DD'), // e.g., Jan 1st
                 end_date: dayjs().endOf('year').format('YYYY-MM-DD'),     // e.g., Dec 31st
                 is_current: false,
                 ...(initialData ? {
                     ...initialData,
-                    school_id: String(initialData.school_id), // Ensure string for Select
+                    school_id: initialData.school_id, // Keep as number
                     start_date: dayjs(initialData.start_date).format('YYYY-MM-DD'),
                     end_date: dayjs(initialData.end_date).format('YYYY-MM-DD'),
                 } : {}),
@@ -102,13 +99,13 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
                 enqueueSnackbar('تم إضافة العام الدراسي بنجاح', { variant: 'success' });
             }
             onSuccess(); // Close dialog and trigger refetch
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Academic Year Form submission error:", error);
-            const backendErrors = error.response?.data?.errors;
+            const backendErrors = (error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
             if (backendErrors) {
                 setFormSubmitError(`فشل الحفظ: ${Object.values(backendErrors).flat().join('. ')}`);
             } else {
-                setFormSubmitError(error.message || 'حدث خطأ غير متوقع.');
+                setFormSubmitError((error as Error)?.message || 'حدث خطأ غير متوقع.');
             }
         }
     };
@@ -135,7 +132,7 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
                                 render={({ field }) => (
                                     <Select
                                         value={field.value ? String(field.value) : ""}
-                                        onValueChange={(val) => field.onChange(val ? Number(val) : '')}
+                                        onValueChange={(val) => field.onChange(val ? Number(val) : 0)}
                                         disabled={isEditMode || schoolsLoading} // Disable school change in edit mode
                                         required
                                     >
@@ -165,12 +162,12 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
                                 <Label htmlFor="start_date_ay_form">تاريخ البداية *</Label>
                                 <Controller name="start_date" control={control} rules={{ required: 'تاريخ البداية مطلوب' }}
                                     render={({ field }) => (
-                                        <Popover><PopoverTrigger asChild>
-                                            <Button variant="outline" className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground", errors.start_date && "border-destructive")}>
-                                                <CalendarIcon className="ml-2 h-4 w-4" />{field.value ? dayjs(field.value).format('DD / MM / YYYY') : <span>اختر تاريخ</span>}
-                                            </Button></PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value ? dayjs(field.value).toDate() : undefined} onSelect={(d) => field.onChange(d ? dayjs(d).format('YYYY-MM-DD') : null)} initialFocus dir="rtl" /></PopoverContent>
-                                        </Popover>
+                                        <Input 
+                                            id="start_date_ay_form" 
+                                            type="date" 
+                                            {...field} 
+                                            className={cn(errors.start_date && "border-destructive")}
+                                        />
                                     )} />
                                 {errors.start_date && <p className="text-xs text-destructive mt-1">{errors.start_date.message}</p>}
                             </div>
@@ -178,12 +175,13 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
                                 <Label htmlFor="end_date_ay_form">تاريخ النهاية *</Label>
                                 <Controller name="end_date" control={control} rules={{ required: 'تاريخ النهاية مطلوب', validate: value => dayjs(value).isAfter(dayjs(watch('start_date'))) || 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية' }}
                                     render={({ field }) => (
-                                        <Popover><PopoverTrigger asChild>
-                                            <Button variant="outline" className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground", errors.end_date && "border-destructive")}>
-                                                <CalendarIcon className="ml-2 h-4 w-4" />{field.value ? dayjs(field.value).format('DD / MM / YYYY') : <span>اختر تاريخ</span>}
-                                            </Button></PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value ? dayjs(field.value).toDate() : undefined} onSelect={(d) => field.onChange(d ? dayjs(d).format('YYYY-MM-DD') : null)} initialFocus dir="rtl" fromDate={watch('start_date') ? dayjs(watch('start_date')).add(1, 'day').toDate() : undefined} /></PopoverContent>
-                                        </Popover>
+                                        <Input 
+                                            id="end_date_ay_form" 
+                                            type="date" 
+                                            {...field} 
+                                            className={cn(errors.end_date && "border-destructive")}
+                                            min={watch('start_date') ? dayjs(watch('start_date')).add(1, 'day').format('YYYY-MM-DD') : undefined}
+                                        />
                                     )} />
                                 {errors.end_date && <p className="text-xs text-destructive mt-1">{errors.end_date.message}</p>}
                             </div>
@@ -200,7 +198,9 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
                         </div>
                     </div>
                     <DialogFooter className="pt-4">
-                        <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>إلغاء</Button></DialogClose>
+                        <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => onOpenChange(false)}>
+                            إلغاء
+                        </Button>
                         <Button type="submit" disabled={isSubmitting || schoolsLoading}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {isEditMode ? 'حفظ التعديلات' : 'إضافة عام دراسي'}

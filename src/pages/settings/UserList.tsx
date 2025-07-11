@@ -1,49 +1,54 @@
-// src/pages/settings/UserList.tsx (or pages/users/UserList.tsx)
+// src/pages/settings/UserList.tsx
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Use alias if needed
+import { useNavigate } from 'react-router-dom';
 import {
-    Box, Button, Container, Typography, CircularProgress, Alert, IconButton,
-    Tooltip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-    Paper, Chip, Stack, // Keep Stack if using it elsewhere
-    Pagination // For DataGrid pagination
-} from '@mui/material';
-import { DataGrid, GridColDef, GridActionsCellItem, GridPaginationModel } from '@mui/x-data-grid';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, LockReset as PasswordIcon } from '@mui/icons-material';
-import { useUserStore } from '@/stores/userStore'; // Adjust path
-import UserFormDialog from '@/components/users/UserFormDialog'; // Adjust path
-import ChangePasswordDialog from '@/components/users/ChangePasswordDialog'; // Adjust path
-import { User } from '@/types/user'; // Adjust path
+    Dialog, DialogContent, DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+    Plus, Edit, Trash2, Key, ArrowLeft, 
+    AlertCircle, Search
+} from 'lucide-react';
+
+import { useUserStore } from '@/stores/userStore';
+import UserFormDialog from '@/components/users/UserFormDialog';
+import ChangePasswordDialog from '@/components/users/ChangePasswordDialog';
+import { User } from '@/types/user';
 import { useSnackbar } from 'notistack';
 
 const UserList: React.FC = () => {
-    const navigate = useNavigate(); // If needed elsewhere
+    const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
-    const { users, loading, error, currentPage, lastPage, total, fetchUsers, deleteUser } = useUserStore();
+    const { users, loading, error, lastPage, total, fetchUsers, deleteUser } = useUserStore();
 
-    // --- Local State ---
-    const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 20 }); // pageSize matching controller default?
+    // Local State
+    const [currentPageState, setCurrentPageState] = useState(1);
     const [userFormOpen, setUserFormOpen] = useState(false);
     const [changePasswordOpen, setChangePasswordOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<User | null>(null); // For Edit/Delete/Password Change
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    // --- Effects ---
-    // Fetch users when pagination changes
+    // Effects
     useEffect(() => {
-        // DataGrid page is 0-based, API is 1-based
-        fetchUsers(paginationModel.page + 1 /*, Add filters here if needed */);
-    }, [paginationModel.page, fetchUsers]);
+        fetchUsers(currentPageState);
+    }, [currentPageState, fetchUsers]);
 
-    // --- Handlers ---
+    // Handlers
     const handleOpenUserForm = (user?: User | null) => {
         setSelectedUser(user || null);
         setUserFormOpen(true);
     };
+
     const handleCloseUserForm = (refetch = false) => {
         setUserFormOpen(false);
         setSelectedUser(null);
         if (refetch) {
-            fetchUsers(paginationModel.page + 1); // Refetch current page
+            fetchUsers(currentPageState);
         }
     };
 
@@ -51,6 +56,7 @@ const UserList: React.FC = () => {
         setSelectedUser(user);
         setChangePasswordOpen(true);
     };
+
     const handleCloseChangePasswordDialog = () => {
         setChangePasswordOpen(false);
         setSelectedUser(null);
@@ -60,21 +66,22 @@ const UserList: React.FC = () => {
         setSelectedUser(user);
         setDeleteDialogOpen(true);
     };
+
     const handleCloseDeleteDialog = () => {
         setSelectedUser(null);
         setDeleteDialogOpen(false);
     };
+
     const handleDeleteConfirm = async () => {
         if (selectedUser) {
             const success = await deleteUser(selectedUser.id);
             if (success) {
                 enqueueSnackbar('تم حذف المستخدم بنجاح', { variant: 'success' });
-                 // Refetch might be needed if total count changes affects current page display
-                 if (users.length === 1 && paginationModel.page > 0) {
-                     setPaginationModel(prev => ({...prev, page: prev.page - 1}));
-                 } else {
-                      fetchUsers(paginationModel.page + 1);
-                 }
+                if (users.length === 1 && currentPageState > 1) {
+                    setCurrentPageState(prev => prev - 1);
+                } else {
+                    fetchUsers(currentPageState);
+                }
             } else {
                 enqueueSnackbar(useUserStore.getState().error || 'فشل حذف المستخدم', { variant: 'error' });
             }
@@ -82,72 +89,159 @@ const UserList: React.FC = () => {
         }
     };
 
-    // --- DataGrid Columns ---
-    const columns: GridColDef<User>[] = [
-        { field: 'id', headerName: 'ID', width: 70 },
-        { field: 'name', headerName: 'الاسم الكامل', width: 200 },
-        { field: 'username', headerName: 'اسم المستخدم', width: 150 },
-        { field: 'email', headerName: 'البريد الإلكتروني', width: 220 },
-        { field: 'role', headerName: 'الدور', width: 100, renderCell:(params)=> <Chip label={params.value} size="small"/> },
-        { field: 'phone', headerName: 'الهاتف', width: 130, sortable: false, valueGetter: (params) => params?.value || '-' },
-        { field: 'gender', headerName: 'الجنس', width: 80, sortable: false, valueGetter: (params) => params?.value || '-' },
-        {
-            field: 'actions', type: 'actions', headerName: 'إجراءات', width: 150,
-            getActions: ({ row }) => [
-                 <GridActionsCellItem
-                    icon={<Tooltip title="تعديل بيانات المستخدم"><EditIcon /></Tooltip>}
-                    label="تعديل"
-                    onClick={() => handleOpenUserForm(row)}
-                    color="primary"
-                />,
-                 <GridActionsCellItem
-                    icon={<Tooltip title="تغيير كلمة المرور"><PasswordIcon /></Tooltip>}
-                    label="كلمة المرور"
-                    onClick={() => handleOpenChangePasswordDialog(row)}
-                    color="secondary"
-                />,
-                <GridActionsCellItem
-                    icon={<Tooltip title="حذف المستخدم"><DeleteIcon /></Tooltip>}
-                    label="حذف"
-                    onClick={() => handleOpenDeleteDialog(row)}
-                    color="error"
-                />,
-            ],
-        },
-    ];
+    const filteredUsers = users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const getRoleBadgeVariant = (role: string) => {
+        switch (role) {
+            case 'admin': return 'destructive';
+            case 'teacher': return 'default';
+            case 'student': return 'secondary';
+            case 'parent': return 'outline';
+            default: return 'secondary';
+        }
+    };
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }} dir="rtl">
+        <div className="container mx-auto py-6 space-y-6" dir="rtl">
             {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1">إدارة المستخدمين</Typography>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenUserForm()}>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4 space-x-reverse">
+                    <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="h-4 w-4 ml-2" />
+                        رجوع
+                    </Button>
+                    <h1 className="text-3xl font-bold">إدارة المستخدمين</h1>
+                </div>
+                <Button onClick={() => handleOpenUserForm()}>
+                    <Plus className="h-4 w-4 ml-2" />
                     إضافة مستخدم
                 </Button>
-            </Box>
+            </div>
 
-            {/* Loading/Error */}
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {/* Search and Filters */}
+            <div className="flex items-center space-x-4 space-x-reverse">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                        placeholder="البحث في المستخدمين..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pr-10"
+                    />
+                </div>
+            </div>
 
-            {/* DataGrid */}
-            <Paper elevation={2} sx={{ height: 650, width: '100%' }}>
-                <DataGrid
-                    rows={users}
-                    columns={columns}
-                    loading={loading}
-                    rowCount={total} // Total rows from API
-                    pageSizeOptions={[20]} // Match backend pagination limit
-                    paginationModel={paginationModel}
-                    onPaginationModelChange={setPaginationModel}
-                    paginationMode="server" // Tell DataGrid pagination is handled server-side
-                    getRowId={(row) => row.id}
-                    sx={{
-                        // Remove focus outline styles for better visual
-                         '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': { outline: 'none' },
-                         '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': { outline: 'none' }
-                    }}
-                />
-            </Paper>
+            {/* Loading State */}
+            {loading && (
+                <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-center space-x-4 space-x-reverse p-4 border rounded-lg">
+                            <Skeleton className="h-12 w-12 rounded-full" />
+                            <div className="space-y-2 flex-1">
+                                <Skeleton className="h-4 w-[250px]" />
+                                <Skeleton className="h-4 w-[200px]" />
+                            </div>
+                            <Skeleton className="h-8 w-[100px]" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+
+            {/* Users List */}
+            {!loading && !error && (
+                <div className="space-y-4">
+                    {filteredUsers.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                            {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد مستخدمين لعرضهم'}
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {filteredUsers.map((user) => (
+                                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                                    <div className="flex items-center space-x-4 space-x-reverse">
+                                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <span className="text-lg font-semibold text-primary">
+                                                {user.name.charAt(0).toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold">{user.name}</h3>
+                                            <p className="text-sm text-muted-foreground">{user.username}</p>
+                                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2 space-x-reverse">
+                                        <Badge variant={getRoleBadgeVariant(user.role)}>
+                                            {user.role}
+                                        </Badge>
+                                        <div className="flex items-center space-x-1 space-x-reverse">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleOpenUserForm(user)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleOpenChangePasswordDialog(user)}
+                                            >
+                                                <Key className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleOpenDeleteDialog(user)}
+                                                className="text-destructive hover:text-destructive"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && !error && total > 20 && (
+                <div className="flex items-center justify-center space-x-2 space-x-reverse">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPageState(prev => Math.max(1, prev - 1))}
+                        disabled={currentPageState === 1}
+                    >
+                        السابق
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                        صفحة {currentPageState} من {lastPage}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPageState(prev => Math.min(lastPage, prev + 1))}
+                        disabled={currentPageState === lastPage}
+                    >
+                        التالي
+                    </Button>
+                </div>
+            )}
 
             {/* Dialogs */}
             <UserFormDialog
@@ -155,21 +249,28 @@ const UserList: React.FC = () => {
                 onClose={handleCloseUserForm}
                 initialData={selectedUser}
             />
-             <ChangePasswordDialog
+            <ChangePasswordDialog
                 open={changePasswordOpen}
                 onClose={handleCloseChangePasswordDialog}
                 user={selectedUser}
-             />
-            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog} dir="rtl">
-                <DialogTitle>تأكيد الحذف</DialogTitle>
-                <DialogContent><DialogContentText>هل أنت متأكد من حذف المستخدم "{selectedUser?.name}"?</DialogContentText></DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDeleteDialog}>إلغاء</Button>
-                    <Button onClick={handleDeleteConfirm} color="error">حذف</Button>
-                </DialogActions>
+            />
+            <Dialog open={deleteDialogOpen} onOpenChange={handleCloseDeleteDialog}>
+                <DialogContent>
+                    <DialogTitle>تأكيد الحذف</DialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                        هل أنت متأكد من حذف المستخدم "{selectedUser?.name}"؟
+                    </p>
+                    <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+                        <Button variant="outline" onClick={handleCloseDeleteDialog}>
+                            إلغاء
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteConfirm}>
+                            حذف
+                        </Button>
+                    </div>
+                </DialogContent>
             </Dialog>
-
-        </Container>
+        </div>
     );
 };
 

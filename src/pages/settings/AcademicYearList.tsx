@@ -1,12 +1,12 @@
 // src/pages/settings/AcademicYearList.tsx
 import React, { useState, useEffect } from 'react';
 import {
-    Box, Button, Container, Typography, CircularProgress, Alert, IconButton, Tooltip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Chip, Stack, FormControl, InputLabel, Select, MenuItem
+    Box, Button, Container, Typography, CircularProgress, Alert, IconButton, Tooltip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Stack, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle as CheckCircleIcon, RadioButtonUnchecked as RadioButtonUncheckedIcon, ArrowBack } from '@mui/icons-material';
 import { useAcademicYearStore } from '@/stores/academicYearStore';
 import { useSchoolStore } from '@/stores/schoolStore'; // Import school store
-import AcademicYearForm from '@/components/settings/AcademicYearForm'; // Import the Form Dialog
+import AcademicYearForm from '@/components/settings/academicYearForm'; // Import the Form Dialog
 import { AcademicYear } from '@/types/academicYear';
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
@@ -153,7 +153,7 @@ const AcademicYearList: React.FC = () => {
             {/* Form Dialog */}
             <AcademicYearForm
                 open={formOpen}
-                onClose={handleCloseForm}
+                onOpenChange={handleCloseForm}
                 onSuccess={() => {
                     handleCloseForm();
                     fetchAcademicYears(selectedSchoolFilter || undefined);

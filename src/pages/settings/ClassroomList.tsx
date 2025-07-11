@@ -93,8 +93,13 @@ const ClassroomList: React.FC = () => {
 
   // --- Effects ---
   useEffect(() => {
+    console.log("Fetching schools..."); // Debug log
     fetchSchools();
   }, [fetchSchools]);
+
+  useEffect(() => {
+    console.log("Schools loaded:", schools.length, schools); // Debug log
+  }, [schools]);
 
   const fetchSchoolSpecificGrades = useCallback(
     async (schoolId: number) => {
@@ -102,7 +107,10 @@ const ClassroomList: React.FC = () => {
       setAvailableGradeLevels([]);
       try {
         const response = await SchoolApi.getAssignedGradeLevels(schoolId);
-        setAvailableGradeLevels(response.data.data ?? []);
+        console.log("School grades response:", response.data); // Debug log
+        // Laravel Resource Collection returns { data: [...] }
+        const gradeLevels = (response.data as { data: GradeLevel[] }).data ?? [];
+        setAvailableGradeLevels(gradeLevels);
       } catch (err) {
         console.error("Failed to fetch school grades", err);
         enqueueSnackbar("فشل تحميل مراحل المدرسة المختارة", {
@@ -116,14 +124,20 @@ const ClassroomList: React.FC = () => {
   );
 
   useEffect(() => {
-    if (selectedSchoolId && activeAcademicYearId) {
+    console.log("useEffect triggered:", { selectedSchoolId, activeAcademicYearId }); // Debug log
+    if (selectedSchoolId) {
+      console.log("Fetching grades for school:", selectedSchoolId); // Debug log
       fetchSchoolSpecificGrades(selectedSchoolId);
-      fetchClassrooms({
-        school_id: selectedSchoolId,
-        grade_level_id: selectedGradeFilter || undefined,
-        active_academic_year_id: activeAcademicYearId,
-      });
+      if (activeAcademicYearId) {
+        console.log("Fetching classrooms for school:", selectedSchoolId, "and year:", activeAcademicYearId); // Debug log
+        fetchClassrooms({
+          school_id: selectedSchoolId,
+          grade_level_id: selectedGradeFilter || undefined,
+          active_academic_year_id: activeAcademicYearId,
+        });
+      }
     } else {
+      console.log("Clearing data"); // Debug log
       clearClassrooms();
       setAvailableGradeLevels([]);
       setSelectedGradeFilter("");
@@ -140,7 +154,10 @@ const ClassroomList: React.FC = () => {
   // --- Handlers ---
   const handleSchoolChange = (value: string) => {
     // shadcn Select returns string value
-    setSelectedSchoolId(value ? Number(value) : "");
+    console.log("School changed to:", value, "Type:", typeof value); // Debug log
+    const schoolId = value ? Number(value) : "";
+    console.log("Setting schoolId to:", schoolId); // Debug log
+    setSelectedSchoolId(schoolId);
     setSelectedGradeFilter("");
   };
   const handleGradeFilterChange = (value: string) => {

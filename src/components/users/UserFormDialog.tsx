@@ -2,352 +2,346 @@
 import React, { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Grid,
-  TextField,
-  CircularProgress,
-  Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  IconButton,
-  InputAdornment,
-} from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { User, UserFormData, UserRole, UserGender } from "@/types/user"; // Adjust path
-import { useUserStore } from "@/stores/userStore"; // Adjust path
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from "@/lib/utils";
+import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+
+import { User, UserFormData, UserRole, UserGender } from "@/types/user";
+import { useUserStore } from "@/stores/userStore";
 import { useSnackbar } from "notistack";
 
 interface UserFormDialogProps {
-  open: boolean;
-  onClose: (refetch?: boolean) => void; // Allow triggering refetch
-  initialData?: User | null; // For editing
+    open: boolean;
+    onClose: (refetch?: boolean) => void;
+    initialData?: User | null;
 }
 
 const roles: UserRole[] = ["admin", "teacher", "student", "parent"];
-// Combine possible gender values for dropdown
 const genders: { value: UserGender; label: string }[] = [
-  { value: "ذكر", label: "ذكر" },
-  { value: "انثي", label: "أنثى" },
+    { value: "ذكر", label: "ذكر" },
+    { value: "انثي", label: "أنثى" },
 ];
 
 const UserFormDialog: React.FC<UserFormDialogProps> = ({
-  open,
-  onClose,
-  initialData,
+    open,
+    onClose,
+    initialData,
 }) => {
-  const isEditMode = !!initialData;
-  const { createUser, updateUser } = useUserStore();
-  const { enqueueSnackbar } = useSnackbar();
-  const [formError, setFormError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
+    const isEditMode = !!initialData;
+    const { createUser, updateUser } = useUserStore();
+    const { enqueueSnackbar } = useSnackbar();
+    const [formError, setFormError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<UserFormData>({
-    // Default values set in useEffect
-  });
+    const {
+        control,
+        handleSubmit,
+        reset,
+        formState: { errors, isSubmitting },
+    } = useForm<UserFormData>({
+        // Default values set in useEffect
+    });
 
-  // Reset form when opening or data changes
-  useEffect(() => {
-    if (open) {
-      setFormError(null);
-      const defaults: Partial<UserFormData> = {
-        name: "",
-        username: "",
-        email: "",
-        role: "student",
-        phone: null,
-        gender: null,
-        password: "",
-        password_confirmation: "", // Clear passwords for create
-      };
-      if (isEditMode && initialData) {
-        reset({
-          ...defaults,
-          ...initialData,
-          password: "",
-          password_confirmation: "",
-        }); // Load data, clear password fields for edit
-      } else {
-        reset(defaults); // Reset to create defaults
-      }
-    }
-  }, [initialData, isEditMode, open, reset]);
+    // Reset form when opening or data changes
+    useEffect(() => {
+        if (open) {
+            setFormError(null);
+            const defaults: Partial<UserFormData> = {
+                name: "",
+                username: "",
+                email: "",
+                role: "student",
+                phone: null,
+                gender: null,
+                password: "",
+                password_confirmation: "",
+            };
+            if (isEditMode && initialData) {
+                reset({
+                    ...defaults,
+                    ...initialData,
+                    password: "",
+                    password_confirmation: "",
+                });
+            } else {
+                reset(defaults);
+            }
+        }
+    }, [initialData, isEditMode, open, reset]);
 
-  const onSubmit = async (data: UserFormData) => {
-    setFormError(null);
-    try {
-      if (isEditMode && initialData) {
-        // Exclude password fields for update API call
-        const { password, password_confirmation, ...updateData } = data;
-        await updateUser(initialData.id, updateData);
-        enqueueSnackbar("تم تحديث المستخدم بنجاح", { variant: "success" });
-      } else {
-        // Include password for create API call
-        await createUser(data);
-        enqueueSnackbar("تم إضافة المستخدم بنجاح", { variant: "success" });
-      }
-      onClose(true); // Close dialog and trigger refetch on success
-    } catch (error: any) {
-      console.error("User Form submission error:", error);
-      const backendErrors = error.response?.data?.errors;
-      if (backendErrors) {
-        setFormError(
-          `فشل الحفظ: ${Object.values(backendErrors).flat().join(". ")}`
-        );
-      } else {
-        setFormError(error.message || "حدث خطأ غير متوقع.");
-      }
-    }
-  };
+    const onSubmit = async (data: UserFormData) => {
+        setFormError(null);
+        try {
+            if (isEditMode && initialData) {
+                const { password, password_confirmation, ...updateData } = data;
+                await updateUser(initialData.id, updateData);
+                enqueueSnackbar("تم تحديث المستخدم بنجاح", { variant: "success" });
+            } else {
+                await createUser(data);
+                enqueueSnackbar("تم إضافة المستخدم بنجاح", { variant: "success" });
+            }
+            onClose(true);
+        } catch (error: unknown) {
+            console.error("User Form submission error:", error);
+            const backendErrors = (error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
+            if (backendErrors) {
+                setFormError(
+                    `فشل الحفظ: ${Object.values(backendErrors).flat().join(". ")}`
+                );
+            } else {
+                setFormError((error as Error)?.message || "حدث خطأ غير متوقع.");
+            }
+        }
+    };
 
-  return (
-    <Dialog open={open} onClose={() => onClose()} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {isEditMode
-          ? `تعديل المستخدم: ${initialData?.name}`
-          : "إضافة مستخدم جديد"}
-      </DialogTitle>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent>
-          {formError && (
-            <Alert
-              severity="error"
-              sx={{ mb: 2 }}
-              onClose={() => setFormError(null)}
-            >
-              {formError}
-            </Alert>
-          )}
-          <Grid container spacing={2.5} sx={{ pt: 1 }}>
-            {/* Fields: Name, Username, Email */}
-            <Grid item xs={12}>
-              <Controller
-                name="name"
-                control={control}
-                rules={{ required: "الاسم مطلوب" }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="الاسم الكامل"
-                    fullWidth
-                    required
-                    error={!!errors.name}
-                    helperText={errors.name?.message}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="username"
-                control={control}
-                rules={{ required: "اسم المستخدم مطلوب" }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="اسم المستخدم (للدخول)"
-                    fullWidth
-                    required
-                    error={!!errors.username}
-                    helperText={errors.username?.message}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="email"
-                control={control}
-                rules={{ required: "البريد الإلكتروني مطلوب" }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    type="email"
-                    label="البريد الإلكتروني"
-                    fullWidth
-                    required
-                    error={!!errors.email}
-                    helperText={errors.email?.message}
-                  />
-                )}
-              />
-            </Grid>
+    return (
+        <Dialog open={open} onOpenChange={() => onClose()} modal>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+                <DialogHeader>
+                    <DialogTitle>
+                        {isEditMode
+                            ? `تعديل المستخدم: ${initialData?.name}`
+                            : "إضافة مستخدم جديد"}
+                    </DialogTitle>
+                    <DialogDescription>
+                        أدخل تفاصيل المستخدم الجديد.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="grid gap-4 py-4">
+                        {formError && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>{formError}</AlertDescription>
+                            </Alert>
+                        )}
 
-            {/* Fields: Role, Phone, Gender */}
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="role"
-                control={control}
-                rules={{ required: "الدور مطلوب" }}
-                render={({ field }) => (
-                  <FormControl fullWidth required error={!!errors.role}>
-                    <InputLabel id="role-label">الدور *</InputLabel>
-                    <Select labelId="role-label" label="الدور *" {...field}>
-                      {roles.map((r) => (
-                        <MenuItem key={r} value={r}>
-                          {r}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.role && (
-                      <FormHelperText>{errors.role.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="رقم الهاتف (اختياري)"
-                    fullWidth
-                    error={!!errors.phone}
-                    helperText={errors.phone?.message}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
-                name="gender"
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.gender}>
-                    <InputLabel id="gender-label">الجنس (اختياري)</InputLabel>
-                    <Select
-                      labelId="gender-label"
-                      label="الجنس (اختياري)"
-                      {...field}
-                      value={field.value ?? ""}
-                    >
-                      <MenuItem value="">
-                        <em>غير محدد</em>
-                      </MenuItem>
-                      {genders.map((g) => (
-                        <MenuItem key={g.value} value={g.value}>
-                          {g.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.gender && (
-                      <FormHelperText>{errors.gender.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                )}
-              />
-            </Grid>
-
-            {/* Password Fields (ONLY for Create Mode) */}
-            {!isEditMode && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="password"
-                    control={control}
-                    rules={{
-                      required: "كلمة المرور مطلوبة",
-                      minLength: {
-                        value: 8,
-                        message: "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
-                      },
-                    }}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="كلمة المرور"
-                        type={showPassword ? "text" : "password"}
-                        fullWidth
-                        required
-                        error={!!errors.password}
-                        helperText={errors.password?.message}
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <IconButton
-                                onClick={() => setShowPassword(!showPassword)}
-                                edge="end"
-                              >
-                                {showPassword ? (
-                                  <VisibilityOff />
-                                ) : (
-                                  <Visibility />
+                        {/* Name */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name_user_form">الاسم الكامل *</Label>
+                            <Controller
+                                name="name"
+                                control={control}
+                                rules={{ required: "الاسم مطلوب" }}
+                                render={({ field }) => (
+                                    <Input
+                                        id="name_user_form"
+                                        placeholder="أدخل الاسم الكامل"
+                                        {...field}
+                                        className={cn(errors.name && "border-destructive")}
+                                    />
                                 )}
-                              </IconButton>
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="password_confirmation"
-                    control={control}
-                    rules={{
-                      required: "تأكيد كلمة المرور مطلوب",
-                      validate: (value) =>
-                        value === control._getWatch("password") ||
-                        "كلمتا المرور غير متطابقتين",
-                    }}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="تأكيد كلمة المرور"
-                        type="password"
-                        fullWidth
-                        required
-                        error={!!errors.password_confirmation}
-                        helperText={errors.password_confirmation?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-              </>
-            )}
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => onClose()}
-            color="inherit"
-            disabled={isSubmitting}
-          >
-            إلغاء
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <CircularProgress size={22} />
-            ) : isEditMode ? (
-              "حفظ التعديلات"
-            ) : (
-              "إضافة مستخدم"
-            )}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
-  );
+                            />
+                            {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
+                        </div>
+
+                        {/* Username and Email */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="username_user_form">اسم المستخدم *</Label>
+                                <Controller
+                                    name="username"
+                                    control={control}
+                                    rules={{ required: "اسم المستخدم مطلوب" }}
+                                    render={({ field }) => (
+                                        <Input
+                                            id="username_user_form"
+                                            placeholder="اسم المستخدم للدخول"
+                                            {...field}
+                                            className={cn(errors.username && "border-destructive")}
+                                        />
+                                    )}
+                                />
+                                {errors.username && <p className="text-xs text-destructive mt-1">{errors.username.message}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="email_user_form">البريد الإلكتروني *</Label>
+                                <Controller
+                                    name="email"
+                                    control={control}
+                                    rules={{ required: "البريد الإلكتروني مطلوب" }}
+                                    render={({ field }) => (
+                                        <Input
+                                            id="email_user_form"
+                                            type="email"
+                                            placeholder="example@email.com"
+                                            {...field}
+                                            className={cn(errors.email && "border-destructive")}
+                                        />
+                                    )}
+                                />
+                                {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
+                            </div>
+                        </div>
+
+                        {/* Role and Phone */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="role_user_form">الدور *</Label>
+                                <Controller
+                                    name="role"
+                                    control={control}
+                                    rules={{ required: "الدور مطلوب" }}
+                                    render={({ field }) => (
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                            required
+                                        >
+                                            <SelectTrigger id="role_user_form" className={cn(errors.role && "border-destructive")}>
+                                                <SelectValue placeholder="اختر الدور" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {roles.map((role) => (
+                                                    <SelectItem key={role} value={role}>
+                                                        {role}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                                {errors.role && <p className="text-xs text-destructive mt-1">{errors.role.message}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="phone_user_form">رقم الهاتف (اختياري)</Label>
+                                <Controller
+                                    name="phone"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            id="phone_user_form"
+                                            placeholder="رقم الهاتف"
+                                            {...field}
+                                            value={field.value || ''}
+                                            className={cn(errors.phone && "border-destructive")}
+                                        />
+                                    )}
+                                />
+                                {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone.message}</p>}
+                            </div>
+                        </div>
+
+                        {/* Gender */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="gender_user_form">الجنس (اختياري)</Label>
+                            <Controller
+                                name="gender"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || ""}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <SelectTrigger id="gender_user_form" className={cn(errors.gender && "border-destructive")}>
+                                            <SelectValue placeholder="اختر الجنس" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value=" ">
+                                                <em>غير محدد</em>
+                                            </SelectItem>
+                                            {genders.map((gender) => (
+                                                <SelectItem key={gender.value} value={gender.value}>
+                                                    {gender.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.gender && <p className="text-xs text-destructive mt-1">{errors.gender.message}</p>}
+                        </div>
+
+                        {/* Password Fields (ONLY for Create Mode) */}
+                        {!isEditMode && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="password_user_form">كلمة المرور *</Label>
+                                    <Controller
+                                        name="password"
+                                        control={control}
+                                        rules={{
+                                            required: "كلمة المرور مطلوبة",
+                                            minLength: {
+                                                value: 8,
+                                                message: "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+                                            },
+                                        }}
+                                        render={({ field }) => (
+                                            <div className="relative">
+                                                <Input
+                                                    id="password_user_form"
+                                                    type={showPassword ? "text" : "password"}
+                                                    placeholder="كلمة المرور"
+                                                    {...field}
+                                                    className={cn(errors.password && "border-destructive")}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                >
+                                                    {showPassword ? (
+                                                        <EyeOff className="h-4 w-4" />
+                                                    ) : (
+                                                        <Eye className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    />
+                                    {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="password_confirmation_user_form">تأكيد كلمة المرور *</Label>
+                                    <Controller
+                                        name="password_confirmation"
+                                        control={control}
+                                        rules={{
+                                            required: "تأكيد كلمة المرور مطلوب",
+                                            validate: (value) =>
+                                                value === control._getWatch("password") ||
+                                                "كلمتا المرور غير متطابقتين",
+                                        }}
+                                        render={({ field }) => (
+                                            <Input
+                                                id="password_confirmation_user_form"
+                                                type="password"
+                                                placeholder="تأكيد كلمة المرور"
+                                                {...field}
+                                                className={cn(errors.password_confirmation && "border-destructive")}
+                                            />
+                                        )}
+                                    />
+                                    {errors.password_confirmation && <p className="text-xs text-destructive mt-1">{errors.password_confirmation.message}</p>}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter className="pt-4">
+                        <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => onClose()}>
+                            إلغاء
+                        </Button>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isEditMode ? 'حفظ التعديلات' : 'إضافة مستخدم'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
 };
 
 export default UserFormDialog;

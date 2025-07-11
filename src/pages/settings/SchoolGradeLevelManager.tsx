@@ -262,7 +262,7 @@ const SchoolGradeLevelManager: React.FC = () => {
     const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
 
     return (
-        <div className="container max-w-screen-md mx-auto py-6 px-4" dir="rtl">
+        <div className="container  mx-auto py-6 px-4" dir="rtl">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                 <h1 className="text-2xl font-semibold text-foreground mb-1">تعيين المراحل الدراسية للمدارس</h1>
                 <p className="text-sm text-muted-foreground mb-6">اختر مدرسة لعرض وتعديل المراحل الدراسية المعينة لها ورسومها الأساسية.</p>
@@ -270,7 +270,7 @@ const SchoolGradeLevelManager: React.FC = () => {
 
             <Card>
                 <CardContent className="p-4 sm:p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div className="md:col-span-2 space-y-2">
                             <Label htmlFor="school-select">اختر المدرسة *</Label>
                             <Select value={selectedSchoolId ? String(selectedSchoolId) : ""} onValueChange={handleSchoolChange} disabled={schoolsLoading}>
@@ -298,7 +298,7 @@ const SchoolGradeLevelManager: React.FC = () => {
                         )}
 
                         {!loadingAssigned && !error && selectedSchoolId && assignedGradeLevels.length > 0 && (
-                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
+                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
                                 {assignedGradeLevels.map((grade) => (
                                     <motion.div key={grade.id} variants={itemVariants}>
                                         <Card className="h-full flex flex-col">

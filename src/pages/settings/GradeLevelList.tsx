@@ -145,10 +145,10 @@ const GradeLevelList: React.FC = () => {
                         <Table className="min-w-full">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[250px]">اسم المرحلة</TableHead>
-                                    <TableHead className="w-[100px]">الرمز</TableHead>
-                                    <TableHead>الوصف</TableHead>
-                                    <TableHead className="text-left w-[80px]">إجراءات</TableHead>
+                                    <TableHead className="w-[250px] text-center">اسم المرحلة</TableHead>
+                                    <TableHead className="w-[100px] text-center">الرمز</TableHead>
+                                    <TableHead className="text-center">الوصف</TableHead>
+                                    <TableHead className="text-left w-[80px] text-center">إجراءات</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -159,10 +159,10 @@ const GradeLevelList: React.FC = () => {
                                 ) : (
                                     filteredGradeLevels.map((gradeLevel) => (
                                         <motion.tr key={gradeLevel.id} variants={itemVariants} className="hover:bg-muted/50">
-                                            <TableCell className="font-medium">{gradeLevel.name}</TableCell>
-                                            <TableCell>{gradeLevel.code}</TableCell>
-                                            <TableCell className="max-w-xs truncate text-sm text-muted-foreground">{gradeLevel.description || '-'}</TableCell>
-                                            <TableCell className="text-left">
+                                            <TableCell className="font-medium text-center   ">{gradeLevel.name}</TableCell>
+                                            <TableCell className="text-center">{gradeLevel.code}</TableCell>
+                                            <TableCell className="max-w-xs truncate text-sm text-muted-foreground text-center">{gradeLevel.description || '-'}</TableCell>
+                                            <TableCell className="text-center">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="w-[160px]" dir="rtl">

@@ -72,8 +72,8 @@ export const SchoolApi = {
   delete: (id: number) => axiosClient.delete(`/schools/${id}`), // No data expected on success (200/204)
   // --- NEW ---
   getAssignedGradeLevels: (schoolId: number) =>
-    // Returns { data: GradeLevel[] }
-    axiosClient.get<GradeLevelCollectionResponse>(
+    // Returns { data: GradeLevel[] } or GradeLevel[] directly
+    axiosClient.get<GradeLevelCollectionResponse | GradeLevel[]>(
       `/schools/${schoolId}/grade-levels`
     ),
 
