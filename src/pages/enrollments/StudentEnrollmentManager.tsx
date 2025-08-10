@@ -1,244 +1,272 @@
 // src/pages/enrollments/StudentEnrollmentManager.tsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  CircularProgress,
+  Alert,
+  Paper,
+  TableContainer,
   Table,
-  TableBody,
-  TableCell,
   TableHead,
-  TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
+  TableCell,
+  TableBody,
+  Stack,
+  FormControl,
+  InputLabel,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog as ShadcnDialog,
-  DialogClose,
+  MenuItem,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogActions,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle as ShadcnDialogTitle,
-} from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  DialogContentText,
+  DialogTitle,
+  Chip,
+  SelectChangeEvent,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  PlusCircle,
-  Edit3,
-  Trash2,
-  Search,
-  FilterX,
-  AlertCircle,
-  Loader2,
-  ArrowRightLeft,
-  MoreHorizontal,
-} from "lucide-react";
-import { motion } from "framer-motion";
-
-import { useAcademicYearStore } from "@/stores/academicYearStore";
-import { useGradeLevelStore } from "@/stores/gradeLevelStore";
-import { useSchoolStore } from "@/stores/schoolStore";
-import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore";
-import { SchoolApi } from "@/api/schoolApi";
-import EnrollmentFormDialog from "@/components/enrollments/EnrollmentFormDialog";
-import UpdateEnrollmentDialog from "@/components/enrollments/UpdateEnrollmentDialog";
-import StudentFeePaymentList from "@/components/finances/StudentFeePaymentList";
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from "@mui/icons-material";
+import { useAcademicYearStore } from "@/stores/academicYearStore"; // Adjust path
+// import { useGradeLevelStore } from "@/stores/gradeLevelStore"; // Adjust path
+import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
+import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore"; // Adjust path
+import EnrollmentFormDialog from "@/components/enrollments/EnrollmentFormDialog"; // Adjust path
+import UpdateEnrollmentDialog from "@/components/enrollments/UpdateEnrollmentDialog"; // Adjust path
 import {
   StudentAcademicYear,
   EnrollmentStatus,
-} from "@/types/studentAcademicYear";
-import { GradeLevel } from "@/types/gradeLevel";
+} from "@/types/studentAcademicYear"; // Adjust path
+import { GradeLevel } from "@/types/gradeLevel"; // Adjust path
 import { useSnackbar } from "notistack";
+import StudentFeePaymentList from "@/components/finances/StudentFeePaymentList";
+import { SchoolApi } from "@/api/schoolApi";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { ClearIcon } from "@mui/x-date-pickers";
+import { SearchIcon } from "lucide-react";
+import { formatNumber } from "@/constants";
+import FeeInstallmentList from "@/components/finances/FeeInstallmentList";
+import FeeInstallmentViewerDialog from "@/components/finances/FeeInstallmentViewerDialog";
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'; // Example icon for statement
 
-// Animation variants
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0 },
-};
-
-// Helper to get status chip color (Tailwind classes for Badge variants)
-const getStatusVariant = (
+// Helper to get status chip color
+const getStatusColor = (
   status: EnrollmentStatus
-): "default" | "secondary" | "destructive" | "outline" | "success" => {
+): "success" | "info" | "warning" | "error" | "default" => {
   switch (status) {
     case "active":
       return "success";
     case "graduated":
-      return "default"; // Or a specific color
+      return "info";
     case "transferred":
-      return "secondary";
+      return "warning";
     case "withdrawn":
-      return "destructive";
+      return "error";
     default:
-      return "outline";
+      return "default";
   }
 };
 
 const StudentEnrollmentManager: React.FC = () => {
+  // --- Hooks ---
   const { enqueueSnackbar } = useSnackbar();
-  const initialActiveSchoolId = useSettingsStore.getState().activeSchoolId;
-  const initialActiveYearId = useSettingsStore.getState().activeAcademicYearId;
 
-  // --- Local State ---
-  const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
-    initialActiveSchoolId ?? ""
-  );
-  const [selectedYearId, setSelectedYearId] = useState<number | "">(() => {
-    const initialAcademicYears = useAcademicYearStore.getState().academicYears;
-    const yearIsValid = initialAcademicYears.some(
-      (y) =>
-        y.id === initialActiveYearId && y.school_id === initialActiveSchoolId
-    );
-    return yearIsValid && initialActiveSchoolId ? initialActiveYearId : "";
-  });
+  // --- Component State ---
   const [selectedGradeId, setSelectedGradeId] = useState<number | "">("");
-  const [availableGradeLevels, setAvailableGradeLevels] = useState<
-    GradeLevel[]
-  >([]); // School-specific grades
-  const [loadingSchoolGrades, setLoadingSchoolGrades] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Dialog States
   const [enrollFormOpen, setEnrollFormOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [paymentListOpen, setPaymentListOpen] = useState(false);
-  const [currentEnrollment, setCurrentEnrollment] =
+  const [statementDialogOpen, setStatementDialogOpen] = useState(false);
+  const [selectedEnrollmentForStatement, setSelectedEnrollmentForStatement] =
     useState<StudentAcademicYear | null>(null);
+  // const { gradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Use global list again for potential context display
 
-  // --- Store Data ---
-  const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
+  // --- NEW Search State ---
+  const [searchTerm, setSearchTerm] = useState("");
+  const { activeAcademicYearId, activeSchoolId } = useSettingsStore.getState();
+  console.log(activeAcademicYearId, "activeAcademicYearId");
+  const [currentEnrollment, setCurrentEnrollment] =
+    useState<StudentAcademicYear | null>(null); // For Update/Delete
+  const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
+    activeSchoolId ?? ""
+  );
+  const [selectedYearId, setSelectedYearId] = useState<number | "">(
+    activeAcademicYearId
+  );
+  console.log(selectedYearId, "selectedYearId");
+  // State for the list of grade levels available FOR THE SELECTED SCHOOL
+  const [availableGradeLevels, setAvailableGradeLevels] = useState<
+    GradeLevel[]
+  >([]);
+  const [loadingGradeLevels, setLoadingGradeLevels] = useState<boolean>(false); // Loading state for school-specific grades
+  // --- Data from Stores ---
+  const {
+    schools,
+    fetchSchools: fetchSchoolList,
+    loading: schoolsLoading,
+  } = useSchoolStore();
   const { academicYears, fetchAcademicYears } = useAcademicYearStore();
-  const { fetchGradeLevels } = useGradeLevelStore();
+  // const { gradeLevels, fetchGradeLevels } = useGradeLevelStore();
   const {
     enrollments,
     loading,
     error,
-    isSearchResult,
     fetchEnrollments,
-    deleteEnrollment,
+    // deleteEnrollment,
     clearEnrollments,
     searchEnrollments,
+    isSearchResult,
   } = useStudentEnrollmentStore();
 
   // --- Effects ---
-  useEffect(() => {
-    fetchSchools();
-    fetchAcademicYears();
-    fetchGradeLevels();
-  }, [fetchSchools, fetchAcademicYears, fetchGradeLevels]);
 
-  const fetchSchoolSpecificGrades = useCallback(
+  // Fetch initial dropdown data on mount
+  useEffect(() => {
+    fetchSchoolList();
+    fetchAcademicYears(); // Fetch all initially
+    // fetchGradeLevels();
+  }, [fetchSchoolList, fetchAcademicYears]);
+  // Fetch Grade Levels SPECIFIC TO THE SELECTED SCHOOL
+  const fetchSchoolGrades = useCallback(
     async (schoolId: number) => {
-      setLoadingSchoolGrades(true);
-      setAvailableGradeLevels([]);
+      setLoadingGradeLevels(true);
       try {
         const response = await SchoolApi.getAssignedGradeLevels(schoolId);
-        setAvailableGradeLevels(
-          response.data.data?.sort((a, b) => a.id - b.id) ?? []
-        );
-      } catch (err: unknown) {
-        console.error("Failed to fetch school grades", err);
-        enqueueSnackbar("فشل تحميل مراحل المدرسة المختارة", {
+        setAvailableGradeLevels(response.data.data); // Assuming response wraps in 'data'
+      } catch (err) {
+        console.error("Failed to fetch grade levels for school", err);
+        enqueueSnackbar("فشل تحميل المراحل الدراسية لهذه المدرسة", {
           variant: "error",
         });
+        setAvailableGradeLevels([]); // Clear on error
       } finally {
-        setLoadingSchoolGrades(false);
+        setLoadingGradeLevels(false);
       }
     },
     [enqueueSnackbar]
-  );
-
+  ); // Include dependencies for useCallback if any
+  // Fetch enrollments when primary filters (School, Year) change
+  // Also fetches when optional Grade filter changes
+  // Fetch enrollments when School & Year change, Fetch Grades when School changes
   useEffect(() => {
-    if (selectedSchoolId) {
-      fetchSchoolSpecificGrades(selectedSchoolId);
-      if (selectedYearId && !isSearchResult) {
-        // Don't fetch by filter if search is active
-        fetchEnrollments({
-          school_id: selectedSchoolId,
-          academic_year_id: selectedYearId,
-          grade_level_id: selectedGradeId || undefined,
-        });
-      } else if (!selectedYearId && !isSearchResult) {
-        clearEnrollments();
-      }
+    // If a search is active, don't fetch based on filters
+    if (isSearchResult) return;
+
+    if (selectedSchoolId && selectedYearId) {
+      fetchSchoolGrades(selectedSchoolId);
+      fetchEnrollments({
+        school_id: selectedSchoolId,
+        academic_year_id: selectedYearId,
+        grade_level_id: selectedGradeId || undefined,
+      });
     } else {
       clearEnrollments();
-      setAvailableGradeLevels([]);
-      setSelectedYearId("");
-      setSelectedGradeId("");
     }
+    // Note: We removed fetchSchoolGrades logic as it's less relevant now
+    // If needed for dialogs, fetch there based on context
   }, [
     selectedSchoolId,
     selectedYearId,
     selectedGradeId,
     fetchEnrollments,
     clearEnrollments,
-    fetchSchoolSpecificGrades,
     isSearchResult,
-  ]);
+  ]); // <-- Add isSearchResult
+  // --- Filtered/Memoized Data ---
+
+  console.log(academicYears, "academic years");
+  // Filter Academic Years based on selected School
+  const filteredAcademicYears = useMemo(() => {
+    if (!selectedSchoolId) return [];
+    return academicYears.filter((ay) => ay.school_id === selectedSchoolId);
+  }, [academicYears, selectedSchoolId]);
+  console.log(filteredAcademicYears, "filteredAcademicYears");
+  // Get the selected objects (needed for the Enroll Dialog)
+  const selectedAcademicYearObj = useMemo(() => {
+    return academicYears.find((ay) => ay.id === selectedYearId) || null;
+  }, [academicYears, selectedYearId]);
+
+  const selectedGradeLevelObj = useMemo(() => {
+    return availableGradeLevels.find((gl) => gl.id === selectedGradeId) || null;
+  }, [availableGradeLevels, selectedGradeId]);
 
   // --- Handlers ---
-  const handleSchoolChange = (value: string) => {
-    /* ... same logic, use Number(value) ... */ setSelectedSchoolId(
-      value ? Number(value) : ""
-    );
-    setSelectedYearId("");
-    setSelectedGradeId("");
-    clearSearch();
-  };
-  const handleYearChange = (value: string) => {
-    /* ... same logic ... */ setSelectedYearId(value ? Number(value) : "");
-    setSelectedGradeId("");
-    clearSearch();
-  };
-  const handleGradeChange = (value: string) => {
-    /* ... same logic ... */ setSelectedGradeId(value ? Number(value) : "");
-    clearSearch();
-  };
-  const handleSearch = () => {
-    if (searchTerm) searchEnrollments(searchTerm);
-  };
-  const clearSearch = () => {
-    setSearchTerm("");
-    clearEnrollments(); /* Fetch with current filters is handled by useEffect */
+  const handleSchoolFilterChange = (event: SelectChangeEvent<number>) => {
+    const newSchoolId = event.target.value as number | "";
+    setSelectedSchoolId(newSchoolId);
+    setSelectedYearId(""); // Reset year
+    setSelectedGradeId(""); // Reset grade
+    // Data fetching triggered by useEffect based on newSchoolId
   };
 
-  const handleOpenEnrollForm = () => {
-    if (!selectedGradeId) {
-      enqueueSnackbar("الرجاء تحديد المرحلة الدراسية أولاً لإضافة تسجيل.", {
-        variant: "warning",
-      });
-      return;
-    }
-    setEnrollFormOpen(true);
+  const handleYearFilterChange = (event: SelectChangeEvent<number>) => {
+    setSelectedYearId(event.target.value as number | "");
+    setSelectedGradeId(""); // Reset grade filter when year changes
+    // Enrollments will refetch via useEffect dependency change
   };
-  const handleEnrollSuccess = () => {
-    setEnrollFormOpen(false); /* Store action handles refetch */
+
+  const handleGradeFilterChange = (event: SelectChangeEvent<number>) => {
+    setSelectedGradeId(event.target.value as number | "");
+    // Enrollments will refetch via useEffect dependency change
   };
+
+  // Dialog Open/Close
+  const handleOpenEnrollForm = () => setEnrollFormOpen(true);
+  const handleCloseEnrollForm = () => setEnrollFormOpen(false);
+
   const handleOpenUpdateForm = (enrollment: StudentAcademicYear) => {
     setCurrentEnrollment(enrollment);
     setUpdateFormOpen(true);
   };
-  const handleUpdateSuccess = () => {
+  const handleCloseUpdateForm = () => {
     setUpdateFormOpen(false);
-    setCurrentEnrollment(null); /* Store action handles refetch */
+    setCurrentEnrollment(null);
+  };
+  // --- NEW Search Handlers ---
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const executeSearch = () => {
+    searchEnrollments(searchTerm); // Call store action
+  };
+  const clearSearch = () => {
+    setSearchTerm("");
+    // Clear results and fetch based on current filters
+    clearEnrollments();
+    if (selectedSchoolId && selectedYearId) {
+      fetchEnrollments({
+        school_id: selectedSchoolId,
+        academic_year_id: selectedYearId,
+        grade_level_id: selectedGradeId || undefined,
+      });
+    }
+  };
+  const handleOpenStatementDialog = (enrollment: StudentAcademicYear) => {
+    setSelectedEnrollmentForStatement(enrollment);
+    setStatementDialogOpen(true);
+  };
+  const handleCloseStatementDialog = (refetch = false) => {
+    // Accept refetch flag
+    setStatementDialogOpen(false);
+    setSelectedEnrollmentForStatement(null);
+    // Refetch enrollments if installments were potentially changed indirectly
+    if (refetch && selectedSchoolId && selectedYearId) {
+      fetchEnrollments({
+        school_id: selectedSchoolId,
+        academic_year_id: selectedYearId,
+        grade_level_id: selectedGradeId || undefined,
+      });
+    }
   };
   const handleOpenDeleteDialog = (enrollment: StudentAcademicYear) => {
     setCurrentEnrollment(enrollment);
@@ -248,443 +276,430 @@ const StudentEnrollmentManager: React.FC = () => {
     setCurrentEnrollment(null);
     setDeleteDialogOpen(false);
   };
-  const handleDeleteConfirm = async () => {
-    if (currentEnrollment && selectedSchoolId && selectedYearId) {
-      try {
-        const success = await deleteEnrollment(Number(currentEnrollment.id));
-        if (success) {
-          enqueueSnackbar('تم حذف التسجيل بنجاح', { variant: 'success' });
-          fetchEnrollments({
-            school_id: selectedSchoolId,
-            academic_year_id: selectedYearId,
-            grade_level_id: selectedGradeId || undefined,
-          });
-        } else {
-          enqueueSnackbar('فشل حذف التسجيل', { variant: 'error' });
-        }
-      } catch (err: unknown) {
-        console.error("Delete enrollment error:", err);
-        enqueueSnackbar('فشل حذف التسجيل', { variant: 'error' });
-      } finally {
-        handleCloseDeleteDialog();
-      }
-    }
-  };
+
+  // Delete Action
+  // const handleDeleteConfirm = async () => {
+  //   if (currentEnrollment) {
+  //     const success = await deleteEnrollment(currentEnrollment.id);
+  //     if (success) {
+  //       enqueueSnackbar("تم حذف التسجيل بنجاح", { variant: "success" });
+  //     } else {
+  //       // Display specific error from store, fallback message if needed
+  //       enqueueSnackbar(
+  //         useStudentEnrollmentStore.getState().error || "فشل حذف التسجيل",
+  //         { variant: "error" }
+  //       );
+  //     }
+  //     handleCloseDeleteDialog();
+  //   }
+  // };
+
+  // Find selected objects for passing to dialog
+  //  const selectedAcademicYearObj = academicYears.find(ay => ay.id === selectedYearId) || null;
+  //  const selectedGradeLevelObj = gradeLevels.find(gl => gl.id === selectedGradeId) || null;
+  const [paymentListOpen, setPaymentListOpen] = useState(false);
+  const [selectedEnrollmentForPayments, setSelectedEnrollmentForPayments] =
+    useState<StudentAcademicYear | null>(null);
+
+  // ... existing functions ...
+
   const handleOpenPaymentList = (enrollment: StudentAcademicYear) => {
-    setCurrentEnrollment(enrollment);
+    setSelectedEnrollmentForPayments(enrollment);
     setPaymentListOpen(true);
   };
   const handleClosePaymentList = () => {
     setPaymentListOpen(false);
-    setCurrentEnrollment(null);
+    setSelectedEnrollmentForPayments(null);
   };
-
-  // --- Memoized Data ---
-  const filteredAcademicYears = useMemo(() => {
-    if (!selectedSchoolId) return [];
-    return academicYears
-      .filter((ay) => ay.school_id === selectedSchoolId)
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [academicYears, selectedSchoolId]);
-
-  const selectedAcademicYearObj = useMemo(() => {
-    return academicYears.find((ay) => ay.id === selectedYearId) || null;
-  }, [academicYears, selectedYearId]);
-
-  const selectedGradeLevelObj = useMemo(() => {
-    // Use availableGradeLevels which are school-specific
-    return availableGradeLevels.find((gl) => gl.id === selectedGradeId) || null;
-  }, [availableGradeLevels, selectedGradeId]);
-
-  // --- Render ---
+  console.log(activeAcademicYearId, "activeAcademicYearId");
   return (
-    <div className="container max-w-screen-xl mx-auto py-6 px-4" dir="rtl">
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }} dir="rtl">
       {/* Header & Filters Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <CardTitle className="text-xl font-semibold">
-              إدارة تعيين الطلاب
-            </CardTitle>
-            <div className="flex flex-wrap gap-2">
-              <Input
-                placeholder="بحث بالاسم أو الرقم الوطني..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-auto sm:min-w-[200px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && searchTerm) handleSearch();
-                }}
-              />
-              <Button
-                onClick={handleSearch}
-                disabled={!searchTerm || loading}
-                size="sm"
-              >
-                <Search className="ml-2 h-4 w-4" /> بحث
-              </Button>
-              {isSearchResult && (
-                <Button variant="outline" onClick={clearSearch} size="sm">
-                  <FilterX className="ml-2 h-4 w-4" /> مسح البحث
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+      <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          justifyContent="space-between"
+          alignItems="center"
+          flexWrap="wrap" // Allow wrapping on smaller screens
+        >
+          <Typography
+            variant="h5"
+            component="h1"
+            sx={{ flexShrink: 0, mb: { xs: 2, md: 0 } }}
+          >
+            إدارة تسجيل الطلاب السنوي
+          </Typography>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            alignItems="center"
+          >
+            {/* --- Search Input --- */}
+            <TextField
+              label="بحث بالاسم أو الرقم الوطني"
+              variant="outlined"
+              size="small"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              sx={{ minWidth: 200 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {searchTerm && (
+                      <IconButton onClick={clearSearch} size="small" edge="end">
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    <IconButton
+                      onClick={executeSearch}
+                      size="small"
+                      edge="end"
+                      color="primary"
+                      disabled={!searchTerm}
+                    >
+                      <SearchIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchTerm) executeSearch();
+              }}
+            />
             {/* School Filter */}
-            <div className="space-y-1">
-              <Label htmlFor="school-filter-enroll">المدرسة *</Label>
+            <FormControl sx={{ minWidth: 180 }} size="small">
+              <InputLabel id="enroll-school-select-label">المدرسة *</InputLabel>
               <Select
-                value={selectedSchoolId ? String(selectedSchoolId) : ""}
-                onValueChange={handleSchoolChange}
-                disabled={schoolsLoading || isSearchResult}
+                required
+                labelId="enroll-school-select-label"
+                label="المدرسة *"
+                value={selectedSchoolId}
+                onChange={handleSchoolFilterChange}
+                disabled={schoolsLoading}
               >
-                <SelectTrigger id="school-filter-enroll">
-                  <SelectValue
-                    placeholder={schoolsLoading ? "..." : "اختر مدرسة..."}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" " disabled>
-                    <em>اختر مدرسة...</em>
-                  </SelectItem>
-                  {schools.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
+                <MenuItem value="" disabled>
+                  <em>اختر مدرسة...</em>
+                </MenuItem>
+                {schoolsLoading ? (
+                  <MenuItem disabled>
+                    <em>جاري التحميل...</em>
+                  </MenuItem>
+                ) : (
+                  schools.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
                       {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                    </MenuItem>
+                  ))
+                )}
               </Select>
-            </div>
+            </FormControl>
             {/* Academic Year Filter */}
-            <div className="space-y-1">
-              <Label htmlFor="year-filter-enroll">العام الدراسي *</Label>
+            <FormControl
+              sx={{ minWidth: 180 }}
+              size="small"
+              disabled={!selectedSchoolId}
+            >
+              <InputLabel id="enroll-ay-select-label">
+                العام الدراسي *
+              </InputLabel>
               <Select
-                value={selectedYearId ? String(selectedYearId) : ""}
-                onValueChange={handleYearChange}
-                disabled={!selectedSchoolId || isSearchResult}
+                required
+                labelId="enroll-ay-select-label"
+                label="العام الدراسي *"
+                value={selectedYearId}
+                onChange={handleYearFilterChange}
               >
-                <SelectTrigger id="year-filter-enroll">
-                  <SelectValue placeholder="اختر عاماً..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" " disabled>
-                    <em>اختر عاماً...</em>
-                  </SelectItem>
-                  {filteredAcademicYears.map((ay) => (
-                    <SelectItem key={ay.id} value={String(ay.id)}>
-                      {ay.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                <MenuItem value="" disabled>
+                  <em>اختر عاماً...</em>
+                </MenuItem>
+                {filteredAcademicYears.map((ay) => (
+                  <MenuItem key={ay.id} value={ay.id}>
+                    {ay.name}
+                  </MenuItem>
+                ))}
               </Select>
-            </div>
-            {/* Grade Level Filter */}
-            <div className="space-y-1">
-              <Label htmlFor="grade-filter-enroll">المرحلة الدراسية</Label>
+            </FormControl>
+            {/* Grade Level Filter (Uses school-specific grades) */}
+            <FormControl
+              sx={{ minWidth: 180 }}
+              size="small"
+              disabled={!selectedYearId || loadingGradeLevels}
+            >
+              <InputLabel id="enroll-gl-select-label">
+                المرحلة الدراسية
+              </InputLabel>
               <Select
-                value={selectedGradeId ? String(selectedGradeId) : ""}
-                onValueChange={handleGradeChange}
-                disabled={
-                  !selectedYearId || loadingSchoolGrades || isSearchResult
-                }
+                labelId="enroll-gl-select-label"
+                label="المرحلة الدراسية"
+                value={selectedGradeId}
+                onChange={handleGradeFilterChange}
               >
-                <SelectTrigger id="grade-filter-enroll">
-                  <SelectValue
-                    placeholder={
-                      loadingSchoolGrades ? "..." : "اختر مرحلة (أو الكل)"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" ">
-                    <em>(جميع المراحل)</em>
-                  </SelectItem>
-                  {availableGradeLevels.map((gl) => (
-                    <SelectItem key={gl.id} value={String(gl.id)}>
+                <MenuItem value="">
+                  <em>(جميع المراحل)</em>
+                </MenuItem>
+                {/* Use the new state 'availableGradeLevels' */}
+                {loadingGradeLevels ? (
+                  <MenuItem disabled>
+                    <em>جاري التحميل...</em>
+                  </MenuItem>
+                ) : (
+                  availableGradeLevels.map((gl) => (
+                    <MenuItem key={gl.id} value={gl.id}>
                       {gl.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                    </MenuItem>
+                  ))
+                )}
               </Select>
-            </div>
+            </FormControl>
             {/* Enroll Button */}
             <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              size="medium"
               onClick={handleOpenEnrollForm}
               disabled={
                 !selectedSchoolId ||
                 !selectedYearId ||
                 !selectedGradeId ||
-                loadingSchoolGrades ||
-                isSearchResult
+                loadingGradeLevels
+              } // Also disable if grades loading
+              title={
+                !selectedSchoolId || !selectedYearId || !selectedGradeId
+                  ? "الرجاء تحديد المدرسة والعام والمرحلة للإضافة"
+                  : "تسجيل طالب جديد لهذه المجموعة"
               }
-              className="w-full sm:w-auto"
             >
-              <PlusCircle className="ml-2 h-4 w-4" /> تعيين طالب
+              تسجيل طالب
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </Stack>
+        </Stack>
+      </Paper>
 
-      {/* Loading/Error/Info Display */}
+      {/* Loading / Error / Info Display */}
       {loading && (
-        <div className="flex justify-center py-5">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
+          <CircularProgress />
+        </Box>
       )}
       {!loading && error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
         </Alert>
       )}
-      {!loading &&
-        !isSearchResult &&
-        (!selectedSchoolId || !selectedYearId) && (
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              الرجاء تحديد المدرسة والعام الدراسي لعرض الطلاب المسجلين أو استخدم
-              البحث العام.
-            </AlertDescription>
-          </Alert>
-        )}
+      {/* Search Results Indicator Alert */}
       {isSearchResult && !loading && (
-        <Alert
-          variant="default"
-          className="mb-4 bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300"
-        >
-          <AlertDescription>
-            عرض نتائج البحث عن "{searchTerm}".
-          </AlertDescription>
+        <Alert severity="success" sx={{ mb: 2 }} onClose={clearSearch}>
+          عرض نتائج البحث عن "{searchTerm}".{" "}
+          <Button onClick={clearSearch} color="inherit" size="small">
+            عرض الكل حسب الفلتر
+          </Button>
         </Alert>
       )}
 
       {/* Enrollments Table */}
-      {!loading &&
-        !error &&
-        (isSearchResult || (selectedSchoolId && selectedYearId)) && (
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-          >
-            <div className="border rounded-lg overflow-x-auto">
-              <Table className="min-w-full">
-                <TableHeader>
+      {!loading && !error && selectedYearId && selectedSchoolId && (
+        <Paper elevation={2}>
+          <TableContainer>
+            <Table
+              sx={{ minWidth: 750 }}
+              aria-label="student enrollments table"
+            >
+              <TableHead sx={{ bgcolor: "grey.100" }}>
+                <TableRow>
+                  <TableCell>الكود</TableCell>
+                  <TableCell>اسم الطالب</TableCell>
+                  <TableCell>المرحله الدراسيه</TableCell>
+                  <TableCell>الرسوم </TableCell>
+                  <TableCell>الفصل</TableCell>
+                  <TableCell align="center">الحالة</TableCell>
+                  <TableCell align="center">الدفعات</TableCell>
+                  <TableCell align="right">إجراءات</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {enrollments.length === 0 && (
                   <TableRow>
-                    {isSearchResult && <TableHead className="text-center">المدرسة</TableHead>}
-                    {isSearchResult && <TableHead className="text-center">العام</TableHead>}
-                    <TableHead className="text-center"> كود الطالب</TableHead>
-                    <TableHead className="text-center">اسم الطالب</TableHead>
-                    <TableHead className="hidden sm:table-cell text-center">
-                      الرقم الوطني
-                    </TableHead>
-                    <TableHead className="text-center hidden sm:table-cell">الصف</TableHead>
-                    <TableHead className="hidden sm:table-cell text-center">
-                      الفصل
-                    </TableHead>
-                    <TableHead className="text-center hidden sm:table-cell">الحالة</TableHead>
-                    <TableHead className="text-center hidden sm:table-cell">الدفعات</TableHead>
-                    <TableHead className="text-center  w-[100px]">
-                      إجراءات
-                    </TableHead>
+                    <TableCell colSpan={5} align="center">
+                      لا يوجد طلاب مسجلون لهذه المرحلة في هذا العام.
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {enrollments.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={isSearchResult ? 9 : 7}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        {isSearchResult
-                          ? "لا نتائج للبحث."
-                          : "لا يوجد طلاب مسجلون."}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    enrollments.map((enrollment) => (
-                      <motion.tr
-                        key={enrollment.id}
-                        variants={itemVariants}
-                        className="hover:bg-muted/50"
-                      >
-                        {isSearchResult && (
-                          <TableCell className="text-center">
-                            {enrollment.school?.name || "-"}
-                          </TableCell>
-                        )}
-                        {isSearchResult && (
-                          <TableCell className="text-center">
-                            {enrollment.academic_year?.name || "-"}
-                          </TableCell>
-                        )}
-                        <TableCell className="font-medium text-center">
-                          {enrollment?.id || "-"}
-                        </TableCell>
-                        <TableCell className="font-medium text-center">
-                          {enrollment.student?.student_name || "-"}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell text-center">
-                          {enrollment.student?.goverment_id || "-"}
-                        </TableCell>
-                        <TableCell className="text-center hidden sm:table-cell">
-                          {enrollment.grade_level?.name || "-"}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell text-center">
-                          {enrollment.classroom?.name || (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center hidden sm:table-cell">
-                          <Badge variant={getStatusVariant(enrollment.status)}>
-                            {enrollment.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center hidden sm:table-cell">
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => handleOpenPaymentList(enrollment)}
-                            className="h-auto p-0"
-                          >
-                            <ArrowRightLeft className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-center w-[100px]">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            
-                            <DropdownMenuContent
-                              align="end"
-                              className="w-[160px]"
-                            >
-                              <DropdownMenuItem
-                                onSelect={() =>
-                                  handleOpenUpdateForm(enrollment)
-                                }
-                              >
-                                <Edit3 className="ml-2 h-4 w-4" /> تعديل التسجيل
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              
-                              <DropdownMenuItem
-                                onSelect={() =>
-                                  handleOpenDeleteDialog(enrollment)
-                                }
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="ml-2 h-4 w-4" /> حذف التسجيل
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </motion.tr>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </motion.div>
-        )}
+                )}
+                {enrollments.map((enrollment) => (
+                  <TableRow key={enrollment.id} hover>
+                    <TableCell>{enrollment.id}</TableCell>
+                    <TableCell>
+                      {enrollment.student?.student_name ?? "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {enrollment?.grade_level?.name || "-"}
+                    </TableCell>
+                    <TableCell>{formatNumber(enrollment.fees)}</TableCell>
+                    <TableCell>
+                      {enrollment.classroom?.name ?? (
+                        <Box component="em" sx={{ color: "text.secondary" }}>
+                          غير محدد
+                        </Box>
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={enrollment.status}
+                        color={getStatusColor(enrollment.status)}
+                        size="small"
+                      />
+                    </TableCell>
+                    {/* Payments Button */}
+                    <TableCell align="center">
+                     
+                      <Tooltip title="عرض/إدارة الأقساط والمدفوعات">
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={() => handleOpenStatementDialog(enrollment)}
+                          startIcon={<ReceiptLongIcon fontSize="small" />}
+                        >
+                          كشف حساب
+                        </Button>
+                      </Tooltip>
+                    </TableCell>
 
-      {/* Dialogs */}
+                    <TableCell align="right">
+                      <Stack
+                        direction="row"
+                        spacing={0.5}
+                        justifyContent="flex-end"
+                      >
+                        <Tooltip title="تعديل الحالة/الفصل">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleOpenUpdateForm(enrollment)}
+                          >
+                            <EditIcon fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="حذف التسجيل">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleOpenDeleteDialog(enrollment)}
+                          >
+                            <DeleteIcon fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      )}
+
+      {/* --- Dialogs --- */}
+      {/* Render Enroll dialog only when selections are made */}
       {selectedGradeLevelObj && selectedAcademicYearObj && (
         <EnrollmentFormDialog
           open={enrollFormOpen}
-          onOpenChange={setEnrollFormOpen}
-          onSuccess={handleEnrollSuccess}
+          onOpenChange={handleCloseEnrollForm}
+          onSuccess={() => {
+            // Refetch enrollments after successful enrollment
+            if (selectedSchoolId && selectedYearId) {
+              fetchEnrollments({
+                school_id: selectedSchoolId,
+                academic_year_id: selectedYearId,
+                grade_level_id: selectedGradeId || undefined,
+              });
+            }
+          }}
           selectedAcademicYear={selectedAcademicYearObj}
           selectedGradeLevel={selectedGradeLevelObj}
         />
       )}
+
+      {/* Update Dialog */}
       <UpdateEnrollmentDialog
         open={updateFormOpen}
-        onOpenChange={setUpdateFormOpen}
-        onSuccess={handleUpdateSuccess}
+        onOpenChange={handleCloseUpdateForm}
+        onSuccess={() => {
+          // Refetch enrollments after successful update
+          if (selectedSchoolId && selectedYearId) {
+            fetchEnrollments({
+              school_id: selectedSchoolId,
+              academic_year_id: selectedYearId,
+              grade_level_id: selectedGradeId || undefined,
+            });
+          }
+        }}
         enrollmentData={currentEnrollment}
       />
-      <ShadcnDialog
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
         open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        dir="rtl"
       >
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <ShadcnDialogTitle>تأكيد حذف التسجيل</ShadcnDialogTitle>
-            <DialogDescription>
-              هل أنت متأكد من حذف تسجيل الطالب "
-              {currentEnrollment?.student?.student_name}" من العام "
-              {currentEnrollment?.academic_year?.name}"?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:justify-start">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                إلغاء
-              </Button>
-            </DialogClose>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-            >
-              تأكيد الحذف
-            </Button>
-          </DialogFooter>
+        <DialogTitle>تأكيد حذف التسجيل</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            هل أنت متأكد من حذف تسجيل الطالب "
+            {currentEnrollment?.student?.student_name ?? "..."}"
+            <br />
+            من العام الدراسي "{currentEnrollment?.academic_year?.name ?? "..."}"
+            / الصف "{currentEnrollment?.grade_level?.name ?? "..."}"؟
+          </DialogContentText>
         </DialogContent>
-      </ShadcnDialog>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>إلغاء</Button>
+          {/* <Button onClick={handleDeleteConfirm} color="error">
+            تأكيد الحذف
+          </Button> */}
+        </DialogActions>
+      </Dialog>
+      {/* --- Dialogs --- */}
+      {/* ... EnrollmentFormDialog, UpdateEnrollmentDialog, DeleteEnrollmentDialog ... */}
+
       {/* Payments Dialog */}
-      <ShadcnDialog
+      <Dialog
         open={paymentListOpen}
-        onOpenChange={setPaymentListOpen}
+        onClose={handleClosePaymentList}
+        maxWidth="lg"
+        fullWidth
       >
-        <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col" dir="rtl">
-          <DialogHeader>
-            <ShadcnDialogTitle>
-              سجل دفعات الطالب:{" "}
-              {currentEnrollment?.student?.student_name}
-            </ShadcnDialogTitle>
-            <DialogDescription>
-              للعام الدراسي:{" "}
-              {currentEnrollment?.academic_year?.name} / الصف:{" "}
-              {currentEnrollment?.grade_level?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-grow overflow-y-auto py-4">
-            {currentEnrollment && (
-              <StudentFeePaymentList
-                feeInstallmentId={Number(currentEnrollment.id)}
-                onDataChange={() => {
-                  if (selectedSchoolId && selectedYearId) {
-                    fetchEnrollments({
-                      school_id: selectedSchoolId,
-                      academic_year_id: selectedYearId,
-                      grade_level_id: selectedGradeId || undefined,
-                    });
-                  }
-                }}
-              />
-            )}
-          </div>
-          <DialogFooter className="pt-2 border-t">
-            <Button variant="outline" onClick={handleClosePaymentList}>
-              إغلاق
-            </Button>
-          </DialogFooter>
+        <DialogTitle>
+          سجل دفعات الطالب:{" "}
+          {selectedEnrollmentForPayments?.student?.student_name}
+          <Typography variant="body2" color="text.secondary">
+            للعام الدراسي: {selectedEnrollmentForPayments?.academic_year?.name}{" "}
+            / الصف: {selectedEnrollmentForPayments?.grade_level?.name}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          {/* Render the Payment List component inside */}
+          {selectedEnrollmentForPayments && (
+            <FeeInstallmentList
+              studentAcademicYearId={selectedEnrollmentForPayments.id as number}
+              totalFeesAssigned={0}
+            />
+          )}
         </DialogContent>
-      </ShadcnDialog>
-    </div>
+        <DialogActions>
+          <Button onClick={handleClosePaymentList}>إغلاق</Button>
+        </DialogActions>
+      </Dialog>
+      <FeeInstallmentViewerDialog
+        open={statementDialogOpen}
+        onClose={handleCloseStatementDialog} // Use the correct close handler
+        studentAcademicYearId={selectedEnrollmentForStatement?.id ?? null}
+        studentName={selectedEnrollmentForStatement?.student?.student_name}
+        academicYearName={selectedEnrollmentForStatement?.academic_year?.name}
+        gradeLevelName={selectedEnrollmentForStatement?.grade_level?.name}
+      />
+    </Container>
   );
 };
+
 export default StudentEnrollmentManager;

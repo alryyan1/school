@@ -1,13 +1,13 @@
 // src/components/AuthLayout.tsx
-import { Box, Container, CssBaseline, ThemeProvider, Typography, useTheme } from '@mui/material';
+import { Box, Container, CssBaseline, ThemeProvider, Typography } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { createTheme } from '@mui/material/styles';
 import { arSA } from '@mui/material/locale';
 import { CacheProvider } from '@emotion/react';
 import { cacheRtl } from '../constants';
+import alfanarLogo from '@/assets/alfanar.png';
 
 const AuthLayout = () => {
-  const theme = useTheme();
 
   // Create RTL theme override for auth pages
   const rtlTheme = createTheme(
@@ -56,12 +56,27 @@ const AuthLayout = () => {
               p: 4,
             }}
           >
+            
             <Box sx={{ maxWidth: 500, textAlign: 'center', color: 'white' }}>
-              <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
-                نظام إدارة الطلاب
-              </Typography>
-              <Typography variant="h6">
-                نظام متكامل لإدارة بيانات الطلاب والمتابعة الأكاديمية
+                {/* Logo */}
+                <Box sx={{ mb: 4 }}>
+                  <img 
+                    src={alfanarLogo} 
+                    alt="Alfanar Logo" 
+                    style={{ 
+                      maxWidth: '250px', 
+                      height: 'auto',
+                      borderRadius: '12px',
+                      filter: 'brightness(0) invert(1)' // Makes the logo white
+                    }} 
+                  />
+                </Box>
+                
+                <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
+                  نظام إدارة الطلاب
+                </Typography>
+                <Typography variant="h6">
+                  نظام متكامل لإدارة بيانات الطلاب والمتابعة الأكاديمية
               </Typography>
             </Box>
           </Box>

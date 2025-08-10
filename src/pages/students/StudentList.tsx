@@ -13,36 +13,36 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select"; // shadcn Select
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Edit, Trash2, Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, CalendarIcon, FilterX,
-  BookCopy,
-  Edit3, // Added FilterX
+  Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, CalendarIcon, FilterX,
+  Edit3, CheckCircle2,
 } from "lucide-react";
 import { useStudentStore } from "@/stores/studentStore";
-import { Gender, Student, EducationLevel } from "@/types/student"; // Import EducationLevel
+import { useSchoolStore } from "@/stores/schoolStore";
+import { Gender, Student } from "@/types/student";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
 import dayjs, { Dayjs } from "dayjs"; // Import Dayjs type
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 
 
 const StudentList = () => {
   const {
-    students, loading, error, fetchStudents, deleteStudent, updateStudent,
+    students, loading, error, fetchStudents, acceptStudent,
   } = useStudentStore();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
   // Pagination state
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(10);
 
   // Sorting state
   const [orderBy, setOrderBy] = useState<keyof Student>("id");
@@ -50,17 +50,53 @@ const StudentList = () => {
 
   // Filtering state
   const [searchTerm, setSearchTerm] = useState("");
-  const [wishedLevelFilter, setWishedLevelFilter] = useState<EducationLevel>(EducationLevel.NotSpecified); // For Wished Level
-  const [dateFilterType, setDateFilterType] = useState<"created_at" | "date_of_birth" | "">("");
+  const [wishedSchoolFilter, setWishedSchoolFilter] = useState<number | null>(null); // For Wished School
+  const [dateFilterType, setDateFilterType] = useState<"created_at" | "date_of_birth" | " " | "">(" ");
   const [startDateFilter, setStartDateFilter] = useState<Dayjs | null>(null);
   const [endDateFilter, setEndDateFilter] = useState<Dayjs | null>(null);
- console.log(wishedLevelFilter,'wishedLevelFilter')
+
+  const { schools, fetchSchools } = useSchoolStore();
   useEffect(() => {
     fetchStudents();
-  }, [fetchStudents]);
+    fetchSchools();
+  }, [fetchStudents, fetchSchools]);
 
-  const handleDelete = async (id: number) => { /* ... same ... */ };
-  const handlePrintList = () => { /* ... same ... */ };
+  // const handleDelete = async (id: number) => { /* ... same ... */ };
+  const handlePrintList = () => {
+    // Build query parameters based on current filters
+    const params = new URLSearchParams();
+    
+    // Add search term if exists
+    if (searchTerm.trim()) {
+      params.append('search', searchTerm.trim());
+    }
+    
+    // Add wished school filter if selected
+    if (wishedSchoolFilter !== null) {
+      params.append('wished_school_id', wishedSchoolFilter.toString());
+    }
+    
+    // Add date filters if selected
+    if (dateFilterType && dateFilterType !== " ") {
+      if (startDateFilter) {
+        params.append('start_date', startDateFilter.format('YYYY-MM-DD'));
+      }
+      if (endDateFilter) {
+        params.append('end_date', endDateFilter.format('YYYY-MM-DD'));
+      }
+      params.append('date_type', dateFilterType);
+    }
+    
+    // Add sorting parameters
+    params.append('sort_by', orderBy);
+    params.append('sort_order', order);
+    
+    // Build the URL
+    const printUrl = `${webUrl}reports/students/list-pdf?${params.toString()}`;
+    
+    // Open in new window/tab
+    window.open(printUrl, '_blank');
+  };
   const handleSort = (property: keyof Student) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
@@ -70,23 +106,21 @@ const StudentList = () => {
   // Enhanced Filtering Logic
   const filteredStudents = useMemo(() => {
     return students
+      .filter((student) => student) // Filter out null/undefined students
       .filter((student) =>
         // Search Term Filter
-        Object.values(student).some(
+        Object.values(student || {}).some(
           (value) =>
             value &&
             value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
       )
       .filter((student) =>{
-        // Wished Level Filter
-        if(wishedLevelFilter != EducationLevel.NotSpecified){
-          
-          return student.wished_level === wishedLevelFilter
+        // Wished School Filter
+        if(wishedSchoolFilter !== null){
+          return student.wished_school === wishedSchoolFilter
         }
-          return true
-        
-        
+        return true
       })
       .filter((student) => {
         // Date Range Filter
@@ -100,7 +134,7 @@ const StudentList = () => {
 
         return startMatch && endMatch;
       });
-  }, [students, searchTerm, wishedLevelFilter, dateFilterType, startDateFilter, endDateFilter]);
+  }, [students, searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter]);
 
 
   const sortedStudents = useMemo(() => { // useMemo for sortedStudents
@@ -146,7 +180,18 @@ const StudentList = () => {
 
   const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
 
-  function handleAccept(student: Student): void { /* ... same ... */ }
+  const handleAccept = async (student: Student) => {
+    try {
+      const success = await acceptStudent(student.id);
+      if (success) {
+        enqueueSnackbar(`تم قبول الطالب ${student.student_name} بنجاح`, { variant: 'success' });
+      } else {
+        enqueueSnackbar('فشل في قبول الطالب', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('حدث خطأ أثناء قبول الطالب', { variant: 'error' });
+    }
+  };
 
   const SortButton = ({ column, children }: { column: keyof Student; children: React.ReactNode }) => (
     <Button variant="ghost" onClick={() => handleSort(column)} className="h-auto p-0 font-medium hover:bg-transparent hover:text-primary">
@@ -157,8 +202,8 @@ const StudentList = () => {
 
   const resetFilters = () => {
     setSearchTerm("");
-    setWishedLevelFilter(EducationLevel.NotSpecified);
-    setDateFilterType("");
+    setWishedSchoolFilter(null);
+    setDateFilterType(" ");
     setStartDateFilter(null);
     setEndDateFilter(null);
     setPage(0); // Reset to first page
@@ -250,13 +295,16 @@ const StudentList = () => {
                 className="w-full"
               />
             </div>
-            <Select value={wishedLevelFilter} onValueChange={(value) => {setWishedLevelFilter(value as EducationLevel); setPage(0);}}>
+            <Select value={wishedSchoolFilter?.toString() || ""} onValueChange={(value) => {setWishedSchoolFilter(value ? parseInt(value) : null); setPage(0);}}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="فلترة بالمرحلة..." />
+                <SelectValue placeholder="فلترة بالمدرسة..." />
               </SelectTrigger>
               <SelectContent>
-                {Object.values(EducationLevel).map((level) => (
-                  <SelectItem key={level} value={level}>{level}</SelectItem>
+                <SelectItem value={null}>جميع المدارس</SelectItem>
+                {schools?.map((school) => (
+                  <SelectItem key={school.id} value={school.id.toString()}>
+                    {school.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -272,13 +320,13 @@ const StudentList = () => {
             </Select>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-full justify-start text-right font-normal", !startDateFilter && "text-muted-foreground")}>
+                <Button variant="outline" className={cn(" justify-start text-right font-normal", !startDateFilter && "text-muted-foreground")}>
                   <CalendarIcon className="ml-2 h-4 w-4" />
                   {startDateFilter ? dayjs(startDateFilter).format('DD/MM/YYYY') : <span>من تاريخ</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={startDateFilter?.toDate()} onSelect={(date) => {setStartDateFilter(date ? dayjs(date): null); setPage(0);}} initialFocus />
+                <Calendar captionLayout="dropdown" mode="single" selected={startDateFilter?.toDate()} onSelect={(date) => {setStartDateFilter(date ? dayjs(date): null); setPage(0);}} initialFocus />
               </PopoverContent>
             </Popover>
             <Popover>
@@ -289,7 +337,13 @@ const StudentList = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={endDateFilter?.toDate()} onSelect={(date) => {setEndDateFilter(date ? dayjs(date): null); setPage(0);}} initialFocus />
+                <Calendar 
+                  captionLayout="dropdown" 
+                  mode="single" 
+                  selected={endDateFilter?.toDate()} 
+                  onSelect={(date) => {setEndDateFilter(date ? dayjs(date): null); setPage(0);}} 
+                  initialFocus 
+                />
               </PopoverContent>
             </Popover>
             <div className="sm:col-span-2 lg:col-span-1 xl:col-span-6 flex justify-center lg:justify-end xl:justify-start">
@@ -310,8 +364,9 @@ const StudentList = () => {
                       <TableHead className="text-center "><SortButton column="student_name">اسم الطالب</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-20"><SortButton column="gender">الجنس</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell">هاتف الأب</TableHead>
-                      <TableHead className="text-center hidden sm:table-cell"><SortButton column="wished_level">المستوى</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell"><SortButton column="wished_school">المدرسة</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-24"><SortButton column="approved">الحالة</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-16">التسجيل</TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="date_of_birth">ت. الميلاد</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="created_at">ت. التسجيل</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-16">طباعة</TableHead>
@@ -321,8 +376,8 @@ const StudentList = () => {
                   <TableBody>
                     {paginatedStudents.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                          {searchTerm || wishedLevelFilter !== EducationLevel.NotSpecified || dateFilterType 
+                        <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                          {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") 
                             ? "لا توجد نتائج تطابق الفلاتر المحددة" 
                             : "لا توجد طلاب لعرضهم"}
                         </TableCell>
@@ -339,12 +394,35 @@ const StudentList = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-center hidden sm:table-cell text-sm">{student.father_phone || '-'}</TableCell>
-                          <TableCell className="text-center hidden sm:table-cell text-sm">{student.wished_level || '-'}</TableCell>
+                          <TableCell className="text-center hidden sm:table-cell text-sm">
+                            {student.wished_school_details?.name || '-'}
+                          </TableCell>
                           <TableCell className="text-center hidden sm:table-cell">
                             <Badge variant={student.approved ? "default" : "outline"} 
                                    className={student.approved ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}>
                               {student.approved ? "مقبول" : "قيد المراجعة"}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-center hidden sm:table-cell">
+                            {student.enrollments && student.enrollments.length > 0 ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8 hover:bg-green-50" 
+                                      onClick={() => navigate(`/students/${student.id}`)}
+                                    >
+                                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>الطالب مسجل - اضغط لعرض الملف</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
                             {student.date_of_birth ? dayjs(student.date_of_birth).format('YYYY/MM/DD') : '-'}
@@ -373,10 +451,7 @@ const StudentList = () => {
                                 <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
                                 <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}`)}><Eye className="ml-2 h-4 w-4" /> عرض الملف</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}/edit`)}><Edit3 className="ml-2 h-4 w-4" /> تعديل البيانات</DropdownMenuItem>
-                                {/* --- NEW MENU ITEM --- */}
-                                <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}/exam-results`)}>
-                                    <BookCopy className="ml-2 h-4 w-4" /> سجل الامتحانات والدرجات
-                                </DropdownMenuItem>
+                              
                                 {/* --------------------- */}
                                 {!student.approved && (
                                     <DropdownMenuItem onSelect={() => handleAccept(student)}> {/* Assuming handleAccept exists */}

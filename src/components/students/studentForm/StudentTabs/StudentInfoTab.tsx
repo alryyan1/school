@@ -8,8 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EducationLevel, Gender, Student } from "@/types/student";
+import { Gender, Student } from "@/types/student";
+import { useSchoolStore } from "@/stores/schoolStore";
 import dayjs from "dayjs";
+import { useEffect } from "react";
 
 export const StudentInfoTab = () => {
   const {
@@ -17,6 +19,12 @@ export const StudentInfoTab = () => {
     register,
     formState: { errors },
   } = useFormContext<Student>();
+
+  const { schools, fetchSchools } = useSchoolStore();
+
+  useEffect(() => {
+    fetchSchools();
+  }, [fetchSchools]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -108,34 +116,31 @@ export const StudentInfoTab = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="wished_level">المرحلة الدراسية المرغوبة *</Label>
+        <Label htmlFor="wished_school">المدرسة المرغوبة *</Label>
         <Controller
-          name="wished_level"
+          name="wished_school"
           control={control}
+          rules={{ required: "المدرسة المرغوبة مطلوبة" }}
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className={errors.wished_level ? "border-red-500" : ""}>
-                <SelectValue placeholder="اختر المرحلة" />
+            <Select 
+              value={field.value?.toString() || ""} 
+              onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+            >
+              <SelectTrigger className={errors.wished_school ? "border-red-500" : ""}>
+                <SelectValue placeholder="اختر المدرسة" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={EducationLevel.Secondary}>
-                  {EducationLevel.Secondary}
-                </SelectItem>
-                <SelectItem value={EducationLevel.Intermediate}>
-                  {EducationLevel.Intermediate}
-                </SelectItem>
-                <SelectItem value={EducationLevel.Primary}>
-                  {EducationLevel.Primary}
-                </SelectItem>
-                <SelectItem value={EducationLevel.Kindergarten}>
-                  {EducationLevel.Kindergarten}
-                </SelectItem>
+                {schools.map((school) => (
+                  <SelectItem key={school.id} value={school.id.toString()}>
+                    {school.name} ({school.code})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}
         />
-        {errors.wished_level && (
-          <p className="text-sm text-red-500">{errors.wished_level.message}</p>
+        {errors.wished_school && (
+          <p className="text-sm text-red-500">{errors.wished_school.message}</p>
         )}
       </div>
 

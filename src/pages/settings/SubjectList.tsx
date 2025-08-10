@@ -118,10 +118,10 @@ const SubjectList: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>اسم المادة</TableHead>
-                  <TableHead>الرمز</TableHead>
-                  <TableHead>الوصف</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
+                  <TableHead className="text-center">اسم المادة</TableHead>
+                  <TableHead className="text-center">الرمز</TableHead>
+                  <TableHead className="text-center">الوصف</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -134,14 +134,14 @@ const SubjectList: React.FC = () => {
                 )}
                 {subjects.map((subject) => (
                   <TableRow key={subject.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-center">
                       {subject.name}
                     </TableCell>
-                    <TableCell>{subject.code}</TableCell>
-                    <TableCell className="max-w-[350px] truncate">
+                    <TableCell className="text-center">{subject.code}</TableCell>
+                    <TableCell className="max-w-[350px] truncate text-center">
                       {subject.description || "-"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">

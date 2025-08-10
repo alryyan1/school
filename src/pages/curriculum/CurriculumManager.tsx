@@ -332,6 +332,7 @@ const CurriculumManager: React.FC = () => {
                   <Table className="w-full min-w-[600px]">
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-16 text-center">#</TableHead>
                         <TableHead className="min-w-[150px] text-center">المادة الدراسية</TableHead>
                         <TableHead className="w-24 text-center">الرمز</TableHead>
                         <TableHead className="min-w-[150px] text-center">المعلم المسؤول</TableHead>
@@ -341,13 +342,16 @@ const CurriculumManager: React.FC = () => {
                     <TableBody>
                       {assignments.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                             لا توجد مواد معينة لهذه المرحلة في هذا العام.
                           </TableCell>
                         </TableRow>
                       )}
-                      {assignments.map((assignment) => (
+                      {assignments.map((assignment, index) => (
                         <TableRow key={assignment.id} className="hover:bg-muted/50">
+                          <TableCell className="text-center font-medium text-muted-foreground">
+                            {index + 1}
+                          </TableCell>
                           <TableCell className="font-medium text-center">
                             {assignment.subject?.name ?? "N/A"}
                           </TableCell>
@@ -371,7 +375,7 @@ const CurriculumManager: React.FC = () => {
                                   <Edit className="w-4 h-4 ml-2" />
                                   تغيير المعلم
                                 </DropdownMenuItem>
-                                examResult               <DropdownMenuItem 
+                                <DropdownMenuItem 
                                   onClick={() => handleOpenDeleteDialog(assignment)}
                                   className="text-red-600"
                                 >

@@ -9,6 +9,11 @@ export type StudentCollectionResponse = {
   data: Student[] /* Add pagination if needed */;
 };
 
+export type AcceptStudentResponse = {
+  message: string;
+  student: Student;
+};
+
 export const StudentApi = {
   create: (
     student: Omit<Student, "id"> // Send plain object if no file involved
@@ -44,5 +49,8 @@ export const StudentApi = {
       }
     );
   },
+
+  // --- NEW: Accept Student ---
+  accept: (id: number) => axiosClient.post<AcceptStudentResponse>(`/students/${id}/accept`),
 
 };

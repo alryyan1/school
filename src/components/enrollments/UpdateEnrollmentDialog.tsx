@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
-    Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -169,9 +169,14 @@ const UpdateEnrollmentDialog: React.FC<UpdateEnrollmentDialogProps> = ({
                         </div>
                     </div>
                     <DialogFooter className="pt-4">
-                        <DialogClose asChild>
-                            <Button type="button" variant="outline" disabled={isSubmitting}>إلغاء</Button>
-                        </DialogClose>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            disabled={isSubmitting}
+                            onClick={() => onOpenChange(false)}
+                        >
+                            إلغاء
+                        </Button>
                         <Button type="submit" disabled={isSubmitting || loadingClassrooms}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             حفظ التعديلات

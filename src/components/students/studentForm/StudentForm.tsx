@@ -1,6 +1,6 @@
 // src/components/students/studentForm/StudentForm.tsx
 import { useForm, FormProvider } from "react-hook-form";
-import { Student, EducationLevel, Gender } from "@/types/student";
+import { Student, Gender } from "@/types/student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +47,7 @@ const initialStudentState: Omit<Student, 'id' | 'created_at' | 'updated_at'> = {
   approved_by_user: null,
   message_sent: false,
   goverment_id: "",
-  wished_level: EducationLevel.Primary,
+  wished_school: null,
 };
 
 // LocalStorage key (consider if still needed, might conflict with edit)
@@ -164,6 +164,7 @@ export const StudentForm = () => {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 max-w-4xl" dir="rtl">
+      <Button className="mb-4" onClick={() => navigate(-1)}>الرجوع</Button>
       <FormProvider {...methods}>
         <Card>
           <CardHeader>

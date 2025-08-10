@@ -44,12 +44,14 @@ import {
   Eye,
   Building,
   AlertCircle,
+  UserPlus,
 } from "lucide-react";
 
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
 import { School } from "@/types/school"; // Adjust path
 import { useSnackbar } from "notistack"; // Still useful for general notifications
 import { webUrl } from "@/constants";
+import AssignUserDialog from "@/components/schools/AssignUserDialog";
 // Removed MUI Pagination, DataGrid, Tooltip, etc.
 
 const SchoolList: React.FC = () => {
@@ -65,6 +67,8 @@ const SchoolList: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
   const [searchTerm, setSearchTerm] = useState(""); // For local search/filter
+  const [assignUserDialogOpen, setAssignUserDialogOpen] = useState(false);
+  const [schoolToAssignUser, setSchoolToAssignUser] = useState<School | null>(null);
 
   // --- Effects ---
   useEffect(() => {
@@ -79,6 +83,20 @@ const SchoolList: React.FC = () => {
   const handleCloseDeleteDialog = () => {
     setSchoolToDelete(null);
     setDeleteDialogOpen(false);
+  };
+
+  const handleOpenAssignUserDialog = (school: School) => {
+    setSchoolToAssignUser(school);
+    setAssignUserDialogOpen(true);
+  };
+
+  const handleCloseAssignUserDialog = () => {
+    setSchoolToAssignUser(null);
+    setAssignUserDialogOpen(false);
+  };
+
+  const handleUserAssigned = () => {
+    fetchSchools(); // Refresh the schools list
   };
   const handleDeleteConfirm = async () => {
     if (schoolToDelete) {
@@ -209,14 +227,12 @@ const SchoolList: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px] text-center">#</TableHead>
               <TableHead className="w-[60px] text-center">الشعار</TableHead>
               <TableHead className="text-center">اسم المدرسة</TableHead>
               <TableHead className="hidden sm:table-cell text-center">الرمز</TableHead>
-              <TableHead className="hidden md:table-cell text-center  ">
-                البريد الإلكتروني
-              </TableHead>
-              <TableHead className="hidden md:table-cell text-center">الهاتف</TableHead>
-              <TableHead className="hidden lg:table-cell text-center">اسم المدير</TableHead>
+           
+              <TableHead className="hidden lg:table-cell text-center">المستخدم المسؤول</TableHead>
               <TableHead className="w-[80px] text-center">إجراءات</TableHead>
             </TableRow>
           </TableHeader>
@@ -224,7 +240,7 @@ const SchoolList: React.FC = () => {
             {filteredSchools.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
                   {searchTerm
@@ -233,7 +249,7 @@ const SchoolList: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSchools.map((school) => (
+              filteredSchools.map((school, index) => (
                 <motion.tr
                   key={school.id}
                   variants={itemVariants}
@@ -241,6 +257,9 @@ const SchoolList: React.FC = () => {
                   animate="visible"
                   className="hover:bg-muted/50 transition-colors"
                 >
+                  <TableCell className="text-center font-mono text-sm font-medium">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="text-center">
                     <Avatar className="h-9 w-9 mx-auto">
                       {/* {console.log(`${webUrl}${school.logo_url ?? undefined}`)} */}
@@ -257,14 +276,17 @@ const SchoolList: React.FC = () => {
                   <TableCell className="hidden sm:table-cell text-center">
                     {school.code}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-center">
-                    {school.email || "-"}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-center">
-                    {school.phone || "-"}
-                  </TableCell>
+               
+               
                   <TableCell className="hidden lg:table-cell text-center">
-                    {school.principal_name || "-"}
+                    {school.user ? (
+                      <div className="flex flex-col items-center">
+                        <span className="font-medium">{school.user.name}</span>
+                        <span className="text-xs text-muted-foreground">{school.user.username}</span>
+                      </div>
+                    ) : (
+                      "-"
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <DropdownMenu>
@@ -291,6 +313,11 @@ const SchoolList: React.FC = () => {
                           }
                         >
                           <Edit3 className="ml-2 h-4 w-4" /> تعديل
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => handleOpenAssignUserDialog(school)}
+                        >
+                          <UserPlus className="ml-2 h-4 w-4" /> تعيين مستخدم
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                    
@@ -339,6 +366,14 @@ const SchoolList: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Assign User Dialog */}
+      <AssignUserDialog
+        open={assignUserDialogOpen}
+        onOpenChange={setAssignUserDialogOpen}
+        school={schoolToAssignUser}
+        onUserAssigned={handleUserAssigned}
+      />
     </div>
   );
 };

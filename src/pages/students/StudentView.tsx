@@ -1,5 +1,5 @@
 // src/pages/students/StudentView.tsx
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,16 +15,13 @@ import {
   User,
   Upload,
   X,
-  Loader2,
 } from 'lucide-react';
 import { useStudentStore } from '@/stores/studentStore';
-import { imagesUrl } from '@/constants';
+import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 import { Gender } from '@/types/student';
 import { useSnackbar } from 'notistack';
 import { motion } from 'framer-motion';
 import StudentActionPane from '@/components/students/StudentActionPane';
-import { useSettingsStore } from '@/stores/settingsStore';
-import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 
 // Helper to display data or placeholder
 const displayData = (data: string | number | null | undefined, placeholder = 'غير محدد', suffix = '') => {
@@ -115,18 +112,12 @@ const StudentView: React.FC = () => {
             setUploadError(useStudentStore.getState().error || 'فشل رفع الصورة. حاول مرة أخرى.');
         }
     };
-    const { activeAcademicYearId } = useSettingsStore.getState();
-    const { enrollments, fetchEnrollments: fetchStudentEnrollments } = useStudentEnrollmentStore();
+    const { enrollments } = useStudentEnrollmentStore();
 
+
+    console.log(enrollments,'enrollments');
      // Find the student's enrollment for the active academic year
-     const currentEnrollmentRecord = useMemo(() => {
-        if (!currentStudent || !activeAcademicYearId) return null;
-        // This assumes 'enrollments' in useStudentEnrollmentStore is either global or fetched for this student
-        // A more robust way would be a dedicated fetch: getEnrollmentForStudentInYear(studentId, activeAcademicYearId)
-        return enrollments.find(
-            e => e.student_id === currentStudent.id && e.academic_year_id === activeAcademicYearId
-        );
-    }, [currentStudent, activeAcademicYearId, enrollments]);
+     const allEnrollments = currentStudent?.enrollments ?? [];
 
 
     if (loading && !currentStudent) {
@@ -273,9 +264,9 @@ const StudentView: React.FC = () => {
                                             {displayData(currentStudent.gender)}
                                         </Badge>
                                     } />
-                                    <InfoItem label="المرحلة المرغوبة" value={
+                                    <InfoItem label="المدرسة المرغوبة" value={
                                         <Badge variant="outline">
-                                            {displayData(currentStudent.wished_level)}
+                                            {displayData(currentStudent.wished_school_details?.name)}
                                         </Badge>
                                     } />
                                     <InfoItem label="الرقم الوطني" value={displayData(currentStudent.goverment_id)} />
@@ -354,9 +345,9 @@ const StudentView: React.FC = () => {
             </Card>
             </div>
              {/* Action Pane Area */}
-             <div className="lg:col-span-3">
-                    <StudentActionPane student={currentStudent} currentEnrollmentId={currentEnrollmentRecord?.id} />
-                </div>
+             <div className="lg:col-span-3 space-y-6">
+                <StudentActionPane student={currentStudent} currentEnrollmentId={typeof allEnrollments[0]?.id === 'string' ? parseInt(allEnrollments[0]?.id) : allEnrollments[0]?.id} />
+            </div>
         </div>
         </motion.div>
     );

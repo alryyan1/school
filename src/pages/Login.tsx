@@ -12,12 +12,12 @@ import {
   TextField,
   Typography,
   CircularProgress,
-  Paper,
-  useTheme
+  Paper
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/context/authcontext';
+import alfanarLogo from '@/assets/alfanar.png';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -27,7 +27,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
-  const theme = useTheme();
   const navigate = useNavigate();
 
     // Determine where to redirect after login
@@ -47,11 +46,12 @@ const Login = () => {
        // Navigate to the 'from' path instead of hardcoding '/dashboard'
        navigate(from, { replace: true });
         // <--- Navigate to original or dashboard
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = 'فشل تسجيل الدخول';
       
-      if (error.response) {
-        switch (error.response.status) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { status: number } };
+        switch (axiosError.response.status) {
           case 401:
             errorMessage = ' اسم المستخدم أو كلمة المرور غير صحيحة';
             break;
@@ -82,7 +82,24 @@ const Login = () => {
           borderRadius: 2
         }}
       >
+        {/* Logo */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <img 
+            src={alfanarLogo} 
+            alt="Alfanar Logo" 
+            style={{ 
+              maxWidth: '200px', 
+              height: 'auto',
+              borderRadius: '8px'
+            }} 
+          />
+        </Box>
+        
         <Typography variant="h4" component="h1" align="center" gutterBottom sx={{ fontWeight: 700 }}>
+          نظام اداره الطلاب
+        </Typography>
+        
+        <Typography variant="h5" component="h2" align="center" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
           تسجيل الدخول
         </Typography>
         
@@ -170,14 +187,7 @@ const Login = () => {
             )}
           </Button>
 
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography variant="body2">
-              ليس لديك حساب؟{' '}
-              <Link to="/auth/register" style={{ fontWeight: 600, textDecoration: 'none' }}>
-                إنشاء حساب جديد
-              </Link>
-            </Typography>
-          </Box>
+  
         </Box>
       </Paper>
     

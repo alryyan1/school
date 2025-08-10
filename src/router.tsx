@@ -17,11 +17,15 @@ import Dashboard from '@/pages/Dashboard';                // Adjust path
 import Login from '@/pages/Login';                      // Adjust path
 import NotFound from '@/pages/NotFound';                  // Adjust path
 import Unauthorized from '@/pages/Unauthorized';            // Adjust path
+import ErrorPage from '@/pages/ErrorPage';                  // Adjust path
 
 // --- Student Pages & Components ---
 import StudentList from '@/pages/students/StudentList';                   // Adjust path
 import StudentDashboard from '@/pages/students/StudentDashboard';         // Adjust path
 import StudentView from '@/pages/students/StudentView';                   // Adjust path
+import StudentEnrollmentsPage from '@/pages/students/StudentEnrollmentsPage';
+import StudentEnrollmentDashboardPage from '@/pages/students/StudentEnrollmentDashboardPage';
+import StudentEnrollmentNotesPage from '@/pages/students/StudentEnrollmentNotesPage';
 
 // --- Teacher Pages & Components ---
 import TeacherList from '@/pages/teachers/TeacherList';                 // Adjust path
@@ -37,7 +41,7 @@ import SchoolForm from '@/components/schools/SchoolForm';                 // Adj
 import SettingsDashboard from '@/pages/settings/SettingsDashboard';       // Adjust path
 import GeneralSettingsPage from '@/pages/settings/GeneralSettingsPage'; // Adjust path
 import AcademicYearList from '@/pages/settings/AcademicYearList';       // Adjust path
-import GradeLevelStudentAssigner from '@/components/settings/GradeLevelStudentAssigner'; // New name
+import ClassroomStudentAssigner from '@/components/settings/ClassroomStudentAssigner';
 import SubjectList from '@/pages/settings/SubjectList';                 // Adjust path
 import ClassroomList from '@/pages/settings/ClassroomList';               // Adjust path
 import SchoolGradeLevelManager from '@/pages/settings/SchoolGradeLevelManager';// Adjust path
@@ -74,6 +78,8 @@ import ExamResultsEntryPage from './pages/exams/ExamResultsEntryPage';
 import StudentExamResultsPage from './pages/students/StudentExamResultsPage';
 import GradeLevelList from './pages/settings/GradeLevelList';
 import RolePermissionManager from './pages/settings/RolePermissionManager';
+import { Grade } from '@mui/icons-material';
+import GradeLevelClassroomListPage from './pages/pages/GradeLevelClassroomListPage';
 
 // --- ProtectedRoute and AuthRoute (Define them here or import if they are in separate files) ---
 // It's often cleaner to keep these alongside the router if they are tightly coupled.
@@ -119,6 +125,7 @@ const router = createHashRouter([
                 <MainLayoutWrapper />
             </ProtectedRoute>
         ),
+        errorElement: <ErrorPage />,
         children: [
             { index: true, element: <Navigate to="/dashboard" replace /> },
             { path: 'dashboard', element: <Dashboard /> },
@@ -133,6 +140,9 @@ const router = createHashRouter([
                     { path: 'create', element: <StudentForm /> },
                     { path: ':id', element: <StudentView /> },
                     { path: ':id/edit', element: <StudentForm /> },
+                    { path: ':id/enrollments', element: <StudentEnrollmentsPage /> },
+                    { path: ':studentId/enrollments/:enrollmentId/dashboard', element: <StudentEnrollmentDashboardPage /> },
+                    { path: ':studentId/enrollments/:enrollmentId/notes', element: <StudentEnrollmentNotesPage /> },
                 ]
             },
             {
@@ -152,6 +162,7 @@ const router = createHashRouter([
                 ]
             },
 
+           
             // --- School Section ---
             {
                 path: 'schools', // Base path, often the list itself
@@ -179,7 +190,7 @@ const router = createHashRouter([
                     { path: 'school-grades', element: <SchoolGradeLevelManager /> },
                     { path: 'users', element: <UserList /> },
                     { path: 'roles-permissions', element: <RolePermissionManager /> }, // <-- Add this
-                    
+                    { path: 'classroom-assigner', element: <ClassroomStudentAssigner /> },
 
                 ]
             },
@@ -224,7 +235,19 @@ const router = createHashRouter([
                 children: [
                      { index: true, element: <SchoolExplorerPage /> },
                      { path: ':schoolId/classrooms', element: <SchoolClassroomListPage /> },
-                     { path: ':schoolId/classrooms/:classroomId/students', element: <ClassroomStudentListPage /> }
+                     //-----------------
+                     {
+                        path: ":schoolId/gradelevels",
+                        element: <SchoolClassroomListPage />, // Level 2
+                      },
+                      {
+                        path: ":schoolId/classrooms/:classroomId/students",
+                        element: <ClassroomStudentListPage />, // Level 3
+                      },
+                      {
+                        path:":schoolId/grade-levels/:gradeLevelId/classrooms",
+                        element:<GradeLevelClassroomListPage/>
+                      }
                      
                 ]
             },
@@ -235,6 +258,7 @@ const router = createHashRouter([
     {
         path: '/auth',
         element: <AuthLayout />,
+        errorElement: <ErrorPage />,
         children: [
             { path: 'login', element: (<AuthRoute><Login /></AuthRoute>) },
             { path: 'register', element: (<AuthRoute><Register /></AuthRoute>) },

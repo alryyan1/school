@@ -16,6 +16,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 // lucide-react icons
@@ -25,6 +32,7 @@ import { useSchoolStore } from '@/stores/schoolStore';   // Adjust path
 import { School, SchoolFormData } from '@/types/school'; // Adjust path
 import { useSnackbar } from 'notistack'; // Still good for general notifications
 import { CircularProgress } from '@mui/material';
+import { User, UserApi } from '@/api/userApi';
 
 const SchoolForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -39,11 +47,13 @@ const SchoolForm: React.FC = () => {
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
+    const [users, setUsers] = useState<User[]>([]);
+    const [usersLoading, setUsersLoading] = useState(false);
 
     const { control, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<SchoolFormData>({
         defaultValues: {
             name: '', code: 'sch-0000', address: ' -', phone: '', email: '-',
-            principal_name: null, establishment_date: null, logo: null, logo_path: null
+            principal_name: null, establishment_date: null, logo: null, logo_path: null, user_id: null
         }
     });
 
@@ -66,7 +76,7 @@ const SchoolForm: React.FC = () => {
         } else {
             reset({ // Default for create mode
                 name: '', code: '', address: '', phone: '', email: '',
-                principal_name: null, establishment_date: null, logo: null, logo_path: null
+                principal_name: null, establishment_date: null, logo: null, logo_path: null, user_id: null
             });
             setLogoPreview(null);
         }
@@ -97,6 +107,22 @@ const SchoolForm: React.FC = () => {
             setLogoPreview(null);
         }
     }, [watchedLogo, currentSchool, isEditMode]);
+
+    // Load users for assignment
+    useEffect(() => {
+        const loadUsers = async () => {
+            setUsersLoading(true);
+            try {
+                const response = await UserApi.getAll(1, {});
+                setUsers(response.data.data || []);
+            } catch (err) {
+                console.error('Error loading users:', err);
+            } finally {
+                setUsersLoading(false);
+            }
+        };
+        loadUsers();
+    }, []);
 
 
     const onSubmit = async (data: SchoolFormData) => {
@@ -257,6 +283,32 @@ const SchoolForm: React.FC = () => {
                                     )} />
                                 {errors.establishment_date && <p className="text-xs text-destructive">{errors.establishment_date.message}</p>}
                             </div>
+                        </div>
+
+                        {/* User Assignment */}
+                        <div className="space-y-2">
+                            <Label htmlFor="user_id">المستخدم المسؤول (اختياري)</Label>
+                            {usersLoading ? (
+                                <Skeleton className="h-10 w-full" />
+                            ) : (
+                                <Controller name="user_id" control={control}
+                                    render={({ field }) => (
+                                        <Select value={field.value?.toString() || ''} onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="اختر مستخدم..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="">بدون مستخدم</SelectItem>
+                                                {users.map((user) => (
+                                                    <SelectItem key={user.id} value={user.id.toString()}>
+                                                        {user.name} ({user.username})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )} />
+                            )}
+                            {errors.user_id && <p className="text-xs text-destructive">{errors.user_id.message}</p>}
                         </div>
 
                         {/* Logo Upload */}

@@ -1,4 +1,5 @@
 // src/types/Student.ts
+import { StudentAcademicYear } from './studentAcademicYear';
 
 export enum Gender {
     Male = 'ذكر',
@@ -48,9 +49,15 @@ export enum Gender {
     message_sent?: boolean;
     
     goverment_id: string;
-    wished_level: EducationLevel;
+    wished_school: number | null; // School ID
+    wished_school_details?: {
+      id: number;
+      name: string;
+      code: string;
+    } | null;
   
     created_at?: string;
     updated_at?: string;
     image_url?:string;
+    enrollments?: StudentAcademicYear[];
   };

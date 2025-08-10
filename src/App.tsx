@@ -20,6 +20,7 @@ import { arSA } from "@mui/material/locale";
 
 // --- Global Contexts ---
 import { AuthProvider } from "./context/authcontext"; // Adjust path
+import ErrorBoundary from "./components/ErrorBoundary"; // Adjust path
 // Import other global providers if any (e.g., settingsStore rehydration if not automatic)
 
 // --- Router ---
@@ -54,6 +55,7 @@ function App() {
         {/* Example shadcn theme */}
         <MuiCssBaseline /> {/* Apply MUI baseline styles */}
         <AuthProvider>
+          <ErrorBoundary>
           <SnackbarProvider
             maxSnack={3}
             autoHideDuration={3000}
@@ -74,6 +76,7 @@ function App() {
             />
             <RouterProvider router={router} />
           </SnackbarProvider>
+          </ErrorBoundary>
         </AuthProvider>
         {/* </ShadcnThemeProvider> */}
       </MuiThemeProvider>

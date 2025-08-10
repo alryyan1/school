@@ -1,4 +1,4 @@
-// src/pages/settings/GradeLevelStudentAssigner.tsx
+// src/components/settings/ClassroomStudentAssigner.tsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
@@ -50,7 +50,7 @@ import { GradeLevel } from "@/types/gradeLevel"; // Ensure this type is correctl
 import { Classroom } from "@/types/classroom";
 import { SchoolApi } from "@/api/schoolApi";
 import { useSnackbar } from "notistack";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // Extended types for this component
 interface ClassroomWithEnrollments extends Classroom {
@@ -68,8 +68,9 @@ interface StudentWithImage {
 
 const UNASSIGNED_STUDENTS_DROPPABLE_ID = "unassigned-students";
 
-const GradeLevelStudentAssigner: React.FC = () => {
+const ClassroomStudentAssigner: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   const {
     activeSchoolId: defaultSchoolId,
     activeAcademicYearId: defaultYearId,
@@ -108,6 +109,8 @@ const GradeLevelStudentAssigner: React.FC = () => {
   // --- Store Data & Actions ---
   const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
   const { academicYears, fetchAcademicYears } = useAcademicYearStore();
+  const { activeAcademicYearId } = useSettingsStore();
+  console.log(activeAcademicYearId,'activeAcademicYearId',academicYears,'academicYears')
   // const { gradeLevels: allGlobalGradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Not used directly for filtering anymore
 
   const {
@@ -216,6 +219,10 @@ const GradeLevelStudentAssigner: React.FC = () => {
   };
   const handleGradeChange = (value: string) =>
     setSelectedGradeId(value ? Number(value) : "");
+
+  const handleStudentClick = (studentId: number) => {
+    navigate(`/students/${studentId}`);
+  };
 
   const onDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -332,6 +339,23 @@ const GradeLevelStudentAssigner: React.FC = () => {
       .sort((a, b) => b.name.localeCompare(a.name)); // Sort desc
   }, [academicYears, selectedSchoolId]);
 
+  // --- Dynamic Grid Columns Calculation ---
+  const getGridColumns = useCallback(() => {
+    const totalColumns = classrooms.length + 1; // +1 for unassigned students column
+    
+    if (totalColumns <= 1) return "grid-cols-1";
+    if (totalColumns <= 2) return "grid-cols-1 md:grid-cols-2";
+    if (totalColumns <= 3) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+    if (totalColumns <= 4) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+    if (totalColumns <= 5) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5";
+    if (totalColumns <= 6) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6";
+    if (totalColumns <= 8) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8";
+    if (totalColumns <= 10) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-10";
+    
+    // For more than 10 columns, use auto-fit with min-width
+    return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6";
+  }, [classrooms.length]);
+
   // --- Render Student Card for DND ---
   const renderStudentCard = (
     enrollment: StudentAcademicYear,
@@ -345,18 +369,20 @@ const GradeLevelStudentAssigner: React.FC = () => {
     >
       {(provided, snapshot) => (
         <div
+         dir="rtl"
           ref={provided.innerRef}
           {...provided.draggableProps}
           className={cn(
-            "p-2.5 mb-2 border rounded-lg bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow",
+            "p-2.5 mb-2 border rounded-lg bg-card text-card-foreground shadow-sm hover:shadow-md hover:bg-accent/50 transition-all cursor-pointer",
             snapshot.isDragging && "ring-2 ring-primary shadow-lg opacity-90"
           )}
+          onClick={() => handleStudentClick(enrollment.student?.id || 0)}
         >
           <div className="flex items-center space-x-2 space-x-reverse">
             <div {...provided.dragHandleProps} className="cursor-grab p-1">
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
-            <ShadcnAvatar className="h-9 w-9">
+            <ShadcnAvatar className="h-19 w-19">
               <AvatarImage
                 src={(enrollment.student as StudentWithImage)?.image_url ?? undefined}
                 alt={enrollment.student?.student_name}
@@ -368,11 +394,11 @@ const GradeLevelStudentAssigner: React.FC = () => {
               </AvatarFallback>
             </ShadcnAvatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="font-medium truncate text-center text-lg  font-bold">
                 {enrollment.student?.student_name}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {enrollment.student?.goverment_id || "لا يوجد رقم وطني"}
+                 كود الطالب {enrollment.id} 
                 {!isUnassigned && enrollment.classroom && (
                   <span className="text-blue-600 dark:text-blue-400">
                     {" "}
@@ -417,21 +443,21 @@ const GradeLevelStudentAssigner: React.FC = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
             <div>
-              <Label htmlFor="school-filter-assign">المدرسة *</Label>
+              <Label htmlFor="school-filter-assign" className="text-lg font-bold">المدرسة *</Label>
               <Select
                 value={String(selectedSchoolId)}
                 onValueChange={handleSchoolChange}
                 disabled={schoolsLoading}
               >
-                <SelectTrigger id="school-filter-assign">
-                  <SelectValue placeholder="..." />
+                <SelectTrigger id="school-filter-assign" className="text-lg font-bold">
+                  <SelectValue placeholder="..." className="text-lg font-bold" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" " disabled>
+                <SelectContent className="text-lg font-bold">
+                  <SelectItem value=" " disabled className="text-lg font-bold">
                     اختر مدرسة...
                   </SelectItem>
                   {schools.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
+                    <SelectItem key={s.id} value={String(s.id)} className="text-lg font-bold">
                       {s.name}
                     </SelectItem>
                   ))}
@@ -439,21 +465,21 @@ const GradeLevelStudentAssigner: React.FC = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="year-filter-assign">العام الدراسي *</Label>
+              <Label htmlFor="year-filter-assign" className="text-lg font-bold">العام الدراسي *</Label>
               <Select
                 value={String(selectedYearId)}
                 onValueChange={handleYearChange}
                 disabled={!selectedSchoolId}
               >
-                <SelectTrigger id="year-filter-assign">
-                  <SelectValue placeholder="..." />
+                <SelectTrigger id="year-filter-assign" className="text-lg font-bold">
+                  <SelectValue placeholder="..." className="text-lg font-bold" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" " disabled>
+                <SelectContent className="text-lg font-bold">
+                  <SelectItem value=" " disabled className="text-lg font-bold">
                     اختر عاماً...
                   </SelectItem>
                   {filteredAcademicYears.map((ay) => (
-                    <SelectItem key={ay.id} value={String(ay.id)}>
+                    <SelectItem key={ay.id} value={String(ay.id)} className="text-lg font-bold">
                       {ay.name}
                     </SelectItem>
                   ))}
@@ -461,21 +487,21 @@ const GradeLevelStudentAssigner: React.FC = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="grade-filter-assign">المرحلة الدراسية *</Label>
+              <Label htmlFor="grade-filter-assign" className="text-lg font-bold">المرحلة الدراسية *</Label>
               <Select
                 value={String(selectedGradeId)}
                 onValueChange={handleGradeChange}
                 disabled={!selectedYearId || loadingSchoolSpecificGrades}
               >
-                <SelectTrigger id="grade-filter-assign">
-                  <SelectValue placeholder="..." />
+                <SelectTrigger id="grade-filter-assign" className="text-lg font-bold">
+                  <SelectValue placeholder="..." className="text-lg font-bold" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" " disabled>
+                <SelectContent className="text-lg font-bold">
+                  <SelectItem value=" " disabled className="text-lg font-bold">
                     اختر مرحلة...
                   </SelectItem>
                   {availableGradeLevels.map((gl) => (
-                    <SelectItem key={gl.id} value={String(gl.id)}>
+                    <SelectItem key={gl.id} value={String(gl.id)} className="text-lg font-bold">
                       {gl.name}
                     </SelectItem>
                   ))}
@@ -514,9 +540,9 @@ const GradeLevelStudentAssigner: React.FC = () => {
         !classroomsLoading &&
         !error && (
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className={`grid ${getGridColumns()} gap-4`}>
               {" "}
-              {/* More columns for classrooms */}
+              {/* Dynamic columns based on number of classrooms */}
               {/* Unassigned Students Column */}
               <Droppable droppableId={UNASSIGNED_STUDENTS_DROPPABLE_ID}>
                 {(provided, snapshot) => (
@@ -623,4 +649,4 @@ const GradeLevelStudentAssigner: React.FC = () => {
   );
 };
 
-export default GradeLevelStudentAssigner;
+export default ClassroomStudentAssigner;

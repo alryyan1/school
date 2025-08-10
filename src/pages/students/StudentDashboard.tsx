@@ -112,7 +112,7 @@ const StudentDashboard: React.FC = () => {
         {
             title: 'توزيع الطلاب على الفصول',
             description: 'تعيين الطلاب غير الموزعين إلى فصول دراسية.',
-            link: '/settings/grade-levels', // This is your GradeLevelStudentAssigner
+            link: '/settings/classroom-assigner', // This is your ClassroomStudentAssigner
             icon: ArrowRightLeft,
             iconColor: "text-purple-600 dark:text-purple-400",
             bgColor: "bg-purple-100/70 dark:bg-purple-900/30",

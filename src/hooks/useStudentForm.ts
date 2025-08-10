@@ -1,6 +1,6 @@
 // src/hooks/useStudentForm.ts
 import { useState } from "react";
-import { Student, EducationLevel, Gender } from "@/types/student";
+import { Student, Gender } from "@/types/student";
 import { StudentApi } from "@/api/studentApi";
 
 export const useStudentForm = (initialData?: Partial<Student>) => {
@@ -31,7 +31,7 @@ export const useStudentForm = (initialData?: Partial<Student>) => {
     initialValues: {
       student_name: "",
       gender: Gender.Male,
-      wished_level: EducationLevel.NotSpecified,
+      wished_school: null,
       ...initialData
     }
   };

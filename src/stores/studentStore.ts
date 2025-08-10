@@ -16,6 +16,7 @@ type StudentActions = {
   createStudent: (student: Omit<Student, "id">) => Promise<void|Student>;
   updateStudent: (id: number, student: Partial<Student>) => Promise<void>;
   deleteStudent: (id: number) => Promise<void>;
+  acceptStudent: (id: number) => Promise<boolean>;
   resetCurrentStudent: () => void;
   updateStudentPhoto: (id: number, photo: File) => Promise<boolean>; 
 };
@@ -97,6 +98,26 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
     } catch (error) {
       set({ error: "Failed to delete student", loading: false });
       throw error;
+    }
+  },
+
+  acceptStudent: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await StudentApi.accept(id);
+      const updatedStudent = response.data.student; // ✅ Correct access
+      
+      set((state) => ({
+        students: state.students.map((s) =>
+          s.id === id ? updatedStudent : s
+        ),
+        currentStudent: state.currentStudent?.id === id ? updatedStudent : state.currentStudent,
+        loading: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ error: "Failed to accept student", loading: false });
+      return false;
     }
   },
 

@@ -17,9 +17,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator"; // For visual separation
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 // lucide-react icons
-import { PlusCircle, Edit3, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { PlusCircle, Edit3, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion'; // For animations
 
 import { useSchoolStore } from '@/stores/schoolStore';       // Adjust path
@@ -215,8 +223,33 @@ const SchoolGradeLevelManager: React.FC = () => {
         setLoadingAssigned(true); setError(null);
         try {
             const response = await SchoolApi.getAssignedGradeLevels(schoolId);
-            setAssignedGradeLevels(response.data.data?.sort((a, b) => a.id - b.id) ?? []);
+            console.log('API Response:', response); // Debug log
+            console.log('Response.data:', response.data); // Debug log
+            
+            // Handle axios response structure - the data might be nested
+            let gradeLevels: GradeLevel[] = [];
+            if (response.data) {
+                if (Array.isArray(response.data)) {
+                    gradeLevels = response.data;
+                } else if (response.data.data && Array.isArray(response.data.data)) {
+                    gradeLevels = response.data.data;
+                } else if (typeof response.data === 'object') {
+                    // If it's an object, try to find the array
+                    const keys = Object.keys(response.data);
+                    console.log('Response.data keys:', keys);
+                    for (const key of keys) {
+                        if (Array.isArray(response.data[key])) {
+                            gradeLevels = response.data[key];
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            console.log('Processed grade levels:', gradeLevels); // Debug log
+            setAssignedGradeLevels(gradeLevels.sort((a: GradeLevel, b: GradeLevel) => a.id - b.id));
         } catch (err: unknown) {
+            console.error('Error fetching assigned grade levels:', err); // Debug log
             const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
             setError(errorObj.response?.data?.message || 'فشل تحميل المراحل المعينة');
             setAssignedGradeLevels([]);
@@ -237,7 +270,6 @@ const SchoolGradeLevelManager: React.FC = () => {
     const handleOpenEditFeeDialog = (gradeLevel: GradeLevel) => { setCurrentGradeLevel(gradeLevel); setEditFeeDialogOpen(true); };
     const handleEditFeeSuccess = () => { setEditFeeDialogOpen(false); setCurrentGradeLevel(null); if (selectedSchoolId) fetchAssigned(selectedSchoolId); };
 
-    const handleOpenDeleteDialog = (gradeLevel: GradeLevel) => { setCurrentGradeLevel(gradeLevel); setDeleteDialogOpen(true); };
     const handleCloseDeleteDialog = () => { setCurrentGradeLevel(null); setDeleteDialogOpen(false); };
 
     const handleDeleteConfirm = async () => {
@@ -261,6 +293,70 @@ const SchoolGradeLevelManager: React.FC = () => {
     // --- Animation Variants ---
     const itemVariants = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
 
+    // Debug logging
+    console.log('Current state:', {
+        selectedSchoolId,
+        assignedGradeLevels: assignedGradeLevels.length,
+        loadingAssigned,
+        error,
+        hasData: assignedGradeLevels.length > 0
+    });
+
+    // --- Render Methods ---
+    const renderCardsView = () => (
+        <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
+            {assignedGradeLevels.map((grade) => (
+                <motion.div key={grade.id} variants={itemVariants}>
+                    <Card className="h-full flex flex-col">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-md">{grade.name} <span className="text-xs text-muted-foreground">({grade.code})</span></CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow">
+                            <p className="text-sm text-muted-foreground">الرسوم الأساسية:</p>
+                            <p className="text-lg font-semibold text-primary">{grade.assignment_details?.basic_fees || 0} </p>
+                        </CardContent>
+                        <CardFooter className="flex justify-end gap-2 pt-3 border-t">
+                            <Button variant="outline" size="sm" onClick={() => handleOpenEditFeeDialog(grade)}>
+                                <Edit3 className="ml-1.5 h-3.5 w-3.5" /> تعديل الرسوم
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </motion.div>
+            ))}
+        </motion.div>
+    );
+
+    const renderTableView = () => (
+        <div className="hidden lg:block">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="text-right">المرحلة الدراسية</TableHead>
+                        <TableHead className="text-right">الرمز</TableHead>
+                        <TableHead className="text-right">الرسوم الأساسية</TableHead>
+                        <TableHead className="text-right">الإجراءات</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {assignedGradeLevels.map((grade) => (
+                        <TableRow key={grade.id}>
+                            <TableCell className="font-medium">{grade.name}</TableCell>
+                            <TableCell>{grade.code}</TableCell>
+                            <TableCell className="font-semibold text-primary">
+                                {grade.assignment_details?.basic_fees || 0} 
+                            </TableCell>
+                            <TableCell>
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEditFeeDialog(grade)}>
+                                    <Edit3 className="ml-1.5 h-3.5 w-3.5" /> تعديل الرسوم
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+
     return (
         <div className="container  mx-auto py-6 px-4" dir="rtl">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -281,9 +377,16 @@ const SchoolGradeLevelManager: React.FC = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button onClick={handleOpenAssignDialog} disabled={!selectedSchoolId || assignableGradeLevels.length === 0 || loadingAssigned} className="w-full md:w-auto">
-                            <PlusCircle className="ml-2 h-4 w-4" /> تعيين مرحلة جديدة
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                            {selectedSchoolId && !loadingAssigned && (
+                                <div className="text-sm text-muted-foreground text-center">
+                                    المراحل المعينة: <span className="font-semibold text-primary">{assignedGradeLevels.length}</span>
+                                </div>
+                            )}
+                            <Button onClick={handleOpenAssignDialog} disabled={!selectedSchoolId || assignableGradeLevels.length === 0 || loadingAssigned} className="w-full md:w-auto">
+                                <PlusCircle className="ml-2 h-4 w-4" /> تعيين مرحلة جديدة
+                            </Button>
+                        </div>
                     </div>
 
                     <Separator className="my-6" />
@@ -298,29 +401,15 @@ const SchoolGradeLevelManager: React.FC = () => {
                         )}
 
                         {!loadingAssigned && !error && selectedSchoolId && assignedGradeLevels.length > 0 && (
-                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
-                                {assignedGradeLevels.map((grade) => (
-                                    <motion.div key={grade.id} variants={itemVariants}>
-                                        <Card className="h-full flex flex-col">
-                                            <CardHeader className="pb-3">
-                                                <CardTitle className="text-md">{grade.name} <span className="text-xs text-muted-foreground">({grade.code})</span></CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="flex-grow">
-                                                <p className="text-sm text-muted-foreground">الرسوم الأساسية:</p>
-                                                <p className="text-lg font-semibold text-primary">{grade.assignment_details?.basic_fees || 0} </p>
-                                            </CardContent>
-                                            <CardFooter className="flex justify-end gap-2 pt-3 border-t">
-                                                {/* <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(grade)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                                    <Trash2 className="ml-1.5 h-3.5 w-3.5" />  
-                                                </Button> */}
-                                                <Button variant="outline" size="sm" onClick={() => handleOpenEditFeeDialog(grade)}>
-                                                    <Edit3 className="ml-1.5 h-3.5 w-3.5" /> تعديل الرسوم
-                                                </Button>
-                                            </CardFooter>
-                                        </Card>
-                                    </motion.div>
-                                ))}
-                            </motion.div>
+                            <>
+                                
+                                
+                                {/* Cards view for mobile and tablet */}
+                                {renderCardsView()}
+                                
+                                {/* Table view for large screens */}
+                                {renderTableView()}
+                            </>
                         )}
                     </div>
                 </CardContent>
