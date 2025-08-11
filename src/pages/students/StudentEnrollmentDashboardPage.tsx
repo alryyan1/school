@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, StickyNote } from 'lucide-react';
+import { ArrowRight, StickyNote, CreditCard } from 'lucide-react';
+import FeeInstallmentViewerDialog from '@/components/finances/FeeInstallmentViewerDialog';
 
 const StudentEnrollmentDashboardPage: React.FC = () => {
   const { studentId, enrollmentId } = useParams<{ studentId: string; enrollmentId: string }>();
   const navigate = useNavigate();
+  const [paymentsOpen, setPaymentsOpen] = useState(false);
 
   return (
     <div className="container max-w-3xl mx-auto py-8 px-4" dir="rtl">
@@ -31,8 +33,25 @@ const StudentEnrollmentDashboardPage: React.FC = () => {
             <p className="text-muted-foreground">إدارة وكتابة الملاحظات الخاصة بهذا التسجيل.</p>
           </CardContent>
         </Card>
-        {/* Add more cards here for other features if needed */}
+        {/* Payments Card */}
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setPaymentsOpen(true)}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CreditCard className="h-5 w-5 text-primary" />
+              الدفعات والأقساط
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">عرض وإدارة أقساط الرسوم وسجل الدفعات وطباعة كشف الحساب.</p>
+          </CardContent>
+        </Card>
       </div>
+      {/* Payments Dialog (installments & payments viewer) */}
+      <FeeInstallmentViewerDialog
+        open={paymentsOpen}
+        onClose={() => setPaymentsOpen(false)}
+        studentAcademicYearId={enrollmentId ? Number(enrollmentId) : null}
+      />
     </div>
   );
 };

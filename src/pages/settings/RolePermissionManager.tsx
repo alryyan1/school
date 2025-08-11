@@ -20,6 +20,7 @@ import { useRoleStore } from '@/stores/roleStore';
 import { SpatieRole, SpatiePermission, SpatieRoleFormData } from '@/types/role';
 import { useSnackbar } from 'notistack';
 import { useForm, Controller } from 'react-hook-form';
+import { RoleApi } from '@/api/roleApi';
 
 // --- RoleFormDialog Component (can be in its own file) ---
 interface RoleFormDialogProps {
@@ -42,20 +43,87 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({ open, onOpenChange, onS
     });
 
     useEffect(() => {
-        if (open) {
-            setFormSubmitError(null);
+        if (!open) return;
+        setFormSubmitError(null);
+        const load = async () => {
             if (isEditMode && initialData) {
-                reset({
-                    name: initialData.name || '',
-                    permissions: initialData.permissions?.map(p => p.name) || [] // Use permission names
-                });
+                try {
+                    const roleId = Number((initialData as { id: number }).id);
+                    // Fetch fresh role with permissions to ensure we have names
+                    const resp = await RoleApi.getRoleById(Number(roleId));
+                    const role = resp.data.data;
+                    reset({
+                        name: role.name || '',
+                        permissions: (role.permissions || []).map((p: { name: string }) => p.name),
+                    });
+                } catch {
+                    // Fallback to existing data if fetch fails
+                    reset({
+                        name: initialData.name || '',
+                        permissions: initialData.permissions?.map(p => p.name) || [],
+                    });
+                }
             } else {
                 reset({ name: '', permissions: [] });
             }
-        }
+        };
+        load();
     }, [initialData, isEditMode, open, reset]);
 
     const currentPermissions = watch('permissions') || [];
+
+    // Permission translation map (fallback to key if missing)
+    const PERMISSION_LABELS: Record<string, string> = {
+        'manage system settings': 'إدارة إعدادات النظام',
+        'manage users': 'إدارة المستخدمين',
+        'manage roles': 'إدارة الأدوار والصلاحيات',
+        'view system dashboard': 'عرض لوحة التحكم',
+        'create schools': 'إضافة مدارس',
+        'view any school': 'عرض جميع المدارس',
+        'view own school': 'عرض مدرسة المستخدم',
+        'edit any school': 'تعديل أي مدرسة',
+        'edit own school': 'تعديل مدرسة المستخدم',
+        'delete schools': 'حذف المدارس',
+        'manage school-grade_levels': 'إدارة مراحل المدرسة',
+        'view any student': 'عرض جميع الطلاب',
+        'view own school students': 'عرض طلاب المدرسة',
+        'create students': 'إضافة طلاب',
+        'edit students': 'تعديل الطلاب',
+        'delete students': 'حذف الطلاب',
+        'approve students': 'قبول الطلاب',
+        'print student profile': 'طباعة ملف الطالب',
+        'view any teacher': 'عرض جميع المعلمين',
+        'view own school teachers': 'عرض معلمي المدرسة',
+        'create teachers': 'إضافة معلمين',
+        'edit teachers': 'تعديل المعلمين',
+        'delete teachers': 'حذف المعلمين',
+        'assign subject to teacher': 'إسناد مادة للمعلم',
+        'manage academic years': 'إدارة الأعوام الدراسية',
+        'manage grade levels': 'إدارة المراحل الدراسية',
+        'manage subjects': 'إدارة المواد الدراسية',
+        'manage classrooms': 'إدارة الفصول الدراسية',
+        'manage curriculum': 'إدارة المنهج الدراسي',
+        'manage student enrollments': 'إدارة تسجيلات الطلاب',
+        'view student enrollments': 'عرض تسجيلات الطلاب',
+        'manage exams': 'إدارة الامتحانات',
+        'manage exam schedules': 'إدارة جداول الامتحانات',
+        'enter exam results': 'إدخال نتائج الامتحانات',
+        'view any exam results': 'عرض جميع نتائج الامتحانات',
+        'view own school exam results': 'عرض نتائج مدرسة المستخدم',
+        'view student fee overview': 'عرض ملخص رسوم الطلاب',
+        'manage fee installments': 'إدارة أقساط الرسوم',
+        'record fee payments': 'تسجيل الدفعات',
+        'view financial reports': 'عرض التقارير المالية',
+        'access school treasury': 'الوصول إلى خزينة المدرسة',
+        'manage transport routes': 'إدارة خطوط الترحيل',
+        'assign students to transport': 'تعيين الطلاب للترحيل',
+        'view transport assignments': 'عرض تعيينات الترحيل',
+        'view student medical records': 'عرض السجل الطبي للطالب',
+        'edit student medical records': 'تعديل السجل الطبي للطالب',
+        'enrollment permission': 'صلاحية التسجيل',
+    };
+
+    const tPerm = (name: string) => PERMISSION_LABELS[name] || name;
     const handlePermissionChange = (permissionName: string, checked: boolean) => {
         const newPermissions = checked
             ? [...currentPermissions, permissionName]
@@ -81,7 +149,6 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({ open, onOpenChange, onS
             enqueueSnackbar(errorMessage, { variant: 'error' });
         }
     };
-
     return (
         <ShadcnDialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg" dir="rtl">
@@ -113,7 +180,29 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({ open, onOpenChange, onS
                             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
                         </div>
                         <div className="space-y-1.5">
-                            <Label>الصلاحيات الممنوحة لهذا الدور</Label>
+                            <div className="flex items-center justify-between">
+                                <Label>الصلاحيات الممنوحة لهذا الدور</Label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={isSubmitting || loadingPermissions || (allPermissions?.length ?? 0) === 0}
+                                        onClick={() => setValue('permissions', (allPermissions || []).map(p => p.name), { shouldDirty: true, shouldValidate: true })}
+                                    >
+                                        تحديد الكل
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={isSubmitting || loadingPermissions || (currentPermissions?.length ?? 0) === 0}
+                                        onClick={() => setValue('permissions', [], { shouldDirty: true, shouldValidate: true })}
+                                    >
+                                        إلغاء التحديد
+                                    </Button>
+                                </div>
+                            </div>
                             {loadingPermissions ? (
                                 <Skeleton className="h-32 w-full"/>
                             ) : allPermissions.length > 0 ? (
@@ -128,7 +217,7 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({ open, onOpenChange, onS
                                                     disabled={isSubmitting || (isEditMode && initialData?.name === 'admin')}
                                                 />
                                                 <Label htmlFor={`perm-${permission.id}`} className="text-sm font-normal cursor-pointer">
-                                                    {permission.name}
+                                                    {tPerm(permission.name)}
                                                 </Label>
                                             </div>
                                         ))}

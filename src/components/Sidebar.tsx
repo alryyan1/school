@@ -10,9 +10,9 @@ import { Separator } from "@/components/ui/separator"; // For visual separation
 // lucide-react icons
 import {
     ChevronRight, ChevronLeft,
-    LayoutDashboard, Building2, Users, GraduationCap, UserCheck, Car, Settings,
+    LayoutDashboard, Building2, Users, GraduationCap, UserCheck, Settings,
     CalendarDays, Milestone, Library, Network, ClipboardCheck,
-    School // For SchoolGradeLevels (already imported)
+    School, CreditCard
 } from 'lucide-react';
 import { MenuBook } from '@mui/icons-material';
 
@@ -26,11 +26,11 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
     { label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'إدارة المدارس', href: '/schools/list', icon: Building2 },
-    { label: 'شؤون المعلمين', href: '/teachers/list', icon: GraduationCap },
-    { label: 'شؤون الطلاب', href: '/students', icon: Users },
+    { label: 'التسجيلات', href: '/enrollments', icon: UserCheck },
     { label: 'الامتحانات', href: '/exams', icon: ClipboardCheck },
     { label: 'المناهج', href: '/curriculum', icon: MenuBook },
+    { label: 'الشؤون المالية', href: '/finances/due-installments', icon: CreditCard },
+    { label: 'مستكشف المدارس', href: '/schools-explorer', icon: School },
 ];
 
 const settingsNavItems: NavItem[] = [
@@ -59,9 +59,15 @@ const SidebarContent: React.FC<{
     isCollapsed, onNavLinkClick, currentPathname, onCollapseToggle, showCollapseButton = false
 }) => {
     const [openSettings, setOpenSettings] = useState(false);
+    const [openStudents, setOpenStudents] = useState(false);
+    const [openTeachers, setOpenTeachers] = useState(false);
+    const [openSchools, setOpenSchools] = useState(false);
 
     useEffect(() => {
         setOpenSettings(currentPathname.startsWith('/settings'));
+        setOpenStudents(currentPathname.startsWith('/students'));
+        setOpenTeachers(currentPathname.startsWith('/teachers'));
+        setOpenSchools(currentPathname.startsWith('/schools'));
     }, [currentPathname]);
 
     const NavLink: React.FC<{ item: NavItem; isCollapsed: boolean; isSubItem?: boolean; onClick?: () => void }> =
@@ -125,6 +131,83 @@ const SidebarContent: React.FC<{
             {/* Navigation Links */}
             <ScrollArea className="flex-1 py-3 px-2"> {/* Adjusted padding */}
                 <nav className="grid gap-1">
+                    {/* Dashboard */}
+                    <NavLink item={{ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard }} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
+
+                    {/* Students Section */}
+                    <div>
+                        <Button
+                            variant={currentPathname.startsWith('/students') && !isCollapsed && openStudents ? 'secondary' : 'ghost'}
+                            className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                            onClick={() => setOpenStudents(!openStudents)}
+                            title="شؤون الطلاب"
+                        >
+                            <Users className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                            {!isCollapsed && (
+                                <span className="truncate flex-1 text-right">شؤون الطلاب</span>
+                            )}
+                            {!isCollapsed && (openStudents ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                        </Button>
+                        <AnimatePresence>
+                            {!isCollapsed && openStudents && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                    <NavLink item={{ label: 'لوحة الطلاب', href: '/students', icon: Users }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                    <NavLink item={{ label: 'قائمة الطلاب', href: '/students/list', icon: Users }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                    <NavLink item={{ label: 'إضافة طالب', href: '/students/create', icon: Users }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Teachers Section */}
+                    <div>
+                        <Button
+                            variant={currentPathname.startsWith('/teachers') && !isCollapsed && openTeachers ? 'secondary' : 'ghost'}
+                            className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                            onClick={() => setOpenTeachers(!openTeachers)}
+                            title="شؤون المعلمين"
+                        >
+                            <GraduationCap className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                            {!isCollapsed && (
+                                <span className="truncate flex-1 text-right">شؤون المعلمين</span>
+                            )}
+                            {!isCollapsed && (openTeachers ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                        </Button>
+                        <AnimatePresence>
+                            {!isCollapsed && openTeachers && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                    <NavLink item={{ label: 'قائمة المعلمين', href: '/teachers/list', icon: GraduationCap }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                    <NavLink item={{ label: 'إضافة معلم', href: '/teachers/create', icon: GraduationCap }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Schools Section */}
+                    <div>
+                        <Button
+                            variant={currentPathname.startsWith('/schools') && !isCollapsed && openSchools ? 'secondary' : 'ghost'}
+                            className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                            onClick={() => setOpenSchools(!openSchools)}
+                            title="إدارة المدارس"
+                        >
+                            <Building2 className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                            {!isCollapsed && (
+                                <span className="truncate flex-1 text-right">إدارة المدارس</span>
+                            )}
+                            {!isCollapsed && (openSchools ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                        </Button>
+                        <AnimatePresence>
+                            {!isCollapsed && openSchools && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                    <NavLink item={{ label: 'قائمة المدارس', href: '/schools/list', icon: Building2 }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                    <NavLink item={{ label: 'إضافة مدرسة', href: '/schools/create', icon: Building2 }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Other top-level items */}
                     {mainNavItems.map((item) => (
                         <NavLink key={item.href} item={item} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
                     ))}

@@ -11,6 +11,7 @@ interface AuthState {
   userId: string | null;
   userName: string | null;
   isLoading: boolean;
+  permissions?: string[] | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -42,6 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         userId: null,
         userName: null,
         isLoading: false,
+        permissions: [],
       });
       return;
     }
@@ -61,6 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           userId: response.data.user.id.toString(),
           userName: response.data.user.name,
           isLoading: false,
+          permissions: response.data.user.permissions || [],
         });
       }
     } catch (error) {
@@ -117,6 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userId: null,
       userName: null,
       isLoading: false,
+      permissions: [],
     });
 
     enqueueSnackbar('تم تسجيل الخروج بنجاح', { variant: 'success' });

@@ -11,11 +11,12 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from '@/components/ui/skeleton';
+// import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 import { User, UserFormData, UserRole, UserGender } from "@/types/user";
+import { useRoleStore } from '@/stores/roleStore';
 import { useUserStore } from "@/stores/userStore";
 import { useSnackbar } from "notistack";
 
@@ -25,7 +26,21 @@ interface UserFormDialogProps {
     initialData?: User | null;
 }
 
-const roles: UserRole[] = ["admin", "teacher", "student", "parent"];
+const translateRole = (name: string) => {
+  const map: Record<string, string> = {
+    'admin': 'مسؤول',
+    'teacher': 'معلم',
+    'student': 'طالب',
+    'parent': 'ولي أمر',
+    'super-manager': 'مدير النظام',
+    'general-manager': 'المدير العام',
+    'accountant': 'محاسب',
+    'school-principal': 'مدير مدرسة',
+    'nurse': 'ممرضة',
+    'transport-manager': 'مسؤول الترحيل',
+  };
+  return map[name] || name;
+};
 const genders: { value: UserGender; label: string }[] = [
     { value: "ذكر", label: "ذكر" },
     { value: "انثي", label: "أنثى" },
@@ -38,6 +53,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
 }) => {
     const isEditMode = !!initialData;
     const { createUser, updateUser } = useUserStore();
+    const { spatieRoles, fetchSpatieRoles } = useRoleStore();
     const { enqueueSnackbar } = useSnackbar();
     const [formError, setFormError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -48,18 +64,19 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
         reset,
         formState: { errors, isSubmitting },
     } = useForm<UserFormData>({
-        // Default values set in useEffect
+        mode: 'onBlur',
     });
 
-    // Reset form when opening or data changes
+    // Fetch roles and reset form when opening or data changes
     useEffect(() => {
         if (open) {
+            if (spatieRoles.length === 0) fetchSpatieRoles();
             setFormError(null);
             const defaults: Partial<UserFormData> = {
                 name: "",
                 username: "",
                 email: "",
-                role: "student",
+                role: (initialData?.role as UserRole) || (spatieRoles[0]?.name as UserRole) || "student",
                 phone: null,
                 gender: null,
                 password: "",
@@ -76,17 +93,28 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                 reset(defaults);
             }
         }
-    }, [initialData, isEditMode, open, reset]);
+    }, [initialData, isEditMode, open, reset, spatieRoles, fetchSpatieRoles]);
 
     const onSubmit = async (data: UserFormData) => {
         setFormError(null);
         try {
+            // Normalize payload
+            const normalized: UserFormData = {
+              ...data,
+              name: String(data.name || '').trim(),
+              username: String(data.username || '').trim(),
+              email: String(data.email || '').trim(),
+              phone: data.phone && String(data.phone).trim() !== '' ? String(data.phone).trim() : null,
+              gender: (data.gender as unknown as string) === '' ? null : data.gender,
+            };
             if (isEditMode && initialData) {
-                const { password, password_confirmation, ...updateData } = data;
+                // Omit password fields in update to avoid sending empty values
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { password: _omitPw, password_confirmation: _omitPwC, ...updateData } = normalized;
                 await updateUser(initialData.id, updateData);
                 enqueueSnackbar("تم تحديث المستخدم بنجاح", { variant: "success" });
             } else {
-                await createUser(data);
+                await createUser(normalized);
                 enqueueSnackbar("تم إضافة المستخدم بنجاح", { variant: "success" });
             }
             onClose(true);
@@ -131,13 +159,14 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                             <Controller
                                 name="name"
                                 control={control}
-                                rules={{ required: "الاسم مطلوب" }}
+                                rules={{ required: "الاسم مطلوب", minLength: { value: 2, message: 'الاسم قصير جداً' } }}
                                 render={({ field }) => (
                                     <Input
                                         id="name_user_form"
                                         placeholder="أدخل الاسم الكامل"
                                         {...field}
                                         className={cn(errors.name && "border-destructive")}
+                                        aria-invalid={!!errors.name}
                                     />
                                 )}
                             />
@@ -151,13 +180,14 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                                 <Controller
                                     name="username"
                                     control={control}
-                                    rules={{ required: "اسم المستخدم مطلوب" }}
+                                    rules={{ required: "اسم المستخدم مطلوب", pattern: { value: /^[a-zA-Z0-9._-]{3,}$/, message: 'اسم المستخدم غير صالح' } }}
                                     render={({ field }) => (
                                         <Input
                                             id="username_user_form"
                                             placeholder="اسم المستخدم للدخول"
                                             {...field}
                                             className={cn(errors.username && "border-destructive")}
+                                            aria-invalid={!!errors.username}
                                         />
                                     )}
                                 />
@@ -168,7 +198,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                                 <Controller
                                     name="email"
                                     control={control}
-                                    rules={{ required: "البريد الإلكتروني مطلوب" }}
+                                    rules={{ required: "البريد الإلكتروني مطلوب", pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'البريد الإلكتروني غير صالح' } }}
                                     render={({ field }) => (
                                         <Input
                                             id="email_user_form"
@@ -176,6 +206,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                                             placeholder="example@email.com"
                                             {...field}
                                             className={cn(errors.email && "border-destructive")}
+                                            aria-invalid={!!errors.email}
                                         />
                                     )}
                                 />
@@ -192,19 +223,15 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                                     control={control}
                                     rules={{ required: "الدور مطلوب" }}
                                     render={({ field }) => (
-                                        <Select
-                                            value={field.value}
-                                            onValueChange={field.onChange}
-                                            required
-                                        >
+                                    <Select value={field.value} onValueChange={field.onChange} required>
                                             <SelectTrigger id="role_user_form" className={cn(errors.role && "border-destructive")}>
                                                 <SelectValue placeholder="اختر الدور" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {roles.map((role) => (
-                                                    <SelectItem key={role} value={role}>
-                                                        {role}
-                                                    </SelectItem>
+                                                {spatieRoles.map((r) => (
+                                                  <SelectItem key={r.id} value={r.name as UserRole}>
+                                                    {translateRole(r.name)}
+                                                  </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -224,6 +251,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                                             {...field}
                                             value={field.value || ''}
                                             className={cn(errors.phone && "border-destructive")}
+                                            aria-invalid={!!errors.phone}
                                         />
                                     )}
                                 />
@@ -234,13 +262,13 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                         {/* Gender */}
                         <div className="space-y-1.5">
                             <Label htmlFor="gender_user_form">الجنس (اختياري)</Label>
-                            <Controller
+                                <Controller
                                 name="gender"
                                 control={control}
                                 render={({ field }) => (
                                     <Select
                                         value={field.value || ""}
-                                        onValueChange={field.onChange}
+                                        onValueChange={(val) => field.onChange(val)}
                                     >
                                         <SelectTrigger id="gender_user_form" className={cn(errors.gender && "border-destructive")}>
                                             <SelectValue placeholder="اختر الجنس" />

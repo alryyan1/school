@@ -17,6 +17,9 @@ export type StudentAcademicYear = {
     fees:number|string;
     discount:number|string;
     status: EnrollmentStatus;
+    // Aggregated totals for this enrollment (provided by backend resource)
+    total_amount_required?: number;
+    total_amount_paid?: number;
     // Nested data from resource
     student?: Pick<Student, 'id' | 'student_name' | 'goverment_id'>; // Only needed fields
     academic_year?: Pick<AcademicYear, 'id' | 'name'>;

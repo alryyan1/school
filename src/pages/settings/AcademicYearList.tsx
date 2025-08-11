@@ -60,8 +60,11 @@ const AcademicYearList: React.FC = () => {
     };
 
      // Handle filter change
-     const handleFilterChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-         setSelectedSchoolFilter(event.target.value as number | '');
+     const handleFilterChange = (
+        event: React.ChangeEvent<{ value: unknown }> | (Event & { target: { value: unknown } })
+     ) => {
+        const value = (event as unknown as { target: { value: unknown } }).target.value ?? '';
+        setSelectedSchoolFilter(value as number | '');
      };
 
     return (
@@ -110,12 +113,13 @@ const AcademicYearList: React.FC = () => {
                                     <TableCell align="center">تاريخ البداية</TableCell>
                                     <TableCell align="center">تاريخ النهاية</TableCell>
                                     <TableCell align="center">الحالي؟</TableCell>
+                                    <TableCell align="center">رسوم التسجيل</TableCell>
                                     <TableCell align="right">إجراءات</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {academicYears.length === 0 && (
-                                     <TableRow><TableCell colSpan={6} align="center">لا توجد أعوام دراسية لعرضها.</TableCell></TableRow>
+                                     <TableRow><TableCell colSpan={7} align="center">لا توجد أعوام دراسية لعرضها.</TableCell></TableRow>
                                  )}
                                 {academicYears.map((year) => (
                                     <TableRow key={year.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
@@ -128,6 +132,7 @@ const AcademicYearList: React.FC = () => {
                                                  {year.is_current ? <CheckCircleIcon color="success" /> : <RadioButtonUncheckedIcon color="disabled"/>}
                                             </Tooltip>
                                         </TableCell>
+                                        <TableCell align="center">{year.enrollment_fee ?? 0}</TableCell>
                                         <TableCell align="right">
                                             <Stack direction="row" spacing={1} justifyContent="flex-end">
                                                 <Tooltip title="تعديل">

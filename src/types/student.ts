@@ -60,4 +60,15 @@ export enum Gender {
     updated_at?: string;
     image_url?:string;
     enrollments?: StudentAcademicYear[];
+    latest_academic_year_totals?: {
+      student_academic_year_id: number | string;
+      academic_year?: {
+        id?: number | string;
+        name?: string;
+        start_date?: string;
+        end_date?: string;
+      } | null;
+      total_amount_required: number;
+      total_amount_paid: number;
+    } | null;
   };

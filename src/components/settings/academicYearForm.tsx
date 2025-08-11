@@ -66,11 +66,13 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
                 start_date: dayjs().startOf('year').format('YYYY-MM-DD'), // e.g., Jan 1st
                 end_date: dayjs().endOf('year').format('YYYY-MM-DD'),     // e.g., Dec 31st
                 is_current: false,
+                enrollment_fee: 0,
                 ...(initialData ? {
                     ...initialData,
                     school_id: initialData.school_id, // Keep as number
                     start_date: dayjs(initialData.start_date).format('YYYY-MM-DD'),
                     end_date: dayjs(initialData.end_date).format('YYYY-MM-DD'),
+                    enrollment_fee: initialData.enrollment_fee ?? 0,
                 } : {}),
             });
         }
@@ -82,6 +84,7 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
         const submitData = {
             ...data,
             school_id: Number(data.school_id), // Convert to number for API
+            enrollment_fee: Number((data as any).enrollment_fee ?? 0) || 0,
             // is_current is already boolean from Switch
         };
 
@@ -195,6 +198,31 @@ const AcademicYearForm: React.FC<AcademicYearFormProps> = ({
                                  تعيين كـ عام دراسي حالي؟
                                  <p className="text-xs text-muted-foreground">(سيتم إلغاء تعيين الأعوام الأخرى لنفس المدرسة)</p>
                              </Label>
+                        </div>
+
+                        {/* Enrollment Fee */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="enrollment_fee_ay_form">رسوم التسجيل</Label>
+                            <Controller
+                                name="enrollment_fee"
+                                control={control}
+                                rules={{ min: { value: 0, message: 'لا يمكن أن تكون الرسوم سالبة' } }}
+                                render={({ field }) => (
+                                    <Input
+                                        id="enrollment_fee_ay_form"
+                                        type="number"
+                                        {...field}
+                                        value={(field.value ?? 0) as number}
+                                        onChange={(e) => field.onChange(e.target.value)}
+                                        placeholder="مثال: 1000"
+                                        min={0}
+                                        className={cn(errors.enrollment_fee && 'border-destructive')}
+                                    />
+                                )}
+                            />
+                            {errors.enrollment_fee && (
+                                <p className="text-xs text-destructive mt-1">{(errors as any).enrollment_fee.message}</p>
+                            )}
                         </div>
                     </div>
                     <DialogFooter className="pt-4">

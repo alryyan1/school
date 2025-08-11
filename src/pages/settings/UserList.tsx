@@ -19,11 +19,14 @@ import UserFormDialog from '@/components/users/UserFormDialog';
 import ChangePasswordDialog from '@/components/users/ChangePasswordDialog';
 import { User } from '@/types/user';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '@/context/authcontext';
+import { cn } from '@/lib/utils';
 
 const UserList: React.FC = () => {
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const { users, loading, error, lastPage, total, fetchUsers, deleteUser } = useUserStore();
+    const { userId: currentUserId } = useAuth();
 
     // Local State
     const [currentPageState, setCurrentPageState] = useState(1);
@@ -168,8 +171,16 @@ const UserList: React.FC = () => {
                         </div>
                     ) : (
                         <div className="grid gap-4">
-                            {filteredUsers.map((user) => (
-                                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                            {filteredUsers.map((user) => {
+                                const isCurrentUser = Number(currentUserId ?? -1) === Number(user.id);
+                                return (
+                                <div
+                                    key={user.id}
+                                    className={cn(
+                                        "flex items-center justify-between p-4 border rounded-lg transition-colors",
+                                        isCurrentUser ? "bg-amber-50 border-amber-300" : "hover:bg-muted/50"
+                                    )}
+                                >
                                     <div className="flex items-center space-x-4 space-x-reverse">
                                         <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                                             <span className="text-lg font-semibold text-primary">
@@ -177,7 +188,12 @@ const UserList: React.FC = () => {
                                             </span>
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold">{user.name}</h3>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold">{user.name}</h3>
+                                                {isCurrentUser && (
+                                                    <Badge variant="secondary" className="text-xs">أنت</Badge>
+                                                )}
+                                            </div>
                                             <p className="text-sm text-muted-foreground">{user.username}</p>
                                             <p className="text-sm text-muted-foreground">{user.email}</p>
                                         </div>
@@ -191,6 +207,7 @@ const UserList: React.FC = () => {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => handleOpenUserForm(user)}
+                                                title="تعديل المستخدم"
                                             >
                                                 <Edit className="h-4 w-4" />
                                             </Button>
@@ -198,6 +215,7 @@ const UserList: React.FC = () => {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => handleOpenChangePasswordDialog(user)}
+                                                title="تغيير كلمة المرور"
                                             >
                                                 <Key className="h-4 w-4" />
                                             </Button>
@@ -206,13 +224,14 @@ const UserList: React.FC = () => {
                                                 size="sm"
                                                 onClick={() => handleOpenDeleteDialog(user)}
                                                 className="text-destructive hover:text-destructive"
+                                                title="حذف المستخدم"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            );})}
                         </div>
                     )}
                 </div>

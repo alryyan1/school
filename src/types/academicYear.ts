@@ -8,6 +8,7 @@ export type AcademicYear = {
     end_date: string;   // Format YYYY-MM-DD
     is_current: boolean;
     school_id: number;
+    enrollment_fee?: number;
     school?: School; // Optional nested school data from API resource
     created_at?: string;
     updated_at?: string;

@@ -25,12 +25,14 @@ import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { Gender, Student } from "@/types/student";
 import { useSnackbar } from "notistack";
+import { useAuth } from "@/context/authcontext";
 import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
 import dayjs, { Dayjs } from "dayjs"; // Import Dayjs type
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import QuickEnrollDialog from "@/components/enrollments/QuickEnrollDialog";
 
 
 const StudentList = () => {
@@ -39,6 +41,10 @@ const StudentList = () => {
   } = useStudentStore();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
+  const { permissions } = useAuth();
+  const canEnroll = (permissions || []).includes('enrollment permission');
+  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [studentForEnroll, setStudentForEnroll] = useState<Student | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -54,6 +60,7 @@ const StudentList = () => {
   const [dateFilterType, setDateFilterType] = useState<"created_at" | "date_of_birth" | " " | "">(" ");
   const [startDateFilter, setStartDateFilter] = useState<Dayjs | null>(null);
   const [endDateFilter, setEndDateFilter] = useState<Dayjs | null>(null);
+  const [onlyEnrolled, setOnlyEnrolled] = useState(false);
 
   const { schools, fetchSchools } = useSchoolStore();
   useEffect(() => {
@@ -133,8 +140,13 @@ const StudentList = () => {
         const endMatch = endDateFilter ? studentDate.isBefore(endDateFilter.endOf('day').add(1, 'day')) : true;       // <= end
 
         return startMatch && endMatch;
+      })
+      .filter((student) => {
+        // Only students with enrollments filter
+        if (!onlyEnrolled) return true;
+        return Array.isArray(student.enrollments) && student.enrollments.length > 0;
       });
-  }, [students, searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter]);
+  }, [students, searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled]);
 
 
   const sortedStudents = useMemo(() => { // useMemo for sortedStudents
@@ -193,6 +205,15 @@ const StudentList = () => {
     }
   };
 
+  const openEnrollDialog = (student: Student) => {
+    if (!student.wished_school) {
+      enqueueSnackbar('الطالب لا يملك مدرسة مرغوبة محددة.', { variant: 'warning' });
+      return;
+    }
+    setStudentForEnroll(student);
+    setEnrollDialogOpen(true);
+  };
+
   const SortButton = ({ column, children }: { column: keyof Student; children: React.ReactNode }) => (
     <Button variant="ghost" onClick={() => handleSort(column)} className="h-auto p-0 font-medium hover:bg-transparent hover:text-primary">
       {children}
@@ -206,6 +227,7 @@ const StudentList = () => {
     setDateFilterType(" ");
     setStartDateFilter(null);
     setEndDateFilter(null);
+    setOnlyEnrolled(false);
     setPage(0); // Reset to first page
   };
 
@@ -281,6 +303,9 @@ const StudentList = () => {
               <Button variant="outline" onClick={handlePrintList} size="sm" className="w-full sm:w-auto">
                 <FileText className="ml-2 h-4 w-4" /> طباعة القائمة
               </Button>
+              <Button variant="outline" onClick={() => window.open(`${webUrl}reports/terms-and-conditions`, '_blank')} size="sm" className="w-full sm:w-auto">
+                <FileText className="ml-2 h-4 w-4" /> طباعة الشروط والأحكام
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -346,7 +371,15 @@ const StudentList = () => {
                 />
               </PopoverContent>
             </Popover>
-            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-6 flex justify-center lg:justify-end xl:justify-start">
+            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-6 flex gap-2 justify-center lg:justify-end xl:justify-start">
+              <Button
+                variant={onlyEnrolled ? "default" : "outline"}
+                onClick={() => { setOnlyEnrolled((v) => !v); setPage(0); }}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                <CheckCircle2 className="ml-2 h-4 w-4" /> المسجلون فقط
+              </Button>
               <Button variant="ghost" onClick={resetFilters} size="sm" className="w-full sm:w-auto">
                 <FilterX className="ml-2 h-4 w-4" /> مسح الفلاتر
               </Button>
@@ -366,6 +399,7 @@ const StudentList = () => {
                       <TableHead className="text-center hidden sm:table-cell">هاتف الأب</TableHead>
                       <TableHead className="text-center hidden sm:table-cell"><SortButton column="wished_school">المدرسة</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-24"><SortButton column="approved">الحالة</SortButton></TableHead>
+                      <TableHead className="text-center hidden sm:table-cell w-40">مستحق/مدفوع (آخر عام)</TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-16">التسجيل</TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="date_of_birth">ت. الميلاد</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="created_at">ت. التسجيل</SortButton></TableHead>
@@ -425,6 +459,24 @@ const StudentList = () => {
                             )}
                           </TableCell>
                           <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
+                            {(() => {
+                              const totals = student.latest_academic_year_totals;
+                              if (totals) {
+                                const due = Number(totals.total_amount_required || 0);
+                                const paid = Number(totals.total_amount_paid || 0);
+                                return `${due.toFixed(0)} / ${paid.toFixed(0)}`;
+                              }
+                              // Fallback: compute from most recent enrollment if available in list
+                              const latest = student.enrollments?.[0];
+                              if (latest && (latest.total_amount_required != null || latest.total_amount_paid != null)) {
+                                const due = Number(latest.total_amount_required || 0);
+                                const paid = Number(latest.total_amount_paid || 0);
+                                return `${due.toFixed(0)} / ${paid.toFixed(0)}`;
+                              }
+                              return '-';
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
                             {student.date_of_birth ? dayjs(student.date_of_birth).format('YYYY/MM/DD') : '-'}
                           </TableCell>
                           <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
@@ -450,6 +502,14 @@ const StudentList = () => {
                             <DropdownMenuContent align="end" className="w-[180px]">
                                 <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
                                 <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}`)}><Eye className="ml-2 h-4 w-4" /> عرض الملف</DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onSelect={() => { if (canEnroll) openEnrollDialog(student); }}
+                                  disabled={!canEnroll}
+                                >
+                                  <span title={canEnroll ? '' : 'لا يملك صلاحية التسجيل'} className="flex items-center">
+                                    <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> تسجيل الطالب
+                                  </span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}/edit`)}><Edit3 className="ml-2 h-4 w-4" /> تعديل البيانات</DropdownMenuItem>
                               
                                 {/* --------------------- */}
@@ -496,6 +556,14 @@ const StudentList = () => {
           </div>
         </CardContent>
       </Card>
+      <QuickEnrollDialog
+        open={enrollDialogOpen}
+        onOpenChange={(o) => setEnrollDialogOpen(o)}
+        student={studentForEnroll}
+        onSuccess={() => {
+          setEnrollDialogOpen(false);
+        }}
+      />
     </div>
   );
 };
