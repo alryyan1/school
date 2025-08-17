@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, ChevronsUpDown, Check } from 'lucide-react';
 
-import { StudentEnrollmentFormData, EnrollmentStatus } from '@/types/studentAcademicYear';
+import { StudentEnrollmentFormData, EnrollmentStatus, EnrollmentType } from '@/types/studentAcademicYear';
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 import { useClassroomStore } from '@/stores/classroomStore';
 import { AcademicYear } from '@/types/academicYear';
@@ -64,6 +64,7 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
                 status: 'active',
                 fees: selectedGradeLevel?.assignment_details?.basic_fees || 0, // Default to grade level fee
                 discount: 0, // Default discount
+                enrollment_type: 'regular',
             };
             reset(defaults);
 
@@ -99,6 +100,7 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
             classroom_id: data.classroom_id ? Number(data.classroom_id) : null,
             fees: Number(data.fees) || 0,
             discount: Number(data.discount) || 0,
+            enrollment_type: data.enrollment_type || 'regular',
         };
 
         if (!submitData.student_id || !submitData.academic_year_id || !submitData.grade_level_id || !submitData.school_id) {
@@ -263,6 +265,24 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
                                     </Select>
                                 )} />
                             {errors.status && <p className="text-xs text-destructive mt-1">{errors.status.message}</p>}
+                        </div>
+
+                        {/* Enrollment Type Selection */}
+                        <div className="space-y-2">
+                            <Label htmlFor="enrollment_type">نوع التسجيل *</Label>
+                            <Controller name="enrollment_type" control={control} rules={{ required: 'نوع التسجيل مطلوب' }}
+                                render={({ field }) => (
+                                    <Select value={field.value || 'regular'} onValueChange={field.onChange} required>
+                                        <SelectTrigger id="enrollment_type" className={cn(errors.enrollment_type && "border-destructive")}>
+                                            <SelectValue placeholder="اختر النوع..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="regular">عادي</SelectItem>
+                                            <SelectItem value="scholarship">منحة</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )} />
+                            {errors.enrollment_type && <p className="text-xs text-destructive mt-1">{errors.enrollment_type.message as string}</p>}
                         </div>
                     </div>
                     <DialogFooter className="pt-4">

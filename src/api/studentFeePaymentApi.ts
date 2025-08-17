@@ -23,7 +23,7 @@ export const StudentFeePaymentApi = {
   update: (
     id: number,
     data: Partial<
-      Pick<StudentFeePaymentFormData, "amount" | "payment_date" | "notes">
+      Pick<StudentFeePaymentFormData, "amount" | "payment_date" | "notes" | "payment_method_id">
     >
   ) => axiosClient.put<ResourceResponse>(`/student-fee-payments/${id}`, data),
 

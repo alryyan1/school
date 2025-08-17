@@ -6,41 +6,45 @@ import { cn } from "@/lib/utils"; // Your shadcn/ui utility
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator"; // For visual separation
+import { useAuth } from '@/context/authcontext';
 
 // lucide-react icons
 import {
     ChevronRight, ChevronLeft,
     LayoutDashboard, Building2, Users, GraduationCap, UserCheck, Settings,
     CalendarDays, Milestone, Library, Network, ClipboardCheck,
-    School, CreditCard
+    School, CreditCard, KeyRound
 } from 'lucide-react';
 import { MenuBook } from '@mui/icons-material';
 
 // Define Menu Item Structure
 interface NavItem {
-    label: string;
-    href: string;
-    icon: React.ElementType;
-    subItems?: NavItem[];
+	label: string;
+	href: string;
+	icon: React.ElementType;
+	subItems?: NavItem[];
+	requiredRoles?: string[];
+	requiredPermissions?: string[];
 }
 
 const mainNavItems: NavItem[] = [
-    { label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'التسجيلات', href: '/enrollments', icon: UserCheck },
-    { label: 'الامتحانات', href: '/exams', icon: ClipboardCheck },
-    { label: 'المناهج', href: '/curriculum', icon: MenuBook },
-    { label: 'الشؤون المالية', href: '/finances/due-installments', icon: CreditCard },
-    { label: 'مستكشف المدارس', href: '/schools-explorer', icon: School },
+	// Dashboard is rendered explicitly at the top of the list to avoid duplication
+	{ label: 'التسجيلات', href: '/enrollments', icon: UserCheck, requiredPermissions: ['manage student enrollments', 'view student enrollments'] },
+	{ label: 'الامتحانات', href: '/exams', icon: ClipboardCheck, requiredPermissions: ['manage exams', 'enter exam results', 'view any exam results', 'view own school exam results'] },
+	{ label: 'المناهج', href: '/curriculum', icon: MenuBook, requiredPermissions: ['manage curriculum'] },
+	{ label: 'الشؤون المالية', href: '/finances/due-installments', icon: CreditCard, requiredPermissions: ['view student fee overview', 'manage fee installments', 'record fee payments', 'view financial reports'] },
+	{ label: 'مستكشف المدارس', href: '/schools-explorer', icon: School, requiredPermissions: ['view any school', 'view own school'] },
 ];
 
 const settingsNavItems: NavItem[] = [
-    { label: 'الإعدادات الرئيسية', href: '/settings', icon: Settings },
-    { label: 'الأعوام الدراسية', href: '/settings/academic-years', icon: CalendarDays },
-    { label: 'المراحل الدراسية', href: '/settings/grade-levels', icon: Milestone },
-    { label: 'المواد التعليمية', href: '/settings/subjects', icon: Library },
-    { label: 'الفصول الدراسية', href: '/settings/classrooms', icon: Network },
-    { label: 'مراحل المدرسة', href: '/settings/school-grades', icon: School }, // Using School icon from lucide
-    { label: 'إدارة المستخدمين', href: '/settings/users', icon: Users },
+	{ label: 'الإعدادات الرئيسية', href: '/settings', icon: Settings, requiredPermissions: ['manage system settings'] },
+	{ label: 'الأعوام الدراسية', href: '/settings/academic-years', icon: CalendarDays, requiredPermissions: ['manage academic years'] },
+	{ label: 'المراحل الدراسية', href: '/settings/grade-levels', icon: Milestone, requiredPermissions: ['manage grade levels'] },
+	{ label: 'المواد التعليمية', href: '/settings/subjects', icon: Library, requiredPermissions: ['manage subjects'] },
+	{ label: 'الفصول الدراسية', href: '/settings/classrooms', icon: Network, requiredPermissions: ['manage classrooms'] },
+	{ label: 'مراحل المدرسة', href: '/settings/school-grades', icon: School, requiredPermissions: ['manage school-grade_levels'] }, // Using School icon from lucide
+	{ label: 'إدارة المستخدمين', href: '/settings/users', icon: Users, requiredPermissions: ['manage users'] },
+	{ label: 'الأدوار والصلاحيات', href: '/settings/roles-permissions', icon: KeyRound, requiredPermissions: ['manage roles'] },
 ];
 
 
@@ -58,6 +62,21 @@ const SidebarContent: React.FC<{
 }> = ({
     isCollapsed, onNavLinkClick, currentPathname, onCollapseToggle, showCollapseButton = false
 }) => {
+    const { userRole, permissions } = useAuth();
+    const effectivePermissions = permissions || [];
+    const isAdmin = (userRole === 'admin');
+
+    const canAccess = (item: NavItem): boolean => {
+        console.log(isAdmin,'isAdmin')
+        if (isAdmin) return true;
+        if (item.requiredRoles && item.requiredRoles.length > 0) {
+            if (userRole && item.requiredRoles.includes(userRole)) return true;
+        }
+        if (item.requiredPermissions && item.requiredPermissions.length > 0) {
+            return item.requiredPermissions.some(p => effectivePermissions.includes(p));
+        }
+        return true; // No requirements means visible
+    };
     const [openSettings, setOpenSettings] = useState(false);
     const [openStudents, setOpenStudents] = useState(false);
     const [openTeachers, setOpenTeachers] = useState(false);
@@ -74,6 +93,8 @@ const SidebarContent: React.FC<{
     ({ item, isCollapsed, isSubItem = false, onClick }) => {
         const isActive = currentPathname === item.href || (item.href !== '/' && currentPathname.startsWith(item.href) && !item.subItems);
         const Icon = item.icon;
+
+        if (!canAccess(item)) return null;
 
         return (
             <Link to={item.href} className="block" onClick={onClick}>
@@ -131,125 +152,163 @@ const SidebarContent: React.FC<{
             {/* Navigation Links */}
             <ScrollArea className="flex-1 py-3 px-2"> {/* Adjusted padding */}
                 <nav className="grid gap-1">
-                    {/* Dashboard */}
-                    <NavLink item={{ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard }} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
+                    {/* Dashboard - visible only for admins */}
+                    {isAdmin && canAccess({ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard, requiredPermissions: ['view system dashboard'] }) && (
+                        <NavLink item={{ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard }} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
+                    )}
 
                     {/* Students Section */}
-                    <div>
-                        <Button
-                            variant={currentPathname.startsWith('/students') && !isCollapsed && openStudents ? 'secondary' : 'ghost'}
-                            className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
-                            onClick={() => setOpenStudents(!openStudents)}
-                            title="شؤون الطلاب"
-                        >
-                            <Users className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
-                            {!isCollapsed && (
-                                <span className="truncate flex-1 text-right">شؤون الطلاب</span>
-                            )}
-                            {!isCollapsed && (openStudents ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
-                        </Button>
-                        <AnimatePresence>
-                            {!isCollapsed && openStudents && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
-                                    <NavLink item={{ label: 'لوحة الطلاب', href: '/students', icon: Users }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                    <NavLink item={{ label: 'قائمة الطلاب', href: '/students/list', icon: Users }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                    <NavLink item={{ label: 'إضافة طالب', href: '/students/create', icon: Users }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    {(() => {
+                        const studentSubItems: NavItem[] = [
+                            { label: 'لوحة الطلاب', href: '/students', icon: Users, requiredPermissions: ['view any student', 'view own school students'] },
+                            { label: 'قائمة الطلاب', href: '/students/list', icon: Users, requiredPermissions: ['view any student', 'view own school students'] },
+                            { label: 'إضافة طالب', href: '/students/create', icon: Users, requiredPermissions: ['create students'] },
+                        ].filter(canAccess);
+                        if (studentSubItems.length === 0) return null;
+                        return (
+                            <div>
+                                <Button
+                                    variant={currentPathname.startsWith('/students') && !isCollapsed && openStudents ? 'secondary' : 'ghost'}
+                                    className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                                    onClick={() => setOpenStudents(!openStudents)}
+                                    title="شؤون الطلاب"
+                                >
+                                    <Users className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                                    {!isCollapsed && (
+                                        <span className="truncate flex-1 text-right">شؤون الطلاب</span>
+                                    )}
+                                    {!isCollapsed && (openStudents ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                                </Button>
+                                <AnimatePresence>
+                                    {!isCollapsed && openStudents && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                            {studentSubItems.map((item) => (
+                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })()}
 
                     {/* Teachers Section */}
-                    <div>
-                        <Button
-                            variant={currentPathname.startsWith('/teachers') && !isCollapsed && openTeachers ? 'secondary' : 'ghost'}
-                            className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
-                            onClick={() => setOpenTeachers(!openTeachers)}
-                            title="شؤون المعلمين"
-                        >
-                            <GraduationCap className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
-                            {!isCollapsed && (
-                                <span className="truncate flex-1 text-right">شؤون المعلمين</span>
-                            )}
-                            {!isCollapsed && (openTeachers ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
-                        </Button>
-                        <AnimatePresence>
-                            {!isCollapsed && openTeachers && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
-                                    <NavLink item={{ label: 'قائمة المعلمين', href: '/teachers/list', icon: GraduationCap }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                    <NavLink item={{ label: 'إضافة معلم', href: '/teachers/create', icon: GraduationCap }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    {(() => {
+                        const teacherSubItems: NavItem[] = [
+                            { label: 'قائمة المعلمين', href: '/teachers/list', icon: GraduationCap, requiredPermissions: ['view any teacher', 'view own school teachers'] },
+                            { label: 'إضافة معلم', href: '/teachers/create', icon: GraduationCap, requiredPermissions: ['create teachers'] },
+                        ].filter(canAccess);
+                        if (teacherSubItems.length === 0) return null;
+                        return (
+                            <div>
+                                <Button
+                                    variant={currentPathname.startsWith('/teachers') && !isCollapsed && openTeachers ? 'secondary' : 'ghost'}
+                                    className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                                    onClick={() => setOpenTeachers(!openTeachers)}
+                                    title="شؤون المعلمين"
+                                >
+                                    <GraduationCap className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                                    {!isCollapsed && (
+                                        <span className="truncate flex-1 text-right">شؤون المعلمين</span>
+                                    )}
+                                    {!isCollapsed && (openTeachers ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                                </Button>
+                                <AnimatePresence>
+                                    {!isCollapsed && openTeachers && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                            {teacherSubItems.map((item) => (
+                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })()}
 
-                    {/* Schools Section */}
-                    <div>
-                        <Button
-                            variant={currentPathname.startsWith('/schools') && !isCollapsed && openSchools ? 'secondary' : 'ghost'}
-                            className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
-                            onClick={() => setOpenSchools(!openSchools)}
-                            title="إدارة المدارس"
-                        >
-                            <Building2 className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
-                            {!isCollapsed && (
-                                <span className="truncate flex-1 text-right">إدارة المدارس</span>
-                            )}
-                            {!isCollapsed && (openSchools ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
-                        </Button>
-                        <AnimatePresence>
-                            {!isCollapsed && openSchools && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
-                                    <NavLink item={{ label: 'قائمة المدارس', href: '/schools/list', icon: Building2 }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                    <NavLink item={{ label: 'إضافة مدرسة', href: '/schools/create', icon: Building2 }} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    {/* Schools Section - visible only for admins */}
+                    {isAdmin && (() => {
+                        const schoolSubItems: NavItem[] = [
+                            { label: 'قائمة المدارس', href: '/schools/list', icon: Building2, requiredPermissions: ['view any school', 'view own school'] },
+                            { label: 'إضافة مدرسة', href: '/schools/create', icon: Building2, requiredPermissions: ['create schools'] },
+                        ].filter(canAccess);
+                        if (schoolSubItems.length === 0) return null;
+                        return (
+                            <div>
+                                <Button
+                                    variant={currentPathname.startsWith('/schools') && !isCollapsed && openSchools ? 'secondary' : 'ghost'}
+                                    className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                                    onClick={() => setOpenSchools(!openSchools)}
+                                    title="إدارة المدارس"
+                                >
+                                    <Building2 className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                                    {!isCollapsed && (
+                                        <span className="truncate flex-1 text-right">إدارة المدارس</span>
+                                    )}
+                                    {!isCollapsed && (openSchools ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                                </Button>
+                                <AnimatePresence>
+                                    {!isCollapsed && openSchools && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                            {schoolSubItems.map((item) => (
+                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })()}
 
-                    {/* Other top-level items */}
-                    {mainNavItems.map((item) => (
+                    {/* Other top-level items - visible only for admins */}
+                    {isAdmin && mainNavItems.filter(canAccess).map((item) => (
                         <NavLink key={item.href} item={item} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
                     ))}
 
-                    <Separator className="my-2" />
+                    {isAdmin && <Separator className="my-2" />}
 
-                    {/* Settings Section with Submenu */}
-                    <div>
-                        <Button
-                            variant={currentPathname.startsWith('/settings') && !isCollapsed && openSettings ? "secondary" : "ghost"}
-                            className={cn("w-full justify-start h-9 sm:h-10 text-sm sm:text-base", isCollapsed ? "px-2" : "px-3")}
-                            onClick={() => {
-                                setOpenSettings(!openSettings);
-                            }}
-                            title="الإعدادات"
-                        >
-                            <Settings className={cn("h-4 w-4 sm:h-5 sm:w-5", isCollapsed ? "" : "ml-2")} /> {/* RTL: ml */}
-                            {!isCollapsed && (
-                                <span className="truncate flex-1 text-right">الإعدادات</span>
-                            )}
-                            {!isCollapsed && (
-                                openSettings ?
-                                <ChevronLeft className="h-4 w-4 mr-auto transition-transform duration-200 rotate-[-90deg]" /> : // RTL: mr
-                                <ChevronRight className="h-4 w-4 mr-auto transition-transform duration-200 rotate-[-90deg]" />  // RTL: mr
-                            )}
-                        </Button>
-                        <AnimatePresence>
-                            {!isCollapsed && openSettings && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="overflow-hidden grid gap-1 mt-1"
+                    {/* Settings Section with Submenu - visible only for admins */}
+                    {isAdmin && (() => {
+                        const visibleSettings = settingsNavItems.filter(canAccess);
+                        if (visibleSettings.length === 0) return null;
+                        return (
+                            <div>
+                                <Button
+                                    variant={currentPathname.startsWith('/settings') && !isCollapsed && openSettings ? "secondary" : "ghost"}
+                                    className={cn("w-full justify-start h-9 sm:h-10 text-sm sm:text-base", isCollapsed ? "px-2" : "px-3")}
+                                    onClick={() => {
+                                        setOpenSettings(!openSettings);
+                                    }}
+                                    title="الإعدادات"
                                 >
-                                    {settingsNavItems.map((item) => (
-                                        <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick}/>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                                    <Settings className={cn("h-4 w-4 sm:h-5 sm:w-5", isCollapsed ? "" : "ml-2")} /> {/* RTL: ml */}
+                                    {!isCollapsed && (
+                                        <span className="truncate flex-1 text-right">الإعدادات</span>
+                                    )}
+                                    {!isCollapsed && (
+                                        openSettings ?
+                                        <ChevronLeft className="h-4 w-4 mr-auto transition-transform duration-200 rotate-[-90deg]" /> : // RTL: mr
+                                        <ChevronRight className="h-4 w-4 mr-auto transition-transform duration-200 rotate-[-90deg]" />  // RTL: mr
+                                    )}
+                                </Button>
+                                <AnimatePresence>
+                                    {!isCollapsed && openSettings && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="overflow-hidden grid gap-1 mt-1"
+                                        >
+                                            {visibleSettings.map((item) => (
+                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick}/>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })()}
                 </nav>
             </ScrollArea>
         </div>

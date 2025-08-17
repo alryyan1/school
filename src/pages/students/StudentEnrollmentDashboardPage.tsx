@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, StickyNote, CreditCard } from 'lucide-react';
+import { ArrowRight, StickyNote, CreditCard, AlertTriangle, CalendarX } from 'lucide-react';
 import FeeInstallmentViewerDialog from '@/components/finances/FeeInstallmentViewerDialog';
 
 const StudentEnrollmentDashboardPage: React.FC = () => {
@@ -43,6 +43,30 @@ const StudentEnrollmentDashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">عرض وإدارة أقساط الرسوم وسجل الدفعات وطباعة كشف الحساب.</p>
+          </CardContent>
+        </Card>
+        {/* Disciplinary Warnings Card */}
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/students/${studentId}/enrollments/${enrollmentId}/warnings`)}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <AlertTriangle className="h-5 w-5 text-primary" />
+              الإنذارات السلوكية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">تسجيل وعرض إنذارات الطالب الخاصة بهذا التسجيل.</p>
+          </CardContent>
+        </Card>
+        {/* Absences Card */}
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/students/${studentId}/enrollments/${enrollmentId}/absences`)}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CalendarX className="h-5 w-5 text-primary" />
+              الغياب
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">تسجيل غياب الطالب لهذا التسجيل وعرض السجل.</p>
           </CardContent>
         </Card>
       </div>

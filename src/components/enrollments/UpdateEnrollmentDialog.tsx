@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle } from 'lucide-react';
 
-import { StudentAcademicYear, StudentEnrollmentUpdateFormData, EnrollmentStatus } from '@/types/studentAcademicYear'; // Adjust path
+import { StudentAcademicYear, StudentEnrollmentUpdateFormData, EnrollmentStatus, EnrollmentType } from '@/types/studentAcademicYear'; // Adjust path
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore'; // Adjust path
 import { useClassroomStore } from '@/stores/classroomStore'; // Adjust path
 import { useSnackbar } from 'notistack';
@@ -53,6 +53,7 @@ const UpdateEnrollmentDialog: React.FC<UpdateEnrollmentDialogProps> = ({
                 classroom_id: enrollmentData.classroom_id || null,
                 status: enrollmentData.status || 'active',
                 fees: enrollmentData.fees || 0,
+                enrollment_type: enrollmentData.enrollment_type || 'regular',
             });
 
             // Fetch classrooms specifically for the grade level and school of this enrollment
@@ -166,6 +167,24 @@ const UpdateEnrollmentDialog: React.FC<UpdateEnrollmentDialogProps> = ({
                                     </Select>
                                 )} />
                             {errors.status && <p className="text-xs text-destructive mt-1">{errors.status.message}</p>}
+                        </div>
+
+                        {/* Enrollment Type Selection */}
+                        <div className="space-y-2">
+                            <Label htmlFor="enrollment_type_update">نوع التسجيل *</Label>
+                            <Controller name="enrollment_type" control={control} rules={{ required: 'نوع التسجيل مطلوب' }}
+                                render={({ field }) => (
+                                    <Select value={field.value || 'regular'} onValueChange={field.onChange} required>
+                                        <SelectTrigger id="enrollment_type_update" className={cn(errors.enrollment_type && "border-destructive")}>
+                                            <SelectValue placeholder="اختر النوع..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="regular">عادي</SelectItem>
+                                            <SelectItem value="scholarship">منحة</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )} />
+                            {errors.enrollment_type && <p className="text-xs text-destructive mt-1">{errors.enrollment_type.message as string}</p>}
                         </div>
                     </div>
                     <DialogFooter className="pt-4">

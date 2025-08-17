@@ -6,6 +6,7 @@ import { School } from './school';
 import { Student } from './student'; // Assuming simplified Student type for display
 
 export type EnrollmentStatus = 'active' | 'transferred' | 'graduated' | 'withdrawn';
+export type EnrollmentType = 'regular' | 'scholarship';
 
 export type StudentAcademicYear = {
     id: number | string;
@@ -17,6 +18,7 @@ export type StudentAcademicYear = {
     fees:number|string;
     discount:number|string;
     status: EnrollmentStatus;
+    enrollment_type?: EnrollmentType;
     // Aggregated totals for this enrollment (provided by backend resource)
     total_amount_required?: number;
     total_amount_paid?: number;
@@ -34,13 +36,13 @@ export type StudentAcademicYear = {
 
 // Form for creating a new enrollment
 export type StudentEnrollmentFormData = Pick<StudentAcademicYear,
-    'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status'|'school_id'|'discount'|'fees'
+    'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status'|'school_id'|'discount'|'fees' | 'enrollment_type'
 >;
 
 // Form for updating an existing enrollment (only classroom & status)
-export type StudentEnrollmentUpdateFormData = Pick<StudentAcademicYear,
-    'classroom_id' | 'status'|'fees'
->;
+export type StudentEnrollmentUpdateFormData = Partial<Pick<StudentAcademicYear,
+    'classroom_id' | 'status' | 'fees' | 'enrollment_type'
+>>;
 
 // Type for the enrollable students list
 export type EnrollableStudent = Pick<Student, 'id' | 'student_name' | 'goverment_id'>;

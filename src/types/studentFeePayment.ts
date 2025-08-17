@@ -1,6 +1,6 @@
 // src/types/studentFeePayment.ts
 import { FeeInstallment } from './feeInstallment'; // <-- Import
-export type paymentMethod = 'cash' | 'bank';
+import { PaymentMethod } from './paymentMethod';
 export type StudentFeePayment = {
     id: number;
     fee_installment_id: number; // <-- Updated FK
@@ -10,8 +10,9 @@ export type StudentFeePayment = {
     fee_installment?: FeeInstallment; // <-- Optional relation
     created_at?: string;
     updated_at?: string;
-    payment_method:paymentMethod
+    payment_method_id: number;
+    payment_method?: PaymentMethod;
 };
 
 // Form data needs installment ID now
-export type StudentFeePaymentFormData = Omit<StudentFeePayment, 'id' | 'created_at' | 'updated_at' | 'fee_installment'>;
+export type StudentFeePaymentFormData = Omit<StudentFeePayment, 'id' | 'created_at' | 'updated_at' | 'fee_installment' | 'payment_method'>;

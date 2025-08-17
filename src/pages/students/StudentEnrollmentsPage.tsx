@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ArrowRight } from 'lucide-react';
-import { Student } from '@/types/student';
-import { StudentAcademicYear } from '@/types/studentAcademicYear';
+// import { Student } from '@/types/student';
+import { StudentAcademicYear, EnrollmentType } from '@/types/studentAcademicYear';
 import { useStudentStore } from '@/stores/studentStore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSnackbar } from 'notistack';
+import { useAuth } from '@/context/authcontext';
+import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 
 const statusLabel = (status: string) => {
   switch (status) {
@@ -34,6 +38,10 @@ const StudentEnrollmentsPage: React.FC = () => {
   const navigate = useNavigate();
   const { getStudentById, currentStudent, loading, error } = useStudentStore();
   const [fetched, setFetched] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const { permissions } = useAuth();
+  const canSetEnrollmentType = (permissions || []).includes('set student enrollment type');
+  const { updateEnrollment } = useStudentEnrollmentStore();
 
   useEffect(() => {
     if (id && !fetched) {
@@ -92,6 +100,7 @@ const StudentEnrollmentsPage: React.FC = () => {
                   <th className="p-2 border">العام الدراسي</th>
                   <th className="p-2 border">الفصل</th>
                   <th className="p-2 border">الحالة</th>
+                  <th className="p-2 border">نوع التسجيل</th>
                   <th className="p-2 border">الرسوم</th>
                   <th className="p-2 border">تاريخ التسجيل</th>
                 </tr>
@@ -116,7 +125,35 @@ const StudentEnrollmentsPage: React.FC = () => {
                       <td className="p-2 border">
                         <Badge variant={statusVariant(enrollment.status)}>{statusLabel(enrollment.status)}</Badge>
                       </td>
-                      <td className="p-2 border text-green-700 font-semibold">{enrollment.fees ? `${enrollment.fees.toLocaleString()} ريال` : 'غير محدد'}</td>
+                      <td className="p-2 border" onClick={(e) => e.stopPropagation()}>
+                        {canSetEnrollmentType ? (
+                          <Select
+                            value={(enrollment.enrollment_type || 'regular') as EnrollmentType}
+                            onValueChange={async (val) => {
+                              try {
+                                await updateEnrollment(Number(enrollment.id), { enrollment_type: val as EnrollmentType });
+                                if (id) {
+                                  await getStudentById(Number(id));
+                                }
+                                enqueueSnackbar('تم تحديث نوع التسجيل', { variant: 'success' });
+                              } catch {
+                                enqueueSnackbar('فشل تحديث نوع التسجيل', { variant: 'error' });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-[140px]">
+                              <SelectValue placeholder="اختر النوع..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="regular">عادي</SelectItem>
+                              <SelectItem value="scholarship">منحة</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span>{(enrollment.enrollment_type || 'regular') === 'scholarship' ? 'منحة' : 'عادي'}</span>
+                        )}
+                      </td>
+                      <td className="p-2 border text-green-700 font-semibold">{enrollment.fees ? `${enrollment.fees.toLocaleString()}` : 'غير محدد'}</td>
                       <td className="p-2 border">{enrollment.created_at ? new Date(enrollment.created_at).toLocaleDateString('ar-EG') : '-'}</td>
                     </tr>
                   ))

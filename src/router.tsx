@@ -26,6 +26,8 @@ import StudentView from '@/pages/students/StudentView';                   // Adj
 import StudentEnrollmentsPage from '@/pages/students/StudentEnrollmentsPage';
 import StudentEnrollmentDashboardPage from '@/pages/students/StudentEnrollmentDashboardPage';
 import StudentEnrollmentNotesPage from '@/pages/students/StudentEnrollmentNotesPage';
+import StudentWarningsPage from '@/pages/students/StudentWarningsPage';
+import StudentAbsencesPage from '@/pages/students/StudentAbsencesPage';
 
 // --- Teacher Pages & Components ---
 import TeacherList from '@/pages/teachers/TeacherList';                 // Adjust path
@@ -143,6 +145,8 @@ const router = createHashRouter([
                     { path: ':id/enrollments', element: <StudentEnrollmentsPage /> },
                     { path: ':studentId/enrollments/:enrollmentId/dashboard', element: <StudentEnrollmentDashboardPage /> },
                     { path: ':studentId/enrollments/:enrollmentId/notes', element: <StudentEnrollmentNotesPage /> },
+                     { path: ':studentId/enrollments/:enrollmentId/warnings', element: <StudentWarningsPage /> },
+                     { path: ':studentId/enrollments/:enrollmentId/absences', element: <StudentAbsencesPage /> },
                 ]
             },
             {

@@ -43,6 +43,7 @@ const StudentList = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
   const canEnroll = (permissions || []).includes('enrollment permission');
+  
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentForEnroll, setStudentForEnroll] = useState<Student | null>(null);
 
@@ -511,6 +512,7 @@ const StudentList = () => {
                                   </span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}/edit`)}><Edit3 className="ml-2 h-4 w-4" /> تعديل البيانات</DropdownMenuItem>
+                                
                               
                                 {/* --------------------- */}
                                 {!student.approved && (

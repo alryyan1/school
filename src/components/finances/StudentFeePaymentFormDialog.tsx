@@ -2,18 +2,22 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
-    Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField,FormHelperText,
-    CircularProgress, Alert, InputAdornment, Typography, // Added Typography
+    Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField,FormHelperText,
+    CircularProgress, Alert, Typography, // Added Typography
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    Box,
+    Stack,
 } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/ar'; // Ensure Arabic locale is imported for date picker
 import dayjs from 'dayjs';
-import { StudentFeePayment, StudentFeePaymentFormData ,paymentMethod} from '@/types/studentFeePayment'; // Adjust path
+import { StudentFeePayment, StudentFeePaymentFormData } from '@/types/studentFeePayment'; // Adjust path
+// import { PaymentMethod } from '@/types/paymentMethod';
+import { usePaymentMethodStore } from '@/stores/paymentMethodStore';
 import { FeeInstallment } from '@/types/feeInstallment'; // Import for context display
 import { useStudentFeePaymentStore } from '@/stores/studentFeePaymentStore'; // Adjust path
 import { useSnackbar } from 'notistack';
@@ -25,19 +29,12 @@ interface StudentFeePaymentFormDialogProps {
     installmentDetails?: Pick<FeeInstallment, 'amount_due' | 'amount_paid'>; // Pass current due/paid for validation
     initialData?: StudentFeePayment | null;   // For editing a payment
 }
-//define options for the dropdown menu
-const paymentMethodOptions : {
-    value: paymentMethod; // Use the type defined in studentFeePayment.ts
-    label: string;
-}[] = [
-    { value: 'cash', label: 'نقدي' },
-    { value: 'bank', label: 'تحويل بنكي' },
-    
-];
+// Quick-add dialog state type
+type NewMethodState = { open: boolean; name: string };
 
 
 // Exclude fee_installment_id from the form data type itself
-type DialogFormData = Omit<StudentFeePaymentFormData, 'fee_installment_id'>;
+type DialogFormData = Omit<StudentFeePaymentFormData, 'fee_installment_id' | 'payment_method' >;
 
 const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = ({
     open, onClose, feeInstallmentId, installmentDetails, initialData
@@ -45,13 +42,15 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
     const isEditMode = !!initialData;
     const { createPayment, updatePayment } = useStudentFeePaymentStore();
     const { enqueueSnackbar } = useSnackbar();
+    const { methods, fetchMethods, createMethod } = usePaymentMethodStore();
+    const [newMethod, setNewMethod] = useState<NewMethodState>({ open: false, name: '' });
     const [formError, setFormError] = useState<string | null>(null);
 
-    const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<DialogFormData>({
+    const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<DialogFormData>({
         defaultValues: {
             amount: '', // Use string for controlled number input
             payment_date: dayjs().format('YYYY-MM-DD'),
-            payment_method: 'cash', // Default to cash
+            payment_method_id: undefined as unknown as number,
             notes: '',
         }
     });
@@ -68,17 +67,19 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
     useEffect(() => {
         if (open) {
             setFormError(null);
+            // Load methods for the select
+            fetchMethods();
             reset({
                 amount: '', payment_date: dayjs().format('YYYY-MM-DD'), notes: '', // Create defaults
                 ...(initialData ? { // Edit defaults
                      amount: String(initialData.amount ?? ''), // Use string for input value
                      payment_date: dayjs(initialData.payment_date).format('YYYY-MM-DD'),
                      notes: initialData.notes || '',
-                     payment_method: initialData.payment_method,
+                     payment_method_id: initialData.payment_method_id,
                  } : {}),
             });
         }
-    }, [initialData, open, reset]);
+    }, [initialData, open, reset, fetchMethods]);
 
     const onSubmit = async (data: DialogFormData) => {
         setFormError(null);
@@ -95,7 +96,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
             ...data,
             amount: paymentAmount, // Send as number
             fee_installment_id: feeInstallmentId,
-            payment_method: data.payment_method, // Include payment method
+            payment_method_id: data.payment_method_id,
         };
 
         try {
@@ -105,7 +106,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                      amount: submitData.amount,
                      payment_date: submitData.payment_date,
                      notes: submitData.notes,
-                     payment_method:submitData.payment_method, // Include payment method
+                     payment_method_id: submitData.payment_method_id,
                  };
                 await updatePayment(initialData.id, updatePayload);
                 enqueueSnackbar('تم تحديث الدفعة بنجاح', { variant: 'success' });
@@ -115,13 +116,13 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                 enqueueSnackbar('تم إضافة الدفعة بنجاح', { variant: 'success' });
             }
             onClose(true); // <-- Signal parent to refetch installment list
-        } catch (error: any) {
+        } catch (error: unknown) {
              console.error("Payment Form submission error:", error);
-             const backendErrors = error.response?.data?.errors;
+             const backendErrors = (error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
              if (backendErrors) {
                  setFormError(`فشل الحفظ: ${Object.values(backendErrors).flat().join('. ')}`);
              } else {
-                 setFormError(error.message || 'حدث خطأ غير متوقع.');
+                 setFormError((error as Error)?.message || 'حدث خطأ غير متوقع.');
              }
         }
     };
@@ -145,9 +146,9 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
 
 
                         {formError && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setFormError(null)}>{formError}</Alert>}
-                        <Grid container spacing={2.5} sx={{ pt: 1 }}>
+                         <Stack spacing={2.5} sx={{ pt: 1 }}>
                             {/* Amount Field */}
-                            <Grid item xs={12}>
+                            <Box>
                                 <Controller
                                     name="amount"
                                     control={control}
@@ -164,9 +165,9 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                         />
                                     )}
                                 />
-                            </Grid>
+                            </Box>
                             {/* Payment Date Field */}
-                             <Grid item xs={12}>
+                             <Box>
                                 <Controller
                                     name="payment_date"
                                     control={control}
@@ -186,34 +187,34 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                         />
                                     )}
                                 />
-                            </Grid>
+                            </Box>
                               {/* --- Payment Method Field --- */}
-                              <Grid item xs={12}>
+                              <Box>
                                 <Controller
-                                    name="payment_method"
+                                    name="payment_method_id"
                                     control={control}
                                     rules={{ required: 'طريقة الدفع مطلوبة' }}
                                     render={({ field }) => (
-                                        <FormControl fullWidth required error={!!errors.payment_method}>
+                                        <FormControl fullWidth required error={!!errors.payment_method_id}>
                                             <InputLabel id="payment-method-label">طريقة الدفع *</InputLabel>
                                             <Select
                                                 labelId="payment-method-label"
                                                 label="طريقة الدفع *"
-                                                {...field} // Spread field props (value, onChange, etc.)
+                                                value={field.value ?? ''}
+                                                onChange={(e) => field.onChange(e.target.value)}
                                             >
-                                                {paymentMethodOptions.map(option => (
-                                                    <MenuItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </MenuItem>
+                                                {methods.map((m) => (
+                                                    <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
                                                 ))}
                                             </Select>
-                                            {errors.payment_method && <FormHelperText>{errors.payment_method.message}</FormHelperText>}
+                                            {errors.payment_method_id && <FormHelperText>{errors.payment_method_id.message}</FormHelperText>}
                                         </FormControl>
                                     )}
                                 />
-                             </Grid>
+                                <Button size="small" sx={{ mt: 1 }} onClick={() => setNewMethod({ open: true, name: '' })}>إضافة طريقة دفع</Button>
+                             </Box>
                             {/* Notes Field */}
-                            <Grid item xs={12}>
+                            <Box>
                                 <Controller
                                     name="notes"
                                     control={control}
@@ -228,8 +229,8 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                                         />
                                     )}
                                 />
-                            </Grid>
-                        </Grid>
+                            </Box>
+                        </Stack>
                     </DialogContent>
                     <DialogActions sx={{ px: 3, pb: 2 }}>
                         {/* Pass false to onClose for Cancel */}
@@ -240,6 +241,37 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
                     </DialogActions>
                 </form>
             </LocalizationProvider>
+            {/* Quick Add Payment Method Dialog */}
+            <Dialog open={newMethod.open} onClose={() => setNewMethod({ open: false, name: '' })} maxWidth="xs" fullWidth>
+              <DialogTitle>إضافة طريقة دفع</DialogTitle>
+              <form onSubmit={async (evt) => {
+                evt.preventDefault();
+                try {
+                  const created = await createMethod(newMethod.name.trim());
+                  if (created) {
+                    enqueueSnackbar('تم إضافة طريقة الدفع', { variant: 'success' });
+                    setNewMethod({ open: false, name: '' });
+                  }
+                } catch {
+                  enqueueSnackbar('فشل إضافة طريقة الدفع', { variant: 'error' });
+                }
+              }}>
+                <DialogContent>
+                  <TextField
+                    label="اسم الطريقة"
+                    value={newMethod.name}
+                    onChange={(e) => setNewMethod((s) => ({ ...s, name: e.target.value }))}
+                    fullWidth
+                    required
+                    autoFocus
+                  />
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setNewMethod({ open: false, name: '' })}>إلغاء</Button>
+                  <Button type="submit" variant="contained">حفظ</Button>
+                </DialogActions>
+              </form>
+            </Dialog>
         </Dialog>
     );
 };

@@ -11,6 +11,7 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 // import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -77,6 +78,11 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                 username: "",
                 email: "",
                 role: (initialData?.role as UserRole) || (spatieRoles[0]?.name as UserRole) || "student",
+                spatie_roles: initialData?.roles && initialData.roles.length > 0
+                    ? initialData.roles
+                    : [
+                        (initialData?.role as string) || (spatieRoles[0]?.name as string) || "student"
+                    ],
                 phone: null,
                 gender: null,
                 password: "",
@@ -107,6 +113,9 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
               phone: data.phone && String(data.phone).trim() !== '' ? String(data.phone).trim() : null,
               gender: (data.gender as unknown as string) === '' ? null : data.gender,
             };
+            const selectedRoles = Array.isArray(normalized.spatie_roles) ? normalized.spatie_roles : [];
+            const primaryRole = selectedRoles[0] || (initialData?.role as UserRole) || (spatieRoles[0]?.name as UserRole) || "student";
+            normalized.role = primaryRole as UserRole;
             if (isEditMode && initialData) {
                 // Omit password fields in update to avoid sending empty values
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -214,30 +223,46 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                             </div>
                         </div>
 
-                        {/* Role and Phone */}
+                        {/* Roles and Phone */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <Label htmlFor="role_user_form">الدور *</Label>
+                                <Label>الأدوار (يمكن اختيار أكثر من واحد) *</Label>
                                 <Controller
-                                    name="role"
+                                    name="spatie_roles"
                                     control={control}
-                                    rules={{ required: "الدور مطلوب" }}
+                                    rules={{
+                                        validate: (value) => (Array.isArray(value) && value.length > 0) || "اختر دورًا واحدًا على الأقل",
+                                    }}
                                     render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange} required>
-                                            <SelectTrigger id="role_user_form" className={cn(errors.role && "border-destructive")}>
-                                                <SelectValue placeholder="اختر الدور" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {spatieRoles.map((r) => (
-                                                  <SelectItem key={r.id} value={r.name as UserRole}>
-                                                    {translateRole(r.name)}
-                                                  </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="grid grid-cols-1 gap-2 rounded-md border p-3">
+                                            {spatieRoles.map((r) => {
+                                                const current = (field.value as string[] | undefined) || [];
+                                                const checked = current.includes(r.name);
+                                                return (
+                                                    <label key={r.id} className="flex items-center gap-2">
+                                                        <Checkbox
+                                                            checked={checked}
+                                                            onCheckedChange={(isChecked) => {
+                                                                const next = new Set(current);
+                                                                if (isChecked) {
+                                                                    next.add(r.name);
+                                                                } else {
+                                                                    next.delete(r.name);
+                                                                }
+                                                                field.onChange(Array.from(next));
+                                                            }}
+                                                            aria-invalid={!!errors.spatie_roles}
+                                                        />
+                                                        <span>{translateRole(r.name)}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
                                     )}
                                 />
-                                {errors.role && <p className="text-xs text-destructive mt-1">{errors.role.message}</p>}
+                                {errors.spatie_roles && (
+                                    <p className="text-xs text-destructive mt-1">{String(errors.spatie_roles.message as unknown as string)}</p>
+                                )}
                             </div>
                             <div className="space-y-1.5">
                                 <Label htmlFor="phone_user_form">رقم الهاتف (اختياري)</Label>

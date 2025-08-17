@@ -24,7 +24,7 @@ type StoreActions = {
     /** Creates a new payment for a specific installment */
     createPayment: (data: StudentFeePaymentFormData) => Promise<StudentFeePayment | null>;
     /** Updates an existing payment */
-    updatePayment: (id: number, data: Partial<Pick<StudentFeePaymentFormData, 'amount' | 'payment_date' | 'notes'>>) => Promise<StudentFeePayment | null>;
+    updatePayment: (id: number, data: Partial<Pick<StudentFeePaymentFormData, 'amount' | 'payment_date' | 'notes' | 'payment_method_id'>>) => Promise<StudentFeePayment | null>;
     /** Deletes a payment */
     deletePayment: (id: number) => Promise<boolean>;
     /** Clears the currently stored list of payments and totals */
