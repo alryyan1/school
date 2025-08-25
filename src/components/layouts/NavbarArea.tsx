@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Menu, School, CalendarDays, LogOut, UserCircle } from 'lucide-react';
+import { Menu, School, CalendarDays, LogOut, UserCircle, Shield, ChevronDown } from 'lucide-react';
 
 import { useAuth } from '@/context/authcontext'; // Adjust path
 import { useSettingsStore } from '@/stores/settingsStore'; // Adjust path
@@ -20,7 +20,7 @@ interface NavbarAreaProps {
 }
 
 const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
-    const { userName, userRole, logout } = useAuth();
+    const { userName, userRole, permissions, logout } = useAuth();
     const navigate = useNavigate();
 
     const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
@@ -100,6 +100,46 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
                             <p className="text-xs leading-none text-muted-foreground">{userRole || "الدور"}</p>
                         </div>
                     </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    
+                    {/* Role and Permissions Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <DropdownMenuItem className="cursor-pointer">
+                                <Shield className="mr-2 h-4 w-4" />
+                                <span className="flex-1 text-right">الدور والصلاحيات</span>
+                                <ChevronDown className="mr-auto h-4 w-4" />
+                            </DropdownMenuItem>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="left" align="start" className="w-64">
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none">معلومات الصلاحيات</p>
+                                    <p className="text-xs leading-none text-muted-foreground">الدور: {userRole || "غير محدد"}</p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {permissions && permissions.length > 0 ? (
+                                <>
+                                    <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                                        الصلاحيات الممنوحة:
+                                    </DropdownMenuLabel>
+                                    <div className="max-h-32 overflow-y-auto">
+                                        {permissions.map((permission, index) => (
+                                            <DropdownMenuItem key={index} className="text-xs cursor-default">
+                                                <span className="truncate">{permission}</span>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <DropdownMenuItem className="text-xs text-muted-foreground cursor-default">
+                                    لا توجد صلاحيات محددة
+                                </DropdownMenuItem>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    
                     <DropdownMenuSeparator />
                     {/* <DropdownMenuItem>ملفي الشخصي</DropdownMenuItem> */}
                     {/* <DropdownMenuItem>إعدادات الحساب</DropdownMenuItem> */}

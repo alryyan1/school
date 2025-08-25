@@ -82,6 +82,14 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
   useEffect(() => {
     if (!open) return;
     // Academic year default
+    console.log('defaultYearId', defaultYearId);
+    console.log('selectedAcademicYearId', selectedAcademicYearId);
+    console.log('schoolYears', schoolYears);
+    console.log('academicYears', academicYears);
+    console.log('wishedSchoolId', wishedSchoolId);
+    console.log('open', open);
+    console.log('loadingYears', loadingYears);
+    console.log('loadingGrades', loadingGrades);
     if (selectedAcademicYearId === '' && defaultYearId !== '') {
       setSelectedAcademicYearId(defaultYearId);
     }

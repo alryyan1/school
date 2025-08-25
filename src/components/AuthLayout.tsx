@@ -88,7 +88,9 @@ const AuthLayout = () => {
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
-              py: 2,
+              py: 1,
+              height: '100vh',
+              overflow: 'hidden'
             }}
           >
             <Box
@@ -96,23 +98,16 @@ const AuthLayout = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                flex: 1,
+                justifyContent: 'center'
               }}
             >
-              {/* <img 
-                src="/logo.png" 
-                alt="Logo" 
-                style={{ 
-                  width: 80, 
-                  height: 80, 
-                  marginBottom: theme.spacing(3) 
-                }} 
-              /> */}
               <Outlet /> {/* This renders the child routes (login/signup) */}
             </Box>
 
             {/* Footer */}
-            <Box sx={{ mt: 4, textAlign: 'center' }}>
-              <Typography variant="body2" color="textSecondary">
+            <Box sx={{ textAlign: 'center', py: 1 }}>
+              <Typography variant="caption" color="textSecondary">
                 © {new Date().getFullYear()} نظام إدارة المدارس - جميع الحقوق محفوظة
               </Typography>
             </Box>

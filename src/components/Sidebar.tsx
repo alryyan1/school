@@ -34,6 +34,9 @@ const mainNavItems: NavItem[] = [
 	{ label: 'المناهج', href: '/curriculum', icon: MenuBook, requiredPermissions: ['manage curriculum'] },
 	{ label: 'الشؤون المالية', href: '/finances/due-installments', icon: CreditCard, requiredPermissions: ['view student fee overview', 'manage fee installments', 'record fee payments', 'view financial reports'] },
 	{ label: 'مستكشف المدارس', href: '/schools-explorer', icon: School, requiredPermissions: ['view any school', 'view own school'] },
+	{ label: 'النقل المدرسي', href: '/transport', icon: Network, requiredPermissions: ['manage transport routes'] },
+	{ label: 'التقارير', href: '/reports', icon: ClipboardCheck, requiredPermissions: ['view reports'] },
+	{ label: 'الإشعارات', href: '/notifications', icon: Settings, requiredPermissions: ['manage notifications'] },
 ];
 
 const settingsNavItems: NavItem[] = [
@@ -115,10 +118,10 @@ const SidebarContent: React.FC<{
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full max-h-screen">
             {/* Header / Logo Area with Collapse Button */}
             <div className={cn(
-                "flex items-center border-b h-14 px-4", // Reduced height
+                "flex items-center border-b h-14 px-4 flex-shrink-0", // Reduced height, prevent shrinking
                 isCollapsed ? "justify-center" : "justify-between"
             )}>
                 {!isCollapsed && (
@@ -150,8 +153,8 @@ const SidebarContent: React.FC<{
             </div>
 
             {/* Navigation Links */}
-            <ScrollArea className="flex-1 py-3 px-2"> {/* Adjusted padding */}
-                <nav className="grid gap-1">
+            <ScrollArea className="flex-1 overflow-hidden">
+                <nav className="grid gap-1 py-3 px-2 min-h-0">
                     {/* Dashboard - visible only for admins */}
                     {isAdmin && canAccess({ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard, requiredPermissions: ['view system dashboard'] }) && (
                         <NavLink item={{ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard }} isCollapsed={isCollapsed} onClick={onNavLinkClick} />

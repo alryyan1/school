@@ -72,125 +72,127 @@ const Login = () => {
   };
 
   return (
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
+        width: '100%',
+        maxWidth: 400,
+        borderRadius: 2,
+        maxHeight: '100vh',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Logo */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+        <img 
+          src={alfanarLogo} 
+          alt="Alfanar Logo" 
+          style={{ 
+            maxWidth: '150px', 
+            height: 'auto',
+            borderRadius: '8px'
+          }} 
+        />
+      </Box>
+      
+      <Typography variant="h5" component="h1" align="center" gutterBottom sx={{ fontWeight: 700, mb: 1 }}>
+        نظام اداره الطلاب
+      </Typography>
+      
+      <Typography variant="h6" component="h2" align="center" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+        تسجيل الدخول
+      </Typography>
+      
+      <Typography variant="body2" color="textSecondary" align="center" sx={{ mb: 3 }}>
+        يرجى إدخال بيانات الدخول الخاصة بك
+      </Typography>
 
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          width: '100%',
-          maxWidth: 450,
-          borderRadius: 2
-        }}
-      >
-        {/* Logo */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-          <img 
-            src={alfanarLogo} 
-            alt="Alfanar Logo" 
-            style={{ 
-              maxWidth: '200px', 
-              height: 'auto',
-              borderRadius: '8px'
-            }} 
-          />
-        </Box>
-        
-        <Typography variant="h4" component="h1" align="center" gutterBottom sx={{ fontWeight: 700 }}>
-          نظام اداره الطلاب
-        </Typography>
-        
-        <Typography variant="h5" component="h2" align="center" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-          تسجيل الدخول
-        </Typography>
-        
-        <Typography variant="body1" color="textSecondary" align="center" sx={{ mb: 4 }}>
-          يرجى إدخال بيانات الدخول الخاصة بك
-        </Typography>
-
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <TextField
-              label="اسم المستخدم "
-              type="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoComplete="username"
-              autoFocus
-              variant="outlined"
-              InputProps={{
-                sx: { borderRadius: 1 }
-              }}
-            />
-          </FormControl>
-
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <TextField
-              label="كلمة المرور"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              variant="outlined"
-              InputProps={{
-                sx: { borderRadius: 1 },
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-          </FormControl>
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  color="primary"
-                />
-              }
-              label="تذكرني"
-            />
-
-            <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
-              <Typography variant="body2" color="primary">
-                نسيت كلمة المرور؟
-              </Typography>
-            </Link>
-          </Box>
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            size="large"
-            disabled={isLoading}
-            sx={{
-              py: 1.5,
-              borderRadius: 1,
-              fontSize: '1rem'
+      <Box component="form" onSubmit={handleSubmit}>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <TextField
+            label="اسم المستخدم "
+            type="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            autoComplete="username"
+            autoFocus
+            variant="outlined"
+            size="small"
+            InputProps={{
+              sx: { borderRadius: 1 }
             }}
-          >
-            {isLoading ? (
-              <CircularProgress size={4} color="inherit" />
-            ) : (
-              'تسجيل الدخول'
-            )}
-          </Button>
+          />
+        </FormControl>
 
-  
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <TextField
+            label="كلمة المرور"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            variant="outlined"
+            size="small"
+            InputProps={{
+              sx: { borderRadius: 1 },
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                    size="small"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
+        </FormControl>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                color="primary"
+                size="small"
+              />
+            }
+            label="تذكرني"
+          />
+
+          <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+            <Typography variant="body2" color="primary">
+              نسيت كلمة المرور؟
+            </Typography>
+          </Link>
         </Box>
-      </Paper>
-    
+
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          size="medium"
+          disabled={isLoading}
+          sx={{
+            py: 1,
+            borderRadius: 1,
+            fontSize: '0.9rem'
+          }}
+        >
+          {isLoading ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            'تسجيل الدخول'
+          )}
+        </Button>
+      </Box>
+    </Paper>
   );
 };
 

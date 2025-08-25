@@ -40,7 +40,7 @@ const MainLayout: React.FC = () => {
 
             {/* Mobile Sidebar (Sheet) */}
             <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-                <SheetContent side="right" className="p-0 w-[260px]" dir="rtl"> {/* RTL: side="right" */}
+                <SheetContent side="right" className="p-0 w-[260px] h-full overflow-hidden" dir="rtl"> {/* RTL: side="right" */}
                     <Button
                         variant="ghost"
                         size="sm"
@@ -50,12 +50,14 @@ const MainLayout: React.FC = () => {
                     >
                         <X className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                    <SidebarContent
-                        isCollapsed={false} // Mobile sidebar is never "collapsed" in the same way
-                        currentPathname={location.pathname}
-                        onNavLinkClick={() => setMobileSheetOpen(false)} // Close on nav link click
-                        showCollapseButton={false} // Don't show collapse button on mobile
-                    />
+                    <div className="h-full pt-12"> {/* Add padding top to account for close button */}
+                        <SidebarContent
+                            isCollapsed={false} // Mobile sidebar is never "collapsed" in the same way
+                            currentPathname={location.pathname}
+                            onNavLinkClick={() => setMobileSheetOpen(false)} // Close on nav link click
+                            showCollapseButton={false} // Don't show collapse button on mobile
+                        />
+                    </div>
                 </SheetContent>
             </Sheet>
 
