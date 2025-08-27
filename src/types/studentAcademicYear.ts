@@ -15,8 +15,8 @@ export type StudentAcademicYear = {
     grade_level_id: number | string;
     classroom_id: number | null;
     school_id:number|string;
-    fees:number|string;
-    discount:number|string;
+    fees?: number|string;
+    discount?: number|string;
     status: EnrollmentStatus;
     enrollment_type?: EnrollmentType;
     // Aggregated totals for this enrollment (provided by backend resource)
@@ -35,9 +35,9 @@ export type StudentAcademicYear = {
 };
 
 // Form for creating a new enrollment
-export type StudentEnrollmentFormData = Pick<StudentAcademicYear,
-    'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status'|'school_id'|'discount'|'fees' | 'enrollment_type'
->;
+export type StudentEnrollmentFormData =
+  Pick<StudentAcademicYear, 'student_id' | 'academic_year_id' | 'grade_level_id' | 'classroom_id' | 'status' | 'school_id'>
+  & Partial<Pick<StudentAcademicYear, 'enrollment_type' | 'fees' | 'discount'>>;
 
 // Form for updating an existing enrollment (only classroom & status)
 export type StudentEnrollmentUpdateFormData = Partial<Pick<StudentAcademicYear,

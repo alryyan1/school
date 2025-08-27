@@ -9,6 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Menu, School, CalendarDays, LogOut, UserCircle, Shield, ChevronDown } from 'lucide-react';
+import StudentSearch from '@/components/StudentSearch';
 
 import { useAuth } from '@/context/authcontext'; // Adjust path
 import { useSettingsStore } from '@/stores/settingsStore'; // Adjust path
@@ -26,6 +27,9 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
     const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
     const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
     const { academicYears, fetchAcademicYears, loading: yearsLoading } = useAcademicYearStore();
+
+    // Show student search on all pages
+    const showStudentSearch = true;
 
     useEffect(() => {
         if (activeSchoolId && schools.length === 0) fetchSchools();
@@ -58,6 +62,13 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
                 <span className="sr-only">Toggle Menu</span>
             </Button>
 
+            {/* Mobile Student Search - Show on all pages */}
+            {showStudentSearch && (
+                <div className="md:hidden flex-1 mx-2">
+                    <StudentSearch />
+                </div>
+            )}
+
             {/* Active School/Year Display */}
             <div className="flex items-center gap-2 text-sm">
                 {activeSchoolId && (
@@ -80,6 +91,13 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
                     </>
                 )}
             </div>
+
+            {/* Student Search - Show on all pages */}
+            {showStudentSearch && (
+                <div className="hidden md:flex">
+                    <StudentSearch />
+                </div>
+            )}
 
 
             {/* User Menu (right side in RTL) */}

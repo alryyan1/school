@@ -123,7 +123,7 @@ const router = createHashRouter([
     {
         path: '/',
         element: (
-            <ProtectedRoute roles={['admin']}> {/* Or adjust roles for main layout access */}
+            <ProtectedRoute>
                 <MainLayoutWrapper />
             </ProtectedRoute>
         ),

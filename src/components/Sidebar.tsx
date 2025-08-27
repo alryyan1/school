@@ -28,15 +28,7 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-	// Dashboard is rendered explicitly at the top of the list to avoid duplication
-	{ label: 'التسجيلات', href: '/enrollments', icon: UserCheck, requiredPermissions: ['manage student enrollments', 'view student enrollments'] },
-	{ label: 'الامتحانات', href: '/exams', icon: ClipboardCheck, requiredPermissions: ['manage exams', 'enter exam results', 'view any exam results', 'view own school exam results'] },
-	{ label: 'المناهج', href: '/curriculum', icon: MenuBook, requiredPermissions: ['manage curriculum'] },
-	{ label: 'الشؤون المالية', href: '/finances/due-installments', icon: CreditCard, requiredPermissions: ['view student fee overview', 'manage fee installments', 'record fee payments', 'view financial reports'] },
-	{ label: 'مستكشف المدارس', href: '/schools-explorer', icon: School, requiredPermissions: ['view any school', 'view own school'] },
-	{ label: 'النقل المدرسي', href: '/transport', icon: Network, requiredPermissions: ['manage transport routes'] },
-	{ label: 'التقارير', href: '/reports', icon: ClipboardCheck, requiredPermissions: ['view reports'] },
-	{ label: 'الإشعارات', href: '/notifications', icon: Settings, requiredPermissions: ['manage notifications'] },
+
 ];
 
 const settingsNavItems: NavItem[] = [
@@ -70,15 +62,7 @@ const SidebarContent: React.FC<{
     const isAdmin = (userRole === 'admin');
 
     const canAccess = (item: NavItem): boolean => {
-        console.log(isAdmin,'isAdmin')
-        if (isAdmin) return true;
-        if (item.requiredRoles && item.requiredRoles.length > 0) {
-            if (userRole && item.requiredRoles.includes(userRole)) return true;
-        }
-        if (item.requiredPermissions && item.requiredPermissions.length > 0) {
-            return item.requiredPermissions.some(p => effectivePermissions.includes(p));
-        }
-        return true; // No requirements means visible
+      return true;
     };
     const [openSettings, setOpenSettings] = useState(false);
     const [openStudents, setOpenStudents] = useState(false);
@@ -155,8 +139,8 @@ const SidebarContent: React.FC<{
             {/* Navigation Links */}
             <ScrollArea className="flex-1 overflow-hidden">
                 <nav className="grid gap-1 py-3 px-2 min-h-0">
-                    {/* Dashboard - visible only for admins */}
-                    {isAdmin && canAccess({ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard, requiredPermissions: ['view system dashboard'] }) && (
+                    {/* Dashboard */}
+                    {canAccess({ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard, requiredPermissions: ['view system dashboard'] }) && (
                         <NavLink item={{ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard }} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
                     )}
 
@@ -229,8 +213,8 @@ const SidebarContent: React.FC<{
                         );
                     })()}
 
-                    {/* Schools Section - visible only for admins */}
-                    {isAdmin && (() => {
+                    {/* Schools Section */}
+                    {(() => {
                         const schoolSubItems: NavItem[] = [
                             { label: 'قائمة المدارس', href: '/schools/list', icon: Building2, requiredPermissions: ['view any school', 'view own school'] },
                             { label: 'إضافة مدرسة', href: '/schools/create', icon: Building2, requiredPermissions: ['create schools'] },
@@ -263,15 +247,15 @@ const SidebarContent: React.FC<{
                         );
                     })()}
 
-                    {/* Other top-level items - visible only for admins */}
-                    {isAdmin && mainNavItems.filter(canAccess).map((item) => (
+                    {/* Other top-level items */}
+                    {mainNavItems.filter(canAccess).map((item) => (
                         <NavLink key={item.href} item={item} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
                     ))}
 
-                    {isAdmin && <Separator className="my-2" />}
+                    <Separator className="my-2" />
 
-                    {/* Settings Section with Submenu - visible only for admins */}
-                    {isAdmin && (() => {
+                    {/* Settings Section with Submenu */}
+                    {(() => {
                         const visibleSettings = settingsNavItems.filter(canAccess);
                         if (visibleSettings.length === 0) return null;
                         return (

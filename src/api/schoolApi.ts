@@ -109,4 +109,8 @@ export const SchoolApi = {
   // Unassign ONE grade level
   detachGradeLevel: (schoolId: number, gradeLevelId: number) =>
     axiosClient.delete(`/schools/${schoolId}/grade-levels/${gradeLevelId}`),
+  
+  // Unassign manager user from school
+  unassignUser: (schoolId: number) =>
+    axiosClient.delete<{ message: string; data: School }>(`/schools/${schoolId}/user`),
 };

@@ -504,8 +504,7 @@ const StudentList = () => {
                                 <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
                                 <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}`)}><Eye className="ml-2 h-4 w-4" /> عرض الملف</DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onSelect={() => { if (canEnroll) openEnrollDialog(student); }}
-                                  disabled={!canEnroll}
+                                  onSelect={() => { openEnrollDialog(student)}}
                                 >
                                   <span title={canEnroll ? '' : 'لا يملك صلاحية التسجيل'} className="flex items-center">
                                     <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> تسجيل الطالب

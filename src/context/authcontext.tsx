@@ -12,6 +12,7 @@ interface AuthState {
   userName: string | null;
   isLoading: boolean;
   permissions?: string[] | null;
+  tokenExpiresAt?: string | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -22,12 +23,19 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const persistedUserJson = (typeof window !== 'undefined' && (localStorage.getItem('authUser') || sessionStorage.getItem('authUser'))) || null;
+  const persistedUser = persistedUserJson ? JSON.parse(persistedUserJson) : null;
+  const persistedToken = typeof window !== 'undefined' && (localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
+  const persistedExpiry = (typeof window !== 'undefined' && (localStorage.getItem('authTokenExpiresAt') || sessionStorage.getItem('authTokenExpiresAt'))) || null;
+
   const [state, setState] = useState<AuthState>({
-    isAuthenticated: null,
-    userRole: null,
-    userId: null,
-    userName: null,
+    isAuthenticated: persistedToken ? true : null,
+    userRole: persistedUser?.role ?? null,
+    userId: persistedUser?.id ? String(persistedUser.id) : null,
+    userName: persistedUser?.name ?? null,
     isLoading: true,
+    permissions: persistedUser?.permissions ?? [],
+    tokenExpiresAt: persistedExpiry,
   });
 
   const { enqueueSnackbar } = useSnackbar();
@@ -44,6 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         userName: null,
         isLoading: false,
         permissions: [],
+        tokenExpiresAt: null,
       });
       return;
     }
@@ -52,18 +61,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setState((prev)=>{
         return {...prev,isLoading:true}
       })
+      // Ensure Authorization header is set before verify
+      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       const response = await axiosClient.get('auth/verify',{
         signal
       });
       if (response.data.valid) {
         console.log('user is valid')
-        setState({
+        setState(prev => ({
+          ...prev,
           isAuthenticated: true,
           userRole: response.data.user.role,
           userId: response.data.user.id.toString(),
           userName: response.data.user.name,
           isLoading: false,
           permissions: response.data.user.permissions || [],
+          tokenExpiresAt: response.data.token_expires_at || prev.tokenExpiresAt || null,
+        }));
+        const userForStorage = {
+          id: response.data.user.id,
+          name: response.data.user.name,
+          role: response.data.user.role,
+          permissions: response.data.user.permissions || [],
+        };
+        if (localStorage.getItem('authToken')) {
+          localStorage.setItem('authUser', JSON.stringify(userForStorage));
+          if (response.data.token_expires_at) {
+            localStorage.setItem('authTokenExpiresAt', response.data.token_expires_at);
+          }
+        } else if (sessionStorage.getItem('authToken')) {
+          sessionStorage.setItem('authUser', JSON.stringify(userForStorage));
+          if (response.data.token_expires_at) {
+            sessionStorage.setItem('authTokenExpiresAt', response.data.token_expires_at);
+          }
+        }
+      } else {
+        // If token is present but invalid, clear it and mark unauthenticated
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        delete axiosClient.defaults.headers.common['Authorization'];
+        localStorage.removeItem('authUser');
+        sessionStorage.removeItem('authUser');
+        setState({
+          isAuthenticated: false,
+          userRole: null,
+          userId: null,
+          userName: null,
+          isLoading: false,
+          permissions: [],
         });
       }
     } catch (error) {
@@ -93,13 +138,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       storage.setItem('authToken', response.data.token);
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
 
-      setState({
+      setState(prev => ({
+        ...prev,
         isAuthenticated: true,
         userRole: response.data.user.role,
         userId: response.data.user.id,
         userName: response.data.user.name,
         isLoading: false,
-      });
+        tokenExpiresAt: response.data.token_expires_at || null,
+      }));
+
+      storage.setItem('authUser', JSON.stringify({
+        id: response.data.user.id,
+        name: response.data.user.name,
+        role: response.data.user.role,
+        permissions: response.data.user.permissions || [],
+      }));
+      if (response.data.token_expires_at) {
+        storage.setItem('authTokenExpiresAt', response.data.token_expires_at);
+      }
 
       enqueueSnackbar('تم تسجيل الدخول بنجاح', { variant: 'success' });
       return true; // Indicate success
@@ -113,6 +170,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('authToken');
     sessionStorage.removeItem('authToken');
     delete axiosClient.defaults.headers.common['Authorization'];
+    localStorage.removeItem('authUser');
+    sessionStorage.removeItem('authUser');
+    localStorage.removeItem('authTokenExpiresAt');
+    sessionStorage.removeItem('authTokenExpiresAt');
     
     setState({
       isAuthenticated: false,
@@ -121,6 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userName: null,
       isLoading: false,
       permissions: [],
+      tokenExpiresAt: null,
     });
 
     enqueueSnackbar('تم تسجيل الخروج بنجاح', { variant: 'success' });
@@ -131,6 +193,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     const authenticate = async () => {
       try {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (token) {
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
         await checkAuth(controller.signal);
       } catch (error) {
         console.error('Authentication error:', error);

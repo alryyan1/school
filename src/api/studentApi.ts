@@ -53,4 +53,7 @@ export const StudentApi = {
   // --- NEW: Accept Student ---
   accept: (id: number) => axiosClient.post<AcceptStudentResponse>(`/students/${id}/accept`),
 
+  // --- NEW: Search by ID ---
+  searchById: (id: number) => axiosClient.get<StudentResourceResponse>(`/students/search/${id}`),
+
 };

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+// import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -36,8 +36,7 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
 
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<number | ''>('');
   const [selectedGradeLevelId, setSelectedGradeLevelId] = useState<number | ''>('');
-  const [fees, setFees] = useState<number | string>('');
-  const [discount, setDiscount] = useState<number | string>(0);
+  // Fees and discount removed per request
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter academic years for wished school only
@@ -93,16 +92,9 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
     if (selectedAcademicYearId === '' && defaultYearId !== '') {
       setSelectedAcademicYearId(defaultYearId);
     }
-  }, [open, defaultYearId, selectedAcademicYearId]);
+  }, [open, defaultYearId, selectedAcademicYearId, academicYears, schoolYears, wishedSchoolId, loadingYears, loadingGrades]);
 
-  // When academic year changes, default fees to academic year's enrollment_fee
-  useEffect(() => {
-    if (!selectedAcademicYearId) return;
-    const ay = schoolYears.find(y => y.id === Number(selectedAcademicYearId));
-    if (ay && ay.enrollment_fee != null) {
-      setFees(ay.enrollment_fee);
-    }
-  }, [selectedAcademicYearId, schoolYears]);
+  // Removed fees auto-fill behavior
 
   const handleSubmit = async () => {
     if (!student?.id || !wishedSchoolId || !selectedAcademicYearId || !selectedGradeLevelId) {
@@ -119,8 +111,9 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
         classroom_id: null,
         status: 'active',
         school_id: Number(wishedSchoolId),
-        fees: Number(fees) || 0,
-        discount: Number(discount) || 0,
+        // Defaults to satisfy backend schema; inputs removed from UI
+        fees: 0,
+        discount: 0,
       });
       enqueueSnackbar('تم تسجيل الطالب بنجاح', { variant: 'success' });
       onSuccess();
@@ -190,29 +183,7 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="fees_input">الرسوم *</Label>
-            <Input
-              id="fees_input"
-              type="number"
-              value={fees === '' ? '' : String(fees)}
-              onChange={(e) => setFees(e.target.value)}
-              placeholder="مثال: 5000"
-              min={0}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="discount_input">الخصم</Label>
-            <Input
-              id="discount_input"
-              type="number"
-              value={discount === '' ? '' : String(discount)}
-              onChange={(e) => setDiscount(e.target.value)}
-              placeholder="مثال: 500"
-              min={0}
-            />
-          </div>
+          {/* Fees and discount inputs removed */}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>

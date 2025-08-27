@@ -13,6 +13,7 @@ type StudentState = {
 type StudentActions = {
   fetchStudents: () => Promise<void>;
   getStudentById: (id: number) => Promise<void>;
+  searchStudentById: (id: number) => Promise<Student | null>;
   createStudent: (student: Omit<Student, "id">) => Promise<void|Student>;
   updateStudent: (id: number, student: Partial<Student>) => Promise<void>;
   deleteStudent: (id: number) => Promise<void>;
@@ -49,6 +50,15 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
       set({ currentStudent: response.data.data, loading: false });
     } catch (error) {
       set({ error: "Failed to fetch student", loading: false });
+    }
+  },
+
+  searchStudentById: async (id: number) => {
+    try {
+      const response = await StudentApi.searchById(id);
+      return response.data.data;
+    } catch (error) {
+      return null;
     }
   },
 

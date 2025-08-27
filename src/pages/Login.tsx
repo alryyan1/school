@@ -153,26 +153,6 @@ const Login = () => {
           />
         </FormControl>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                color="primary"
-                size="small"
-              />
-            }
-            label="تذكرني"
-          />
-
-          <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
-            <Typography variant="body2" color="primary">
-              نسيت كلمة المرور؟
-            </Typography>
-          </Link>
-        </Box>
-
         <Button
           type="submit"
           fullWidth

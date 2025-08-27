@@ -298,7 +298,7 @@ const SchoolForm: React.FC = () => {
                                                 <SelectValue placeholder="اختر مستخدم..." />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">بدون مستخدم</SelectItem>
+                                                <SelectItem value=" ">بدون مستخدم</SelectItem>
                                                 {users.map((user) => (
                                                     <SelectItem key={user.id} value={user.id.toString()}>
                                                         {user.name} ({user.username})

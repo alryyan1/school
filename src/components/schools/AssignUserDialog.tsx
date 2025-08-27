@@ -19,8 +19,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { User, UserApi } from "@/api/userApi";
-import { School, SchoolApi } from "@/api/schoolApi";
+import { UserApi } from "@/api/userApi";
+import { SchoolApi } from "@/api/schoolApi";
+import type { User } from "@/types/user";
+import type { School } from "@/types/school";
 import { useSnackbar } from "notistack";
 import { Loader2, AlertCircle } from "lucide-react";
 
@@ -100,9 +102,7 @@ const AssignUserDialog: React.FC<AssignUserDialogProps> = ({
 
     setLoading(true);
     try {
-      await SchoolApi.update(school.id, {
-        user_id: null
-      });
+      await SchoolApi.unassignUser(school.id);
 
       enqueueSnackbar('تم إلغاء تعيين المستخدم من المدرسة بنجاح', { variant: 'success' });
       onUserAssigned();
@@ -116,7 +116,7 @@ const AssignUserDialog: React.FC<AssignUserDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} dir="rtl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>تعيين مستخدم للمدرسة</DialogTitle>
