@@ -1,31 +1,30 @@
-// src/stores/academicYearSubjectStore.ts
 import { create } from 'zustand';
-import { AcademicYearSubject, AcademicYearSubjectFormData } from '@/types/academicYearSubject';
-import { AcademicYearSubjectApi } from '@/api/academicYearSubjectApi';
+import { GradeLevelSubject, GradeLevelSubjectFormData } from '@/api/gradeLevelSubjectApi';
+import { GradeLevelSubjectApi } from '@/api/gradeLevelSubjectApi';
 
 type StoreState = {
-    assignments: AcademicYearSubject[]; // Assignments for the currently selected year/grade
+    assignments: GradeLevelSubject[]; // Assignments for the currently selected grade level
     loading: boolean;
     error: string | null;
 };
 
 type StoreActions = {
-    fetchAssignments: (academicYearId: number, gradeLevelId: number) => Promise<void>;
-    assignSubject: (data: AcademicYearSubjectFormData) => Promise<AcademicYearSubject | null>;
-    updateTeacherAssignment: (id: number, teacherId: number | null) => Promise<AcademicYearSubject | null>;
+    fetchAssignments: (gradeLevelId: number) => Promise<void>;
+    assignSubject: (data: GradeLevelSubjectFormData) => Promise<GradeLevelSubject | null>;
+    updateTeacherAssignment: (id: number, teacherId: number | null) => Promise<GradeLevelSubject | null>;
     unassignSubject: (id: number) => Promise<boolean>;
     clearAssignments: () => void;
 };
 
-export const useAcademicYearSubjectStore = create<StoreState & StoreActions>((set, get) => ({
+export const useGradeLevelSubjectStore = create<StoreState & StoreActions>((set, get) => ({
     assignments: [],
     loading: false,
     error: null,
 
-    fetchAssignments: async (academicYearId, gradeLevelId) => {
+    fetchAssignments: async (gradeLevelId) => {
         set({ loading: true, error: null, assignments: [] }); // Clear previous
         try {
-            const response = await AcademicYearSubjectApi.getAll(academicYearId, gradeLevelId);
+            const response = await GradeLevelSubjectApi.getAll(gradeLevelId);
             set({ assignments: response.data.data, loading: false });
         } catch (error: any) {
             const msg = error.response?.data?.message || 'فشل جلب تعيينات المواد';
@@ -36,7 +35,7 @@ export const useAcademicYearSubjectStore = create<StoreState & StoreActions>((se
     assignSubject: async (data) => {
         // No loading state change here, handled by caller/form
         try {
-            const response = await AcademicYearSubjectApi.create(data);
+            const response = await GradeLevelSubjectApi.create(data);
             const newAssignment = response.data.data;
             set((state) => ({ // Add to current list
                 assignments: [...state.assignments, newAssignment]
@@ -55,7 +54,7 @@ export const useAcademicYearSubjectStore = create<StoreState & StoreActions>((se
 
     updateTeacherAssignment: async (id, teacherId) => {
          try {
-             const response = await AcademicYearSubjectApi.update(id, { teacher_id: teacherId });
+             const response = await GradeLevelSubjectApi.update(id, { teacher_id: teacherId });
              const updatedAssignment = response.data.data;
              set((state) => ({
                  assignments: state.assignments.map((a) =>
@@ -73,7 +72,7 @@ export const useAcademicYearSubjectStore = create<StoreState & StoreActions>((se
 
      unassignSubject: async (id) => {
           try {
-              await AcademicYearSubjectApi.delete(id);
+              await GradeLevelSubjectApi.delete(id);
               set((state) => ({
                   assignments: state.assignments.filter((a) => a.id !== id),
               }));

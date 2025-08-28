@@ -14,7 +14,6 @@ import StudentSearch from '@/components/StudentSearch';
 import { useAuth } from '@/context/authcontext'; // Adjust path
 import { useSettingsStore } from '@/stores/settingsStore'; // Adjust path
 import { useSchoolStore } from '@/stores/schoolStore'; // Adjust path
-import { useAcademicYearStore } from '@/stores/academicYearStore'; // Adjust path
 
 interface NavbarAreaProps {
     onMobileMenuToggle: () => void; // For mobile sidebar
@@ -24,9 +23,8 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
     const { userName, userRole, permissions, logout } = useAuth();
     const navigate = useNavigate();
 
-    const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
+    const { activeSchoolId, activeAcademicYear } = useSettingsStore();
     const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
-    const { academicYears, fetchAcademicYears, loading: yearsLoading } = useAcademicYearStore();
 
     // Show student search on all pages
     const showStudentSearch = true;
@@ -35,19 +33,7 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
         if (activeSchoolId && schools.length === 0) fetchSchools();
     }, [activeSchoolId, schools.length, fetchSchools]);
 
-    useEffect(() => {
-        // Fetch years only if an active school is set, and filter for that school
-        if (activeSchoolId && activeAcademicYearId && academicYears.length === 0) {
-            fetchAcademicYears(activeSchoolId); // Assuming fetchAcademicYears can take schoolId
-        } else if (activeSchoolId && academicYears.length === 0) {
-            fetchAcademicYears(activeSchoolId); // Fetch for the active school
-        }
-    }, [activeSchoolId, activeAcademicYearId, academicYears.length, fetchAcademicYears]);
-
-
     const activeSchool = schools.find(s => s.id === activeSchoolId);
-    // Ensure activeYear is also filtered by the activeSchoolId
-    const activeYear = academicYears.find(ay => ay.id === activeAcademicYearId && ay.school_id === activeSchoolId);
 
     const handleLogout = () => {
         logout();
@@ -72,22 +58,22 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
             {/* Active School/Year Display */}
             <div className="flex items-center gap-2 text-sm">
                 {activeSchoolId && (
-                    <Link to="/settings/general" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
                         <School className="h-4 w-4" />
                         <span className="font-medium">
                             {schoolsLoading ? <Skeleton className="h-4 w-20" /> : (activeSchool?.name || `مدرسة (${activeSchoolId})`)}
                         </span>
-                    </Link>
+                    </span>
                 )}
-                {activeSchoolId && activeYear && (
+                {activeAcademicYear && (
                     <>
                         <span className="text-muted-foreground">/</span>
-                        <Link to="/settings/general" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
                             <CalendarDays className="h-4 w-4" />
                             <span className="font-medium">
-                                {yearsLoading ? <Skeleton className="h-4 w-20" /> : (activeYear?.name || `عام (${activeAcademicYearId})`)}
+                                {activeAcademicYear}
                             </span>
-                        </Link>
+                        </span>
                     </>
                 )}
             </div>

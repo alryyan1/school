@@ -14,43 +14,45 @@ type EnrollableResponse = { data: EnrollableStudent[] };
 export const StudentAcademicYearApi = {
   // Get enrollments for a specific year and grade/classroom
   getAll: (filters: {
-    academic_year_id: number;
+    academic_year: string; // Changed from academic_year_id to string
     grade_level_id?: number;
     school_id?: number;
     classroom_id?: number;
   }) =>
-    axiosClient.get<CollectionResponse>("/student-enrollments", {
+    axiosClient.get<CollectionResponse>("/enrollments", { // Changed endpoint
       params: filters,
     }),
 
   // Get students not enrolled in a specific year
-  getEnrollableStudents: (academicYearId: number, schoolId: number) =>
+  getEnrollableStudents: (academicYear: string, schoolId: number) => // Changed parameter
     axiosClient.get<EnrollableResponse>("/enrollable-students", {
-      params: { academic_year_id: academicYearId, school_id: schoolId },
+      params: { academic_year: academicYear, school_id: schoolId }, // Changed parameter
     }),
 
   // Enroll a student
   create: (data: StudentEnrollmentFormData) =>
-    axiosClient.post<ResourceResponse>("/student-enrollments", data),
+    axiosClient.post<ResourceResponse>("/enrollments", data), // Changed endpoint
 
   // Update classroom/status
   update: (id: number, data: StudentEnrollmentUpdateFormData) =>
-    axiosClient.put<ResourceResponse>(`/student-enrollments/${id}`, data),
+    axiosClient.put<ResourceResponse>(`/enrollments/${id}`, data), // Changed endpoint
 
   // Unenroll a student
-  delete: (id: number) => axiosClient.delete(`/student-enrollments/${id}`),
+  delete: (id: number) => axiosClient.delete(`/enrollments/${id}`), // Changed endpoint
+  
   // --- NEW SEARCH FUNCTION ---
   search: (searchTerm: string) =>
-    axiosClient.get<CollectionResponse>("search", {
+    axiosClient.get<CollectionResponse>("/enrollments/search", { // Changed endpoint
       params: { term: searchTerm },
     }),
 
-    getAllStudentAcademicYear: ()=>{
-      return  axiosClient.get<StudentAcademicYear[]>('getAllStudentAcademicYear')
-    },
-    getUnassignedForGrade: (filters: { school_id: number; academic_year_id: number; grade_level_id: number }) =>
-      axiosClient.get<CollectionResponse>('/unassigned-students-for-grade', { params: filters }),
+  getAllStudentAcademicYear: () => {
+    return axiosClient.get<StudentAcademicYear[]>('/enrollments') // Changed endpoint
+  },
+  
+  getUnassignedForGrade: (filters: { school_id: number; academic_year: string; grade_level_id: number }) => // Changed parameter
+    axiosClient.get<CollectionResponse>('/unassigned-students-for-grade', { params: filters }),
 
-  assignToClassroom: (studentAcademicYearId: number, classroomId: number | null) =>
-      axiosClient.put<ResourceResponse>(`/student-enrollments/${studentAcademicYearId}/assign-classroom`, { classroom_id: classroomId }),
+  assignToClassroom: (enrollmentId: number, classroomId: number | null) => // Changed parameter name
+    axiosClient.put<ResourceResponse>(`/enrollments/${enrollmentId}/assign-classroom`, { classroom_id: classroomId }), // Changed endpoint
 };

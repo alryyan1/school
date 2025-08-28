@@ -1,27 +1,51 @@
 // src/pages/students/StudentExamResultsPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { motion } from 'framer-motion';
-// shadcn/ui & lucide imports
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
-import { Loader2, Save, ArrowRight } from 'lucide-react';
-// Stores & Types
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    CardFooter,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import {
+    ArrowLeft,
+    Save,
+    Loader2,
+    AlertCircle,
+    CheckCircle,
+    BookOpen,
+    GraduationCap,
+    Calendar,
+    User,
+    ArrowRight,
+} from 'lucide-react';
 import { useStudentStore } from '@/stores/studentStore';
 import { useExamStore } from '@/stores/examStore';
 import { useSubjectStore } from '@/stores/subjectStore';
 import { useExamScheduleStore } from '@/stores/examScheduleStore';
 import { useExamResultStore } from '@/stores/examResultStore';
-import { useAcademicYearStore } from '@/stores/academicYearStore'; // To get student's current year enrollment
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore'; // For specific enrollment data
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Student } from '@/types/student';
@@ -37,7 +61,8 @@ import { ExamScheduleApi } from '@/api/examScheduleApi';
 import { StudentAcademicYearApi } from '@/api/studentAcademicYearApi';
 
 // Extended form data for student page with additional display fields
-type StudentExamResultFormData = ExamResultFormData & {
+type StudentExamResultFormData = Omit<ExamResultFormData, 'student_academic_year_id'> & {
+    student_id: number;
     exam_schedule_id?: number;
     subject_id_display?: number;
     subject_name_display?: string;
@@ -53,7 +78,7 @@ const StudentExamResultsPage: React.FC = () => {
     const studentId = Number(studentIdParam);
     const { enqueueSnackbar } = useSnackbar();
 
-    const { activeAcademicYearId } = useSettingsStore.getState();
+    const { activeAcademicYear } = useSettingsStore.getState();
     const {enrollments: studentEnrollments, fetchEnrollments: fetchStudentEnrollments} = useStudentEnrollmentStore();
 
     // --- Animation variants ---
@@ -90,11 +115,11 @@ const StudentExamResultsPage: React.FC = () => {
     useEffect(() => {
         if (studentId) {
             fetchStudentDetails(studentId);
-            fetchStudentEnrollments({academic_year_id: activeAcademicYearId,school_id: activeSchoolId});   
+            fetchStudentEnrollments({academic_year: activeAcademicYear,school_id: activeSchoolId});   
             // Fetch all enrollments for this student to find the active one
-            if (activeAcademicYearId) {
+            if (activeAcademicYear) {
                 StudentAcademicYearApi.getAll({
-                    academic_year_id: activeAcademicYearId,
+                    academic_year: activeAcademicYear,
                             school_id:activeSchoolId
                             
                 })
@@ -113,7 +138,7 @@ const StudentExamResultsPage: React.FC = () => {
                 .catch(() => setPageError("فشل تحميل بيانات تسجيل الطالب."));
             }
         }
-    }, [studentId, fetchStudentDetails, activeAcademicYearId]);
+    }, [studentId, fetchStudentDetails, activeAcademicYear]);
 
     // 2. Fetch Relevant Exams for the Student (based on active enrollment's school/year)
     useEffect(() => {
@@ -127,14 +152,14 @@ const StudentExamResultsPage: React.FC = () => {
     // 3. Fetch Subjects and Exam Schedules when an Exam and Enrollment (with grade) are selected
     useEffect(() => {
         const loadSubjectAndScheduleData = async () => {
-            if (selectedExamId && currentStudentEnrollment?.grade_level_id && currentStudentEnrollment?.school_id && activeAcademicYearId) {
+            if (selectedExamId && currentStudentEnrollment?.grade_level_id && currentStudentEnrollment?.school_id && activeAcademicYear) {
                 setLoadingGradeSubjects(true);
                 setSchedulesLoading(true);
                 try {
                      // Fetch subjects for the student's current grade, school, and active year
                     const subjectsResponse = await SubjectApi.getSubjectsForGradeLevel({
                         school_id: Number(currentStudentEnrollment.school_id),
-                        academic_year_id: activeAcademicYearId ? Number(activeAcademicYearId) : 0,
+                        academic_year: activeAcademicYear,
                         grade_level_id: Number(currentStudentEnrollment.grade_level_id)
                     });
                     setSubjectsForGrade(subjectsResponse.data.data || []);
@@ -177,10 +202,10 @@ const StudentExamResultsPage: React.FC = () => {
             }
         };
         loadSubjectAndScheduleData();
-    }, [selectedExamId, currentStudentEnrollment, activeAcademicYearId, fetchResultsForSchedule, enqueueSnackbar]);
+    }, [selectedExamId, currentStudentEnrollment, activeAcademicYear, fetchResultsForSchedule, enqueueSnackbar]);
     console.log("Selected Exam ID:", selectedExamId);
     console.log("Current Student Enrollment:", currentStudentEnrollment);
-    console.log("Active Academic Year ID:", activeAcademicYearId);
+    console.log("Active Academic Year ID:", activeAcademicYear);
     console.log("Subjects for Grade:", subjectsForGrade);
     console.log("Available Schedules for Exam/Grade:", scheduleMap); // From useExamScheduleStore
     console.log("Existing Results for selected Schedules:", resultsForSchedule); // From useExamResultStore
@@ -196,11 +221,11 @@ const StudentExamResultsPage: React.FC = () => {
             const schedule = scheduleMap[subject.id]; // Get schedule for this subject
             const existingResult = schedule && resultsForSchedule && Array.isArray(resultsForSchedule) ? 
                 resultsForSchedule.find(
-                    res => res.exam_schedule_id === schedule.id && res.student_academic_year_id === currentStudentEnrollment?.id
+                    res => res.exam_schedule_id === schedule.id && res.student_id === currentStudentEnrollment?.id
                 ) : null;
 
             return {
-                student_academic_year_id: Number(currentStudentEnrollment!.id), // Ensure it's a number
+                student_id: Number(currentStudentEnrollment!.id), // Ensure it's a number
                 exam_schedule_id: schedule?.id || 0,
                 subject_id_display: subject.id,
                 subject_name_display: subject.name,
@@ -224,7 +249,7 @@ const StudentExamResultsPage: React.FC = () => {
             .filter(r => r.exam_schedule_id !== 0) // Only submit if there's a valid schedule
             .filter(r => (r.marks_obtained !== '' && r.marks_obtained !== null) || r.is_absent === true)
             .map(r => ({
-                student_academic_year_id: r.student_academic_year_id,
+                student_id: r.student_id,
                 exam_schedule_id: r.exam_schedule_id, // Ensure this is the actual schedule ID
                 marks_obtained: r.is_absent ? '' : r.marks_obtained,
                 is_absent: r.is_absent,
@@ -296,7 +321,7 @@ const StudentExamResultsPage: React.FC = () => {
                         </div>
                         <CardDescription>
                             المدرسة: {currentStudentEnrollment?.school?.name ?? '-'} |
-                            العام: {currentStudentEnrollment?.academic_year?.name ?? activeAcademicYearId ?? '-'} |
+                            العام: {currentStudentEnrollment?.academic_year?.name ?? activeAcademicYear ?? '-'} |
                             الصف: {currentStudentEnrollment?.grade_level?.name ?? '-'}
                         </CardDescription>
                     </CardHeader>

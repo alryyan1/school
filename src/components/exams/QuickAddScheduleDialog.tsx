@@ -146,7 +146,7 @@ const QuickAddScheduleDialog: React.FC<QuickAddScheduleDialogProps> = ({ open, o
                                 <AlertTitle>تنبيه هام</AlertTitle>
                                 <AlertDescription>
                                     لم يتم تحديد عام دراسي نشط في الإعدادات العامة. الإضافة السريعة تعتمد على العام النشط لتحديد المناهج.
-                                    <Button variant="link" size="sm" asChild className="p-0 h-auto mr-1"><Link to="/settings/general">الذهاب للإعدادات</Link></Button>
+                                    {/* General settings removed */}
                                 </AlertDescription>
                             </Alert>
                         )}

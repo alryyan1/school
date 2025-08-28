@@ -3,7 +3,7 @@ export type WarningSeverity = 'low' | 'medium' | 'high';
 
 export type StudentWarning = {
   id: number;
-  student_academic_year_id: number;
+  student_id: number; // Changed from student_academic_year_id
   issued_by_user_id: number | null;
   severity: WarningSeverity;
   reason: string;

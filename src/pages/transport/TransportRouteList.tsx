@@ -38,11 +38,9 @@ import {
 } from "@mui/icons-material";
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path if needed
 import { useTransportRouteStore } from "@/stores/transportRouteStore"; // Adjust path if needed
-import { useAcademicYearStore } from "@/stores/academicYearStore"; // Adjust path if needed
 import TransportRouteFormDialog from "@/components/transport/TransportRouteFormDialog"; // Adjust path if needed
 import AssignStudentDialog from "@/components/transport/AssignStudentDialog"; // Adjust path if needed
 import { TransportRoute } from "@/types/transportRoute"; // Adjust path if needed
-import { AcademicYear } from "@/types/academicYear"; // Adjust path if needed
 import { useSnackbar } from "notistack";
 // Ensure you have a utility for formatting currency or remove its usage
 // import { formatCurrency } from '@/utils/formatters';
@@ -60,9 +58,7 @@ const TransportRouteList: React.FC = () => {
 
   // --- Local State ---
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">("");
-  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<
-    number | ""
-  >("");
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("2024/2025");
   const [routeFormOpen, setRouteFormOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<TransportRoute | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -73,9 +69,17 @@ const TransportRouteList: React.FC = () => {
     null
   );
 
+  // --- Available academic years
+  const availableAcademicYears = [
+    "2024/2025",
+    "2023/2024", 
+    "2022/2023",
+    "2021/2022",
+    "2020/2021"
+  ];
+
   // --- Data from Stores ---
   const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
-  const { academicYears, fetchAcademicYears } = useAcademicYearStore();
   // Ensure useTransportRouteStore exists and exports these items
   const { routes, loading, error, fetchRoutes, deleteRoute, clearRoutes } =
     useTransportRouteStore();
@@ -84,8 +88,7 @@ const TransportRouteList: React.FC = () => {
   // Fetch initial dropdown data
   useEffect(() => {
     fetchSchools();
-    fetchAcademicYears(); // Fetch all years
-  }, [fetchSchools, fetchAcademicYears]);
+  }, [fetchSchools]);
 
   // Fetch routes when school changes
   useEffect(() => {
@@ -99,10 +102,10 @@ const TransportRouteList: React.FC = () => {
   // --- Handlers ---
   const handleSchoolChange = (event: SelectChangeEvent<number>) => {
     setSelectedSchoolId(event.target.value as number | "");
-    setSelectedAcademicYearId(""); // Reset year when school changes
+    setSelectedAcademicYear("2024/2025"); // Reset year when school changes
   };
-  const handleYearChange = (event: SelectChangeEvent<number>) => {
-    setSelectedAcademicYearId(event.target.value as number | "");
+  const handleYearChange = (event: SelectChangeEvent<string>) => {
+    setSelectedAcademicYear(event.target.value as string);
   };
 
   // Route Form Dialog
@@ -122,7 +125,7 @@ const TransportRouteList: React.FC = () => {
 
   // Assign Students Dialog
   const handleOpenAssignDialog = (route: TransportRoute) => {
-    if (!selectedAcademicYearId) {
+    if (!selectedAcademicYear) {
       enqueueSnackbar("الرجاء تحديد العام الدراسي أولاً.", {
         variant: "warning",
       });
@@ -165,12 +168,12 @@ const TransportRouteList: React.FC = () => {
   // Filter academic years based on selected school
   const filteredAcademicYears = React.useMemo(() => {
     if (!selectedSchoolId) return [];
-    return academicYears.filter((ay) => ay.school_id === selectedSchoolId);
-  }, [academicYears, selectedSchoolId]);
+    return availableAcademicYears.filter((ay) => ay.includes(selectedSchoolId.toString()));
+  }, [availableAcademicYears, selectedSchoolId]);
   // --- Find the selected AcademicYear object ---
   const selectedAcademicYearObj = useMemo(() => {
-    return academicYears.find((ay) => ay.id === selectedAcademicYearId) || null;
-  }, [academicYears, selectedAcademicYearId]);
+    return availableAcademicYears.find((ay) => ay === selectedAcademicYear) || null;
+  }, [availableAcademicYears, selectedAcademicYear]);
 
   // --- Render ---
   return (
@@ -229,15 +232,15 @@ const TransportRouteList: React.FC = () => {
               <Select
                 labelId="trans-year-filter-label"
                 label="العام الدراسي *"
-                value={selectedAcademicYearId}
+                value={selectedAcademicYear}
                 onChange={handleYearChange}
               >
                 <MenuItem value="" disabled>
                   <em>اختر عاماً...</em>
                 </MenuItem>
                 {filteredAcademicYears.map((ay) => (
-                  <MenuItem key={ay.id} value={ay.id}>
-                    {ay.name}
+                  <MenuItem key={ay} value={ay}>
+                    {ay}
                   </MenuItem>
                 ))}
               </Select>
@@ -346,7 +349,7 @@ const TransportRouteList: React.FC = () => {
                                 size="small"
                                 color="secondary"
                                 onClick={() => handleOpenAssignDialog(route)}
-                                disabled={!selectedAcademicYearId}
+                                disabled={!selectedAcademicYear}
                               >
                                 <AssignStudentsIcon fontSize="inherit" />
                               </IconButton>

@@ -19,7 +19,6 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday"; // For Year
 import { useAuth } from "@/context/authcontext"; // Adjust path
 import { useSettingsStore } from "@/stores/settingsStore"; // Adjust path
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
-import { useAcademicYearStore } from "@/stores/academicYearStore"; // Adjust path
 
 interface NavbarProps {
   userRole?: string;
@@ -31,30 +30,17 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // --- Get Active Settings ---
-  const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
+  const { activeSchoolId, activeAcademicYear } = useSettingsStore();
 
   // --- Get Names from Stores ---
   const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
-  const {
-    academicYears,
-    fetchAcademicYears,
-    loading: yearsLoading,
-  } = useAcademicYearStore();
 
-  // Fetch schools and years if IDs are set but lists are empty
+  // Fetch schools if ID is set but list is empty
   useEffect(() => {
     if (activeSchoolId && schools.length === 0) fetchSchools();
   }, [activeSchoolId, schools.length, fetchSchools]);
 
-  useEffect(() => {
-    if (activeAcademicYearId && academicYears.length === 0)
-      fetchAcademicYears();
-  }, [activeAcademicYearId, academicYears.length, fetchAcademicYears]);
-
   const activeSchool = schools.find((s) => s.id === activeSchoolId);
-  const activeYear = academicYears.find(
-    (ay) => ay.id === activeAcademicYearId && ay.school_id === activeSchoolId
-  );
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) =>
     setAnchorEl(event.currentTarget);
@@ -92,32 +78,22 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
               size="small"
               variant="outlined"
               sx={{ cursor: "pointer" }}
-              onClick={() => navigate("/settings/general")} // Link to general settings
+              onClick={() => {}} // Disabled link: general settings removed
             />
           </Tooltip>
         )}
-        {activeYear &&
-          activeSchoolId && ( // Show year only if school is selected
-            <Tooltip
-              title="العام الدراسي النشط حالياً"
-              placement="bottom-start"
-            >
-              <Chip
-                icon={<CalendarTodayIcon fontSize="small" />}
-                label={
-                  yearsLoading ? (
-                    <Skeleton width={60} height={20} />
-                  ) : (
-                    activeYear?.name || `عام (${activeAcademicYearId})`
-                  )
-                }
-                size="small"
-                variant="outlined"
-                sx={{ cursor: "pointer" }}
-                onClick={() => navigate("/settings/general")} // Link to general settings
-              />
-            </Tooltip>
-          )}
+        {activeAcademicYear && (
+          <Tooltip title="العام الدراسي النشط حالياً" placement="bottom-start">
+            <Chip
+              icon={<CalendarTodayIcon fontSize="small" />}
+              label={activeAcademicYear}
+              size="small"
+              variant="outlined"
+              sx={{ cursor: "pointer" }}
+              onClick={() => {}} // Disabled link: general settings removed
+            />
+          </Tooltip>
+        )}
       </Stack>
 
       {/* Spacer to push user menu to the right */}

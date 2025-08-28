@@ -36,8 +36,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
-import { useAcademicYearStore } from "@/stores/academicYearStore"; // Adjust path
-// import { useGradeLevelStore } from "@/stores/gradeLevelStore"; // Adjust path
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
 import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore"; // Adjust path
 import EnrollmentFormDialog from "@/components/enrollments/EnrollmentFormDialog"; // Adjust path
@@ -88,40 +86,39 @@ const StudentEnrollmentManager: React.FC = () => {
   const [statementDialogOpen, setStatementDialogOpen] = useState(false);
   const [selectedEnrollmentForStatement, setSelectedEnrollmentForStatement] =
     useState<StudentAcademicYear | null>(null);
-  // const { gradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Use global list again for potential context display
 
   // --- NEW Search State ---
   const [searchTerm, setSearchTerm] = useState("");
-  const { activeAcademicYearId, activeSchoolId } = useSettingsStore.getState();
-  console.log(activeAcademicYearId, "activeAcademicYearId");
+  const { activeAcademicYear, activeSchoolId } = useSettingsStore.getState(); // Changed from activeAcademicYearId
+  console.log(activeAcademicYear, "activeAcademicYear");
   const [currentEnrollment, setCurrentEnrollment] =
     useState<StudentAcademicYear | null>(null); // For Update/Delete
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
     activeSchoolId ?? ""
   );
-  const [selectedYearId, setSelectedYearId] = useState<number | "">(
-    activeAcademicYearId
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(
+    activeAcademicYear ?? "2024/2025" // Default academic year as string
   );
-  console.log(selectedYearId, "selectedYearId");
+  console.log(selectedAcademicYear, "selectedAcademicYear");
+  
   // State for the list of grade levels available FOR THE SELECTED SCHOOL
   const [availableGradeLevels, setAvailableGradeLevels] = useState<
     GradeLevel[]
   >([]);
   const [loadingGradeLevels, setLoadingGradeLevels] = useState<boolean>(false); // Loading state for school-specific grades
+  
   // --- Data from Stores ---
   const {
     schools,
     fetchSchools: fetchSchoolList,
     loading: schoolsLoading,
   } = useSchoolStore();
-  const { academicYears, fetchAcademicYears } = useAcademicYearStore();
-  // const { gradeLevels, fetchGradeLevels } = useGradeLevelStore();
+  
   const {
     enrollments,
     loading,
     error,
     fetchEnrollments,
-    // deleteEnrollment,
     clearEnrollments,
     searchEnrollments,
     isSearchResult,
@@ -132,9 +129,8 @@ const StudentEnrollmentManager: React.FC = () => {
   // Fetch initial dropdown data on mount
   useEffect(() => {
     fetchSchoolList();
-    fetchAcademicYears(); // Fetch all initially
-    // fetchGradeLevels();
-  }, [fetchSchoolList, fetchAcademicYears]);
+  }, [fetchSchoolList]);
+  
   // Fetch Grade Levels SPECIFIC TO THE SELECTED SCHOOL
   const fetchSchoolGrades = useCallback(
     async (schoolId: number) => {
@@ -153,47 +149,45 @@ const StudentEnrollmentManager: React.FC = () => {
       }
     },
     [enqueueSnackbar]
-  ); // Include dependencies for useCallback if any
+  );
+  
   // Fetch enrollments when primary filters (School, Year) change
-  // Also fetches when optional Grade filter changes
-  // Fetch enrollments when School & Year change, Fetch Grades when School changes
   useEffect(() => {
     // If a search is active, don't fetch based on filters
     if (isSearchResult) return;
 
-    if (selectedSchoolId && selectedYearId) {
+    if (selectedSchoolId && selectedAcademicYear) {
       fetchSchoolGrades(selectedSchoolId);
       fetchEnrollments({
         school_id: selectedSchoolId,
-        academic_year_id: selectedYearId,
+        academic_year: selectedAcademicYear, // Changed from academic_year_id
         grade_level_id: selectedGradeId || undefined,
       });
     } else {
       clearEnrollments();
     }
-    // Note: We removed fetchSchoolGrades logic as it's less relevant now
-    // If needed for dialogs, fetch there based on context
   }, [
     selectedSchoolId,
-    selectedYearId,
+    selectedAcademicYear,
     selectedGradeId,
     fetchEnrollments,
     clearEnrollments,
     isSearchResult,
-  ]); // <-- Add isSearchResult
+  ]);
+
   // --- Filtered/Memoized Data ---
 
-  console.log(academicYears, "academic years");
+  console.log(activeAcademicYear, "activeAcademicYear");
   // Filter Academic Years based on selected School
   const filteredAcademicYears = useMemo(() => {
     if (!selectedSchoolId) return [];
-    return academicYears.filter((ay) => ay.school_id === selectedSchoolId);
-  }, [academicYears, selectedSchoolId]);
+    return [activeAcademicYear]; // Assuming activeAcademicYear is the only year for a school
+  }, [activeAcademicYear, selectedSchoolId]);
   console.log(filteredAcademicYears, "filteredAcademicYears");
   // Get the selected objects (needed for the Enroll Dialog)
   const selectedAcademicYearObj = useMemo(() => {
-    return academicYears.find((ay) => ay.id === selectedYearId) || null;
-  }, [academicYears, selectedYearId]);
+    return { id: activeAcademicYear, name: activeAcademicYear };
+  }, [activeAcademicYear]);
 
   const selectedGradeLevelObj = useMemo(() => {
     return availableGradeLevels.find((gl) => gl.id === selectedGradeId) || null;
@@ -203,20 +197,17 @@ const StudentEnrollmentManager: React.FC = () => {
   const handleSchoolFilterChange = (event: SelectChangeEvent<number>) => {
     const newSchoolId = event.target.value as number | "";
     setSelectedSchoolId(newSchoolId);
-    setSelectedYearId(""); // Reset year
+    setSelectedAcademicYear("2024/2025"); // Reset year to default
     setSelectedGradeId(""); // Reset grade
-    // Data fetching triggered by useEffect based on newSchoolId
   };
 
-  const handleYearFilterChange = (event: SelectChangeEvent<number>) => {
-    setSelectedYearId(event.target.value as number | "");
+  const handleYearFilterChange = (event: SelectChangeEvent<string>) => { // Changed to string
+    setSelectedAcademicYear(event.target.value as string);
     setSelectedGradeId(""); // Reset grade filter when year changes
-    // Enrollments will refetch via useEffect dependency change
   };
 
   const handleGradeFilterChange = (event: SelectChangeEvent<number>) => {
     setSelectedGradeId(event.target.value as number | "");
-    // Enrollments will refetch via useEffect dependency change
   };
 
   // Dialog Open/Close
@@ -231,6 +222,7 @@ const StudentEnrollmentManager: React.FC = () => {
     setUpdateFormOpen(false);
     setCurrentEnrollment(null);
   };
+  
   // --- NEW Search Handlers ---
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -239,39 +231,43 @@ const StudentEnrollmentManager: React.FC = () => {
   const executeSearch = () => {
     searchEnrollments(searchTerm); // Call store action
   };
+  
   const clearSearch = () => {
     setSearchTerm("");
     // Clear results and fetch based on current filters
     clearEnrollments();
-    if (selectedSchoolId && selectedYearId) {
+    if (selectedSchoolId && selectedAcademicYear) {
       fetchEnrollments({
         school_id: selectedSchoolId,
-        academic_year_id: selectedYearId,
+        academic_year: selectedAcademicYear, // Changed from academic_year_id
         grade_level_id: selectedGradeId || undefined,
       });
     }
   };
+  
   const handleOpenStatementDialog = (enrollment: StudentAcademicYear) => {
     setSelectedEnrollmentForStatement(enrollment);
     setStatementDialogOpen(true);
   };
+  
   const handleCloseStatementDialog = (refetch = false) => {
-    // Accept refetch flag
     setStatementDialogOpen(false);
     setSelectedEnrollmentForStatement(null);
     // Refetch enrollments if installments were potentially changed indirectly
-    if (refetch && selectedSchoolId && selectedYearId) {
+    if (refetch && selectedSchoolId && selectedAcademicYear) {
       fetchEnrollments({
         school_id: selectedSchoolId,
-        academic_year_id: selectedYearId,
+        academic_year: selectedAcademicYear, // Changed from academic_year_id
         grade_level_id: selectedGradeId || undefined,
       });
     }
   };
+  
   const handleOpenDeleteDialog = (enrollment: StudentAcademicYear) => {
     setCurrentEnrollment(enrollment);
     setDeleteDialogOpen(true);
   };
+  
   const handleCloseDeleteDialog = () => {
     setCurrentEnrollment(null);
     setDeleteDialogOpen(false);
@@ -311,7 +307,7 @@ const StudentEnrollmentManager: React.FC = () => {
     setPaymentListOpen(false);
     setSelectedEnrollmentForPayments(null);
   };
-  console.log(activeAcademicYearId, "activeAcademicYearId");
+  console.log(activeAcademicYear, "activeAcademicYear");
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }} dir="rtl">
       {/* Header & Filters Section */}
@@ -407,24 +403,22 @@ const StudentEnrollmentManager: React.FC = () => {
                 required
                 labelId="enroll-ay-select-label"
                 label="العام الدراسي *"
-                value={selectedYearId}
+                value={selectedAcademicYear}
                 onChange={handleYearFilterChange}
               >
                 <MenuItem value="" disabled>
                   <em>اختر عاماً...</em>
                 </MenuItem>
-                {filteredAcademicYears.map((ay) => (
-                  <MenuItem key={ay.id} value={ay.id}>
-                    {ay.name}
-                  </MenuItem>
-                ))}
+                <MenuItem value="2024/2025">2024/2025</MenuItem>
+                <MenuItem value="2023/2024">2023/2024</MenuItem>
+                <MenuItem value="2022/2023">2022/2023</MenuItem>
               </Select>
             </FormControl>
             {/* Grade Level Filter (Uses school-specific grades) */}
             <FormControl
               sx={{ minWidth: 180 }}
               size="small"
-              disabled={!selectedYearId || loadingGradeLevels}
+              disabled={!selectedAcademicYear || loadingGradeLevels}
             >
               <InputLabel id="enroll-gl-select-label">
                 المرحلة الدراسية
@@ -460,12 +454,12 @@ const StudentEnrollmentManager: React.FC = () => {
               onClick={handleOpenEnrollForm}
               disabled={
                 !selectedSchoolId ||
-                !selectedYearId ||
+                !selectedAcademicYear ||
                 !selectedGradeId ||
                 loadingGradeLevels
               } // Also disable if grades loading
               title={
-                !selectedSchoolId || !selectedYearId || !selectedGradeId
+                !selectedSchoolId || !selectedAcademicYear || !selectedGradeId
                   ? "الرجاء تحديد المدرسة والعام والمرحلة للإضافة"
                   : "تسجيل طالب جديد لهذه المجموعة"
               }
@@ -498,7 +492,7 @@ const StudentEnrollmentManager: React.FC = () => {
       )}
 
       {/* Enrollments Table */}
-      {!loading && !error && selectedYearId && selectedSchoolId && (
+      {!loading && !error && selectedAcademicYear && selectedSchoolId && (
         <Paper elevation={2}>
           <TableContainer>
             <Table
@@ -606,10 +600,10 @@ const StudentEnrollmentManager: React.FC = () => {
           onOpenChange={handleCloseEnrollForm}
           onSuccess={() => {
             // Refetch enrollments after successful enrollment
-            if (selectedSchoolId && selectedYearId) {
+            if (selectedSchoolId && selectedAcademicYear) {
               fetchEnrollments({
                 school_id: selectedSchoolId,
-                academic_year_id: selectedYearId,
+                academic_year: selectedAcademicYear, // Changed from academic_year_id
                 grade_level_id: selectedGradeId || undefined,
               });
             }
@@ -625,10 +619,10 @@ const StudentEnrollmentManager: React.FC = () => {
         onOpenChange={handleCloseUpdateForm}
         onSuccess={() => {
           // Refetch enrollments after successful update
-          if (selectedSchoolId && selectedYearId) {
+          if (selectedSchoolId && selectedAcademicYear) {
             fetchEnrollments({
               school_id: selectedSchoolId,
-              academic_year_id: selectedYearId,
+              academic_year: selectedAcademicYear, // Changed from academic_year_id
               grade_level_id: selectedGradeId || undefined,
             });
           }

@@ -1,5 +1,5 @@
 // src/components/settings/ClassroomStudentAssigner.tsx
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   DragDropContext,
@@ -41,7 +41,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useSchoolStore } from "@/stores/schoolStore";
-import { useAcademicYearStore } from "@/stores/academicYearStore";
 import { useClassroomStore } from "@/stores/classroomStore";
 import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -73,21 +72,16 @@ const ClassroomStudentAssigner: React.FC = () => {
   const navigate = useNavigate();
   const {
     activeSchoolId: defaultSchoolId,
-    activeAcademicYearId: defaultYearId,
+    activeAcademicYear: defaultYear,
   } = useSettingsStore.getState();
 
   // --- Filters State ---
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
     defaultSchoolId ?? ""
   );
-  const [selectedYearId, setSelectedYearId] = useState<number | "">(() => {
-    const initialAcademicYears = useAcademicYearStore.getState().academicYears;
-    return initialAcademicYears.find(
-      (y) => y.id === defaultYearId && y.school_id === defaultSchoolId
-    )
-      ? defaultYearId
-      : "";
-  });
+  const [selectedYear, setSelectedYear] = useState<string>(
+    defaultYear ?? "2024/2025"
+  );
   const [selectedGradeId, setSelectedGradeId] = useState<number | "">("");
 
   // --- Data for Dropdowns ---
@@ -108,10 +102,16 @@ const ClassroomStudentAssigner: React.FC = () => {
 
   // --- Store Data & Actions ---
   const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
-  const { academicYears, fetchAcademicYears } = useAcademicYearStore();
-  const { activeAcademicYearId } = useSettingsStore();
-  console.log(activeAcademicYearId,'activeAcademicYearId',academicYears,'academicYears')
-  // const { gradeLevels: allGlobalGradeLevels, fetchGradeLevels } = useGradeLevelStore(); // Not used directly for filtering anymore
+  const { activeAcademicYear } = useSettingsStore();
+  
+  // Available academic years
+  const availableAcademicYears = [
+    "2024/2025",
+    "2023/2024", 
+    "2022/2023",
+    "2021/2022",
+    "2020/2021"
+  ];
 
   const {
     classrooms,
@@ -130,8 +130,7 @@ const ClassroomStudentAssigner: React.FC = () => {
   // --- Effects ---
   useEffect(() => {
     fetchSchools();
-    fetchAcademicYears(); /*fetchGradeLevels();*/
-  }, [fetchSchools, fetchAcademicYears /*, fetchGradeLevels*/]);
+  }, [fetchSchools]);
 
   const fetchSchoolSpecificGrades = useCallback(
     async (schoolId: number) => {
@@ -157,16 +156,16 @@ const ClassroomStudentAssigner: React.FC = () => {
   useEffect(() => {
     if (selectedSchoolId) {
       fetchSchoolSpecificGrades(selectedSchoolId);
-      if (selectedYearId && selectedGradeId) {
+      if (selectedYear && selectedGradeId) {
         fetchUnassignedStudentsForGrade({
           school_id: selectedSchoolId,
-          academic_year_id: selectedYearId,
+          academic_year: selectedYear,
           grade_level_id: selectedGradeId,
         });
         fetchClassroomsFromStore({
           school_id: selectedSchoolId,
           grade_level_id: selectedGradeId,
-          active_academic_year_id: selectedYearId,
+          active_academic_year: selectedYear,
         });
       } else {
         clearUnassignedStore();
@@ -176,12 +175,12 @@ const ClassroomStudentAssigner: React.FC = () => {
       clearUnassignedStore();
       clearClassroomStore();
       setAvailableGradeLevels([]);
-      setSelectedYearId("");
+      setSelectedYear("");
       setSelectedGradeId("");
     }
   }, [
     selectedSchoolId,
-    selectedYearId,
+    selectedYear,
     selectedGradeId,
     fetchUnassignedStudentsForGrade,
     fetchClassroomsFromStore,
@@ -210,11 +209,11 @@ const ClassroomStudentAssigner: React.FC = () => {
   // --- Handlers ---
   const handleSchoolChange = (value: string) => {
     setSelectedSchoolId(value ? Number(value) : "");
-    setSelectedYearId("");
+    setSelectedYear("");
     setSelectedGradeId("");
   };
   const handleYearChange = (value: string) => {
-    setSelectedYearId(value ? Number(value) : "");
+    setSelectedYear(value);
     setSelectedGradeId("");
   };
   const handleGradeChange = (value: string) =>
@@ -232,7 +231,7 @@ const ClassroomStudentAssigner: React.FC = () => {
     if (
       isNaN(enrollmentId) ||
       !selectedSchoolId ||
-      !selectedYearId ||
+      !selectedYear ||
       !selectedGradeId
     ) {
       console.error("Drag end error: Invalid IDs or context");
@@ -306,7 +305,7 @@ const ClassroomStudentAssigner: React.FC = () => {
         enrollmentId,
         targetClassroomId,
         selectedSchoolId,
-        selectedYearId,
+        selectedYear,
         selectedGradeId
       );
       enqueueSnackbar("تم تحديث تعيين الطالب بنجاح", { variant: "success" });
@@ -318,26 +317,26 @@ const ClassroomStudentAssigner: React.FC = () => {
         variant: "error",
       });
       // Revert UI by refetching from store (which should have original state or refetch itself)
-      fetchUnassignedStudentsForGrade({
-        school_id: selectedSchoolId,
-        academic_year_id: selectedYearId,
-        grade_level_id: selectedGradeId,
-      });
-      fetchClassroomsFromStore({
-        school_id: selectedSchoolId,
-        grade_level_id: selectedGradeId,
-        active_academic_year_id: selectedYearId,
-      });
+              fetchUnassignedStudentsForGrade({
+          school_id: selectedSchoolId,
+          academic_year: selectedYear,
+          grade_level_id: selectedGradeId,
+        });
+        fetchClassroomsFromStore({
+          school_id: selectedSchoolId,
+          grade_level_id: selectedGradeId,
+          active_academic_year: selectedYear,
+        });
     }
   };
 
   // --- Filtered Academic Years for Dropdown ---
-  const filteredAcademicYears = useMemo(() => {
+  const filteredAcademicYears = useCallback(() => {
     if (!selectedSchoolId) return [];
-    return academicYears
-      .filter((ay) => ay.school_id === selectedSchoolId)
-      .sort((a, b) => b.name.localeCompare(a.name)); // Sort desc
-  }, [academicYears, selectedSchoolId]);
+    return availableAcademicYears
+      .filter((ay) => ay.includes(selectedYear))
+      .sort((a, b) => b.localeCompare(a)); // Sort desc
+  }, [selectedYear, selectedSchoolId]);
 
   // --- Dynamic Grid Columns Calculation ---
   const getGridColumns = useCallback(() => {
@@ -467,7 +466,7 @@ const ClassroomStudentAssigner: React.FC = () => {
             <div>
               <Label htmlFor="year-filter-assign" className="text-lg font-bold">العام الدراسي *</Label>
               <Select
-                value={String(selectedYearId)}
+                value={selectedYear}
                 onValueChange={handleYearChange}
                 disabled={!selectedSchoolId}
               >
@@ -479,8 +478,8 @@ const ClassroomStudentAssigner: React.FC = () => {
                     اختر عاماً...
                   </SelectItem>
                   {filteredAcademicYears.map((ay) => (
-                    <SelectItem key={ay.id} value={String(ay.id)} className="text-lg font-bold">
-                      {ay.name}
+                    <SelectItem key={ay} value={ay} className="text-lg font-bold">
+                      {ay}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -491,7 +490,7 @@ const ClassroomStudentAssigner: React.FC = () => {
               <Select
                 value={String(selectedGradeId)}
                 onValueChange={handleGradeChange}
-                disabled={!selectedYearId || loadingSchoolSpecificGrades}
+                disabled={!selectedYear || loadingSchoolSpecificGrades}
               >
                 <SelectTrigger id="grade-filter-assign" className="text-lg font-bold">
                   <SelectValue placeholder="..." className="text-lg font-bold" />
@@ -523,7 +522,7 @@ const ClassroomStudentAssigner: React.FC = () => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      {(!selectedSchoolId || !selectedYearId || !selectedGradeId) &&
+      {(!selectedSchoolId || !selectedYear || !selectedGradeId) &&
         !loadingUnassigned &&
         !classroomsLoading && (
           <Alert className="mb-4">
@@ -534,7 +533,7 @@ const ClassroomStudentAssigner: React.FC = () => {
           </Alert>
         )}
       {selectedSchoolId &&
-        selectedYearId &&
+        selectedYear &&
         selectedGradeId &&
         !loadingUnassigned &&
         !classroomsLoading &&

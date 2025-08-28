@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils"; // For combining class names
 // lucide-react icons
 import {
     Building2,      // For Schools
-    CalendarDays,   // For Academic Years
     Milestone,      // For Grade Levels
     Library,        // For Subjects
     Settings as SettingsLucideIcon, // Renamed to avoid conflict with component name
@@ -60,14 +59,7 @@ const SettingsDashboard: React.FC = () => {
             iconColor: "text-sky-600 dark:text-sky-400",
             bgColor: "bg-sky-100/70 dark:bg-sky-900/40",
         },
-        {
-            title: 'الأعوام الدراسية',
-            description: 'إدارة الأعوام وتحديد العام النشط.',
-            link: 'academic-years', // Relative to /settings
-            icon: CalendarDays,
-            iconColor: "text-red-600 dark:text-red-400",
-            bgColor: "bg-red-100/70 dark:bg-red-900/40",
-        },
+
         {
             title: 'المراحل الدراسية (عام)',
             description: 'إدارة المراحل والصفوف العامة.',
@@ -132,14 +124,7 @@ const SettingsDashboard: React.FC = () => {
             iconColor: "text-blue-600 dark:text-blue-400",
             bgColor: "bg-blue-100/70 dark:bg-blue-900/40",
         },
-         {
-             title: 'الإعدادات الافتراضية',
-             description: 'تحديد المدرسة والعام النشط الافتراضي.',
-             link: 'general', // Relative
-             icon: SettingsLucideIcon,
-             iconColor: "text-slate-600 dark:text-slate-400",
-             bgColor: "bg-slate-100/70 dark:bg-slate-900/40",
-         },
+
          // Example: Link to main Teachers list
         // {
         //     title: 'قائمة المعلمين الرئيسية',

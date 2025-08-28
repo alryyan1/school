@@ -41,8 +41,6 @@ import SchoolForm from '@/components/schools/SchoolForm';                 // Adj
 
 // --- Settings Pages ---
 import SettingsDashboard from '@/pages/settings/SettingsDashboard';       // Adjust path
-import GeneralSettingsPage from '@/pages/settings/GeneralSettingsPage'; // Adjust path
-import AcademicYearList from '@/pages/settings/AcademicYearList';       // Adjust path
 import ClassroomStudentAssigner from '@/components/settings/ClassroomStudentAssigner';
 import SubjectList from '@/pages/settings/SubjectList';                 // Adjust path
 import ClassroomList from '@/pages/settings/ClassroomList';               // Adjust path
@@ -186,8 +184,6 @@ const router = createHashRouter([
                 element: <Outlet />,
                 children: [
                     { index: true, element: <SettingsDashboard /> },
-                    { path: 'general', element: <GeneralSettingsPage /> },
-                    { path: 'academic-years', element: <AcademicYearList /> },
                     { path: 'grade-levels', element: <GradeLevelList /> }, // Renamed page
                     { path: 'subjects', element: <SubjectList /> },
                     { path: 'classrooms', element: <ClassroomList /> },

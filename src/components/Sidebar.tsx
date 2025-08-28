@@ -6,16 +6,15 @@ import { cn } from "@/lib/utils"; // Your shadcn/ui utility
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator"; // For visual separation
-import { useAuth } from '@/context/authcontext';
+// import { useAuth } from '@/context/authcontext';
 
 // lucide-react icons
 import {
     ChevronRight, ChevronLeft,
-    LayoutDashboard, Building2, Users, GraduationCap, UserCheck, Settings,
-    CalendarDays, Milestone, Library, Network, ClipboardCheck,
-    School, CreditCard, KeyRound
+    LayoutDashboard, Building2, Users, GraduationCap, Settings,
+    Milestone, Library, Network,
+    School, KeyRound
 } from 'lucide-react';
-import { MenuBook } from '@mui/icons-material';
 
 // Define Menu Item Structure
 interface NavItem {
@@ -33,7 +32,6 @@ const mainNavItems: NavItem[] = [
 
 const settingsNavItems: NavItem[] = [
 	{ label: 'الإعدادات الرئيسية', href: '/settings', icon: Settings, requiredPermissions: ['manage system settings'] },
-	{ label: 'الأعوام الدراسية', href: '/settings/academic-years', icon: CalendarDays, requiredPermissions: ['manage academic years'] },
 	{ label: 'المراحل الدراسية', href: '/settings/grade-levels', icon: Milestone, requiredPermissions: ['manage grade levels'] },
 	{ label: 'المواد التعليمية', href: '/settings/subjects', icon: Library, requiredPermissions: ['manage subjects'] },
 	{ label: 'الفصول الدراسية', href: '/settings/classrooms', icon: Network, requiredPermissions: ['manage classrooms'] },
@@ -57,11 +55,11 @@ const SidebarContent: React.FC<{
 }> = ({
     isCollapsed, onNavLinkClick, currentPathname, onCollapseToggle, showCollapseButton = false
 }) => {
-    const { userRole, permissions } = useAuth();
-    const effectivePermissions = permissions || [];
-    const isAdmin = (userRole === 'admin');
+    // const { userRole, permissions } = useAuth();
+    // const effectivePermissions = permissions || [];
+    // const isAdmin = (userRole === 'admin');
 
-    const canAccess = (item: NavItem): boolean => {
+    const canAccess = (): boolean => {
       return true;
     };
     const [openSettings, setOpenSettings] = useState(false);
@@ -81,7 +79,7 @@ const SidebarContent: React.FC<{
         const isActive = currentPathname === item.href || (item.href !== '/' && currentPathname.startsWith(item.href) && !item.subItems);
         const Icon = item.icon;
 
-        if (!canAccess(item)) return null;
+        if (!canAccess()) return null;
 
         return (
             <Link to={item.href} className="block" onClick={onClick}>
@@ -140,7 +138,7 @@ const SidebarContent: React.FC<{
             <ScrollArea className="flex-1 overflow-hidden">
                 <nav className="grid gap-1 py-3 px-2 min-h-0">
                     {/* Dashboard */}
-                    {canAccess({ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard, requiredPermissions: ['view system dashboard'] }) && (
+                    {canAccess() && (
                         <NavLink item={{ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard }} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
                     )}
 

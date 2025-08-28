@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -9,9 +9,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useSnackbar } from 'notistack';
 
 import { Student } from '@/types/student';
-import { AcademicYear } from '@/types/academicYear';
 import { GradeLevel } from '@/types/gradeLevel';
-import { useAcademicYearStore } from '@/stores/academicYearStore';
 import { SchoolApi } from '@/api/schoolApi';
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 
@@ -26,7 +24,6 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
   const wishedSchoolId = student?.wished_school ?? null;
   const wishedSchoolName = student?.wished_school_details?.name ?? '';
 
-  const { academicYears, fetchAcademicYears, loading: loadingYears } = useAcademicYearStore();
   const { enrollStudent } = useStudentEnrollmentStore();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -34,35 +31,24 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<number | ''>('');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2024/2025');
   const [selectedGradeLevelId, setSelectedGradeLevelId] = useState<number | ''>('');
   // Fees and discount removed per request
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter academic years for wished school only
-  const schoolYears = useMemo<AcademicYear[]>(() =>
-    academicYears.filter(ay => ay.school_id === wishedSchoolId),
-    [academicYears, wishedSchoolId]
-  );
-
-  // Determine latest academic year by end_date then start_date
-  const defaultYearId = useMemo(() => {
-    if (schoolYears.length === 0) return '';
-    const sorted = [...schoolYears].sort((a, b) => {
-      const aEnd = a.end_date || '';
-      const bEnd = b.end_date || '';
-      if (aEnd === bEnd) return (a.start_date || '').localeCompare(b.start_date || '');
-      return aEnd.localeCompare(bEnd);
-    });
-    return sorted[sorted.length - 1]?.id ?? '';
-  }, [schoolYears]);
+  // Available academic years
+  const availableAcademicYears = [
+    "2024/2025",
+    "2023/2024", 
+    "2022/2023",
+    "2021/2022",
+    "2020/2021"
+  ];
 
   // Load lists when opening
   useEffect(() => {
     if (!open || !wishedSchoolId) return;
     setFormError(null);
-    // Fetch school academic years
-    fetchAcademicYears(wishedSchoolId);
     // Fetch assigned grade levels
     setLoadingGrades(true);
     SchoolApi.getAssignedGradeLevels(wishedSchoolId)
@@ -75,40 +61,23 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
         setGradeLevels([]);
       })
       .finally(() => setLoadingGrades(false));
-  }, [open, wishedSchoolId, fetchAcademicYears]);
-
-  // Initialize defaults when data is ready
-  useEffect(() => {
-    if (!open) return;
-    // Academic year default
-    console.log('defaultYearId', defaultYearId);
-    console.log('selectedAcademicYearId', selectedAcademicYearId);
-    console.log('schoolYears', schoolYears);
-    console.log('academicYears', academicYears);
-    console.log('wishedSchoolId', wishedSchoolId);
-    console.log('open', open);
-    console.log('loadingYears', loadingYears);
-    console.log('loadingGrades', loadingGrades);
-    if (selectedAcademicYearId === '' && defaultYearId !== '') {
-      setSelectedAcademicYearId(defaultYearId);
-    }
-  }, [open, defaultYearId, selectedAcademicYearId, academicYears, schoolYears, wishedSchoolId, loadingYears, loadingGrades]);
+  }, [open, wishedSchoolId]);
 
   // Removed fees auto-fill behavior
 
   const handleSubmit = async () => {
-    if (!student?.id || !wishedSchoolId || !selectedAcademicYearId || !selectedGradeLevelId) {
+    if (!student?.id || !wishedSchoolId || !selectedAcademicYear || !selectedGradeLevelId) {
       setFormError('الرجاء اختيار العام والمرحلة بشكل صحيح.');
       return;
     }
     setFormError(null);
     setIsSubmitting(true);
     try {
-      await enrollStudent({
-        student_id: Number(student.id),
-        academic_year_id: Number(selectedAcademicYearId),
-        grade_level_id: Number(selectedGradeLevelId),
-        classroom_id: null,
+              await enrollStudent({
+          student_id: Number(student.id),
+          academic_year: selectedAcademicYear,
+          grade_level_id: Number(selectedGradeLevelId),
+          classroom_id: null,
         status: 'active',
         school_id: Number(wishedSchoolId),
         // Defaults to satisfy backend schema; inputs removed from UI
@@ -166,17 +135,16 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
           <div className="space-y-2">
             <Label>العام الدراسي *</Label>
             <Select
-              value={selectedAcademicYearId === '' ? '' : String(selectedAcademicYearId)}
-              onValueChange={(val) => setSelectedAcademicYearId(val ? Number(val) : '')}
-              disabled={loadingYears}
+              value={selectedAcademicYear}
+              onValueChange={(val) => setSelectedAcademicYear(val)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loadingYears ? 'جاري تحميل الأعوام...' : 'اختر العام...'} />
+                <SelectValue placeholder="اختر العام..." />
               </SelectTrigger>
               <SelectContent>
-                {schoolYears.map(ay => (
-                  <SelectItem key={ay.id} value={String(ay.id)}>
-                    {ay.name}
+                {availableAcademicYears.map(ay => (
+                  <SelectItem key={ay} value={ay}>
+                    {ay}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -189,7 +157,7 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             إلغاء
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !selectedAcademicYearId || !selectedGradeLevelId}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || !selectedAcademicYear || !selectedGradeLevelId}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             تسجيل
           </Button>

@@ -1,12 +1,12 @@
 // src/types/feeInstallment.ts
-import { StudentAcademicYear } from './studentAcademicYear';
+import { Student } from './student';
 import { StudentFeePayment } from './studentFeePayment'; // Import Payment type
 
-export type InstallmentStatus = 'pending' | 'partially_paid' | 'paid' | 'overdue';
+export type InstallmentStatus = 'قيد الانتظار' | 'دفع جزئي' | 'مدفوع' | 'متأخر';
 
 export type FeeInstallment = {
     id: number;
-    student_academic_year_id: number;
+    student_id: number; // Changed from student_academic_year_id
     title: string;
     amount_due: number | string;
     amount_paid: number | string;
@@ -17,8 +17,8 @@ export type FeeInstallment = {
     updated_at?: string;
     
     // Optional nested data
-    student_enrollment?: StudentAcademicYear;
+    student?: Pick<Student, 'id' | 'student_name' | 'goverment_id'>;
     payments?: StudentFeePayment[]; // Array of payments FOR this installment
 };
 
-export type FeeInstallmentFormData = Omit<FeeInstallment, 'id' | 'amount_paid' | 'status' | 'created_at' | 'updated_at' | 'student_enrollment' | 'payments'>;
+export type FeeInstallmentFormData = Omit<FeeInstallment, 'id' | 'amount_paid' | 'status' | 'created_at' | 'updated_at' | 'student' | 'payments'>;

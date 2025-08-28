@@ -56,11 +56,11 @@ import { useSnackbar } from "notistack";
 
 const ClassroomList: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
+  const { activeSchoolId } = useSettingsStore();
   const initialActiveSchoolId = activeSchoolId;
 
   // Debug logging for settings
-  console.log("Settings - activeSchoolId:", activeSchoolId, "activeAcademicYearId:", activeAcademicYearId);
+  console.log("Settings - activeSchoolId:", activeSchoolId);
 
   // --- Local State ---
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
@@ -74,12 +74,11 @@ const ClassroomList: React.FC = () => {
   useEffect(() => {
     console.log("Settings check:", {
       activeSchoolId,
-      activeAcademicYearId,
       selectedSchoolId,
       selectedGradeFilter,
-      hasAllRequired: !!(activeSchoolId && activeAcademicYearId && selectedSchoolId && selectedGradeFilter)
+      hasAllRequired: !!(activeSchoolId && selectedSchoolId && selectedGradeFilter)
     });
-  }, [activeSchoolId, activeAcademicYearId, selectedSchoolId, selectedGradeFilter]);
+  }, [activeSchoolId, selectedSchoolId, selectedGradeFilter]);
   const [availableGradeLevels, setAvailableGradeLevels] = useState<
     GradeLevel[]
   >([]);
@@ -138,23 +137,20 @@ const ClassroomList: React.FC = () => {
   );
 
   useEffect(() => {
-    console.log("useEffect triggered:", { selectedSchoolId, activeAcademicYearId, selectedGradeFilter }); // Debug log
+    console.log("useEffect triggered:", { selectedSchoolId, selectedGradeFilter }); // Debug log
     if (selectedSchoolId) {
       console.log("Fetching grades for school:", selectedSchoolId); // Debug log
       fetchSchoolSpecificGrades(selectedSchoolId);
       
-      // Fetch classrooms if we have school, grade level, and academic year
-      if (activeAcademicYearId && selectedGradeFilter) {
-        console.log("Fetching classrooms for school:", selectedSchoolId, "grade:", selectedGradeFilter, "and year:", activeAcademicYearId); // Debug log
+      // Fetch classrooms if we have school and grade level
+      if (selectedGradeFilter) {
+        console.log("Fetching classrooms for school:", selectedSchoolId, "grade:", selectedGradeFilter);
         fetchClassrooms({
           school_id: selectedSchoolId,
           grade_level_id: selectedGradeFilter,
-          active_academic_year_id: activeAcademicYearId,
         });
-      } else if (activeAcademicYearId) {
-        console.log("Academic year available but no grade selected"); // Debug log
       } else {
-        console.log("No academic year or grade level selected"); // Debug log
+        console.log("No grade level selected"); // Debug log
       }
     } else {
       console.log("Clearing data"); // Debug log
@@ -165,7 +161,6 @@ const ClassroomList: React.FC = () => {
   }, [
     selectedSchoolId,
     selectedGradeFilter,
-    activeAcademicYearId,
     fetchClassrooms,
     clearClassrooms,
     fetchSchoolSpecificGrades,
@@ -187,10 +182,9 @@ const ClassroomList: React.FC = () => {
     setSelectedGradeFilter(gradeId);
   };
   const handleOpenForm = (classroom?: Classroom) => {
-    if (!selectedSchoolId || !selectedGradeFilter || !activeAcademicYearId) {
-      // For create, school, grade, and academic year must be selected
+    if (!selectedSchoolId || !selectedGradeFilter) {
       enqueueSnackbar(
-        "الرجاء تحديد المدرسة والمرحلة الدراسية والعام الدراسي أولاً لإضافة فصل.",
+        "الرجاء تحديد المدرسة والمرحلة الدراسية أولاً لإضافة فصل.",
         { variant: "warning" }
       );
       return;
@@ -201,12 +195,11 @@ const ClassroomList: React.FC = () => {
   const handleFormSuccess = () => {
     setFormOpen(false);
     setEditingClassroom(null);
-    if (selectedSchoolId && activeAcademicYearId) {
+    if (selectedSchoolId) {
       // Refetch classrooms for the current school
       fetchClassrooms({
         school_id: selectedSchoolId,
         grade_level_id: selectedGradeFilter || undefined,
-        active_academic_year_id: activeAcademicYearId,
       });
     }
   };
@@ -222,11 +215,10 @@ const ClassroomList: React.FC = () => {
       setDeleteDialogOpen(false);
       setClassroomToDelete(null);
       // Refetch classrooms
-      if (selectedSchoolId && activeAcademicYearId) {
+      if (selectedSchoolId) {
         fetchClassrooms({
           school_id: selectedSchoolId,
           grade_level_id: selectedGradeFilter || undefined,
-          active_academic_year_id: activeAcademicYearId,
         });
       }
     } catch (error) {
@@ -267,7 +259,7 @@ const ClassroomList: React.FC = () => {
           <Button
             onClick={() => handleOpenForm()}
             disabled={
-              !selectedSchoolId || !selectedGradeFilter || !activeAcademicYearId || loadingSchoolGrades
+              !selectedSchoolId || !selectedGradeFilter || loadingSchoolGrades
             }
           >
             <PlusCircle className="ml-2 h-4 w-4" /> إضافة فصل
@@ -352,14 +344,7 @@ const ClassroomList: React.FC = () => {
           <AlertDescription>الرجاء اختيار مدرسة لعرض الفصول.</AlertDescription>
         </Alert>
       )}
-      {!loading && selectedSchoolId && !activeAcademicYearId && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>تنبيه</AlertTitle>
-          <AlertDescription>الرجاء تحديد العام الدراسي النشط لعرض الفصول.</AlertDescription>
-        </Alert>
-      )}
-      {!loading && selectedSchoolId && activeAcademicYearId && !selectedGradeFilter && (
+      {!loading && selectedSchoolId && !selectedGradeFilter && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>تنبيه</AlertTitle>
@@ -368,7 +353,7 @@ const ClassroomList: React.FC = () => {
       )}
 
       {/* Table */}
-      {!loading && !error && selectedSchoolId && activeAcademicYearId && selectedGradeFilter && (
+      {!loading && !error && selectedSchoolId && selectedGradeFilter && (
         <motion.div
           initial="hidden"
           animate="visible"

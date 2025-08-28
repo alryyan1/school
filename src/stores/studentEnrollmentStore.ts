@@ -21,8 +21,8 @@ type StoreState = {
 
 type StoreActions = {
     fetchAllEnrollments:()=>Promise<void>;
-    fetchEnrollments: (filters: { school_id: number; academic_year_id: number; grade_level_id?: number; classroom_id?: number }) => Promise<void>;
-    fetchEnrollableStudents: (academicYearId: number, schoolId: number) => Promise<void>; // Added schoolId
+    fetchEnrollments: (filters: { school_id: number; academic_year: string; grade_level_id?: number; classroom_id?: number }) => Promise<void>; // Changed academic_year_id to academic_year
+    fetchEnrollableStudents: (academicYear: string, schoolId: number) => Promise<void>; // Changed academicYearId to academicYear
     searchEnrollments: (searchTerm: string) => Promise<void>; // <-- Add Search Action
 
     enrollStudent: (data: StudentEnrollmentFormData) => Promise<StudentAcademicYear | null>;
@@ -30,8 +30,8 @@ type StoreActions = {
     deleteEnrollment: (id: number) => Promise<boolean>;
     clearEnrollments: () => void;
     clearEnrollableStudents: () => void;
-    fetchUnassignedStudentsForGrade: (filters: { school_id: number; academic_year_id: number; grade_level_id: number }) => Promise<void>;
-    assignStudentToClassroom: (studentAcademicYearId: number, classroomId: number | null, targetSchoolId: number, targetAcademicYearId: number, targetGradeId: number) => Promise<boolean>;
+    fetchUnassignedStudentsForGrade: (filters: { school_id: number; academic_year: string; grade_level_id: number }) => Promise<void>; // Changed academic_year_id to academic_year
+    assignStudentToClassroom: (enrollmentId: number, classroomId: number | null, targetSchoolId: number, targetAcademicYear: string, targetGradeId: number) => Promise<boolean>; // Changed academicYearId to academicYear
     };
 const initialState: StoreState = { enrollments: [], enrollableStudents: [], loading: false, loadingEnrollable: false, error: null,isSearchResult:false };
 
@@ -58,7 +58,7 @@ export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set,
     }
 },
     fetchEnrollments: async (filters) => {
-        if (!filters.school_id || !filters.academic_year_id) {
+        if (!filters.school_id || !filters.academic_year) { // Changed from academic_year_id
             set({ enrollments: [], loading: false, error: 'الرجاء تحديد المدرسة والعام الدراسي.' });
             return;
         }
@@ -72,10 +72,10 @@ export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set,
             set({ error: msg, loading: false, enrollments: [] }); // Clear on error
         }
     },
-    fetchEnrollableStudents: async (academicYearId, schoolId) => {
+    fetchEnrollableStudents: async (academicYear, schoolId) => { // Changed parameter name
         set({ loadingEnrollable: true, error: null });
         try {
-            const response = await StudentAcademicYearApi.getEnrollableStudents(academicYearId, schoolId);
+            const response = await StudentAcademicYearApi.getEnrollableStudents(academicYear, schoolId); // Changed parameter
             set({ enrollableStudents: response.data.data, loadingEnrollable: false });
         } catch (error: unknown) {
              const errorObj = error as { response?: { data?: { message?: string } }; message?: string };
@@ -95,7 +95,7 @@ export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set,
             
             // Refetch available students as one has been removed from the list
             //when using get() retrieve the current state and doesnt make rerender
-            get().fetchEnrollableStudents(Number(data.academic_year_id), Number(data.school_id));
+            get().fetchEnrollableStudents(data.academic_year, Number(data.school_id)); // Changed from academic_year_id
             return newEnrollment;
         } catch (error: unknown) {
             console.error("Enroll Student error:", error);
@@ -131,13 +131,13 @@ export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set,
             set({ unassignedStudentsForGrade: response.data.data, loadingUnassigned: false });
         } catch (err: any) { /* ... error handling ... */ set({loadingUnassigned: false }); }
     },
-    assignStudentToClassroom: async (studentAcademicYearId, classroomId, targetSchoolId, targetAcademicYearId, targetGradeId) => {
+    assignStudentToClassroom: async (studentAcademicYearId, classroomId, targetSchoolId, targetAcademicYear, targetGradeId) => {
         // No store loading state here, component manages drag/drop state
         try {
             await StudentAcademicYearApi.assignToClassroom(studentAcademicYearId, classroomId);
             // Refetch both lists to reflect the change accurately
-            get().fetchUnassignedStudentsForGrade({ school_id: targetSchoolId, academic_year_id: targetAcademicYearId, grade_level_id: targetGradeId });
-            useClassroomStore.getState().fetchClassrooms({ school_id: targetSchoolId, grade_level_id: targetGradeId, active_academic_year_id: targetAcademicYearId });
+            get().fetchUnassignedStudentsForGrade({ school_id: targetSchoolId, academic_year: targetAcademicYear, grade_level_id: targetGradeId });
+            useClassroomStore.getState().fetchClassrooms({ school_id: targetSchoolId, grade_level_id: targetGradeId, active_academic_year_id: targetAcademicYear });
             return true;
         } catch (err: any) {
             console.error("Assign to classroom error:", err);
@@ -155,7 +155,7 @@ export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set,
             }));
             // Refetch enrollable students using context from deleted item
             if (deletedEnrollment) {
-                get().fetchEnrollableStudents(Number(deletedEnrollment.academic_year_id), Number(deletedEnrollment.school_id));
+                get().fetchEnrollableStudents(deletedEnrollment.academic_year, Number(deletedEnrollment.school_id));
             }
             return true;
         } catch (error: unknown) {

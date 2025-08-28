@@ -6,9 +6,9 @@ type CollectionResponse = { data: FeeInstallment[] };
 type ResourceResponse = { data: FeeInstallment };
 
 export const FeeInstallmentApi = {
-  getAll: (studentAcademicYearId: number) =>
+  getAll: (studentId: number) =>
     axiosClient.get<CollectionResponse>("/fee-installments", {
-      params: { student_academic_year_id: studentAcademicYearId },
+      params: { student_id: studentId },
     }),
   create: (data: FeeInstallmentFormData) =>
     axiosClient.post<ResourceResponse>("/fee-installments", data),
@@ -17,11 +17,11 @@ export const FeeInstallmentApi = {
   delete: (id: number) => axiosClient.delete(`/fee-installments/${id}`),
     // --- NEW: Generate Installments ---
     generateInstallments: (
-        studentAcademicYearId: number,
+        studentId: number,
         totalAmount: number,
         numberOfInstallments: number
     ) => {
-        const url = `/student-enrollments/${studentAcademicYearId}/generate-installments`;
+        const url = `/students/${studentId}/generate-installments`;
         const payload = {
             total_amount: totalAmount,
             number_of_installments: numberOfInstallments,
@@ -35,7 +35,7 @@ export const FeeInstallmentApi = {
      * @param days Number of days ahead to check (default: 7)
      */
     getDueSoon: (days: number = 7) =>
-      axiosClient.get<CollectionResponse>('/fee-installment/due-soon', {
+      axiosClient.get<CollectionResponse>('/fee-installments/due-soon', {
           params: { days }
       }),
 };

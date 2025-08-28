@@ -4,19 +4,19 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 interface SettingsState {
   activeSchoolId: number | null;
-  activeAcademicYearId: number | null;
+  activeAcademicYear: string | null; // Changed from activeAcademicYearId to string
   // Add other general settings later if needed
 }
 
 interface SettingsActions {
   setActiveSchoolId: (schoolId: number | null) => void;
-  setActiveAcademicYearId: (yearId: number | null) => void;
+  setActiveAcademicYear: (academicYear: string | null) => void; // Changed parameter type
   clearSettings: () => void;
 }
 
 const initialState: SettingsState = {
   activeSchoolId: null,
-  activeAcademicYearId: null,
+  activeAcademicYear: null, // Changed from activeAcademicYearId
 };
 
 export const useSettingsStore = create<SettingsState & SettingsActions>()(
@@ -28,17 +28,17 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
       setActiveSchoolId: (schoolId) => {
         set((state) => {
           // If school is cleared, also clear the dependent academic year
-          const newYearId =
-            schoolId === null ? null : state.activeAcademicYearId;
+          const newAcademicYear =
+            schoolId === null ? null : state.activeAcademicYear;
           // Note: We might need extra logic here or in the component
           // to ensure the currently selected year *belongs* to the new school.
           // For now, we only clear it if the school is cleared entirely.
-          return { activeSchoolId: schoolId, activeAcademicYearId: newYearId };
+          return { activeSchoolId: schoolId, activeAcademicYear: newAcademicYear };
         });
       },
 
-      setActiveAcademicYearId: (yearId) => {
-        set({ activeAcademicYearId: yearId });
+      setActiveAcademicYear: (academicYear) => { // Changed parameter name
+        set({ activeAcademicYear: academicYear });
       },
 
       clearSettings: () => {
@@ -53,7 +53,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
       // Optionally: Specify which parts of the state to persist
       // partialize: (state) => ({
       //   activeSchoolId: state.activeSchoolId,
-      //   activeAcademicYearId: state.activeAcademicYearId
+      //   activeAcademicYear: state.activeAcademicYear
       // }),
     }
   )

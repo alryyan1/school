@@ -1,5 +1,5 @@
 // src/pages/curriculum/CurriculumManager.tsx
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -25,10 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -43,31 +41,21 @@ import {
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
-import { useAcademicYearStore } from "@/stores/academicYearStore";
 import { useSubjectStore } from "@/stores/subjectStore";
 import { useTeacherStore } from "@/stores/teacherStore";
-import { useAcademicYearSubjectStore } from "@/stores/academicYearSubjectStore";
-import { AcademicYearSubject } from "@/types/academicYearSubject";
+import { useGradeLevelSubjectStore } from "@/stores/gradeLevelSubjectStore";
+import { GradeLevelSubject } from "@/api/gradeLevelSubjectApi";
 import { useSnackbar } from "notistack";
-import { useSchoolStore } from "@/stores/schoolStore";
-import { useSettingsStore } from "@/stores/settingsStore";
-import { SchoolApi } from "@/api/schoolApi";
+import { useGradeLevelStore } from "@/stores/gradeLevelStore";
 import { NavLink } from "react-router-dom";
 
 const CurriculumManager: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
-  // --- Settings Store
-  const { activeSchoolId, activeAcademicYearId } = useSettingsStore();
   // --- State for selections ---
-  const [selectedYearId, setSelectedYearId] = useState<number | "">( activeAcademicYearId ?? "");
   const [selectedGradeId, setSelectedGradeId] = useState<number | "">("");
-  const [selectedSchool, setSelectedSchool] = useState<number | string>(
-    activeSchoolId ?? ""
-  );
 
   // --- Fetch data from stores ---
-  const { academicYears, fetchAcademicYears } = useAcademicYearStore();
   const { subjects, fetchSubjects } = useSubjectStore();
   const { teachers, fetchTeachers: fetchAllTeachers } = useTeacherStore();
   const {
@@ -79,52 +67,40 @@ const CurriculumManager: React.FC = () => {
     updateTeacherAssignment,
     unassignSubject,
     clearAssignments,
-  } = useAcademicYearSubjectStore();
-  const { fetchSchools, schools, loading: schoolIsLoading } = useSchoolStore();
+  } = useGradeLevelSubjectStore();
+  const { gradeLevels, fetchGradeLevels } = useGradeLevelStore();
 
   // --- State for Dialogs ---
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [editTeacherDialogOpen, setEditTeacherDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentAssignment, setCurrentAssignment] =
-    useState<AcademicYearSubject | null>(null);
+    useState<GradeLevelSubject | null>(null);
 
   // --- State for Assign Dialog Form ---
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | "">("");
   const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null);
-  const [assignedSchoolGradeLevels, setAssignedSchoolGradeLevels] = useState([]);
+
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
   // --- Fetch initial lists ---
   useEffect(() => {
-    fetchSchools();
-    fetchAcademicYears();
     fetchSubjects();
     fetchAllTeachers();
-  }, [fetchAcademicYears, fetchSubjects, fetchAllTeachers]);
+    fetchGradeLevels();
+  }, [fetchSubjects, fetchAllTeachers, fetchGradeLevels]);
 
-  const fetchSchoolGradeLevelsCallback = useCallback(async () => {
-    try {
-      const response = await SchoolApi.getAssignedGradeLevels(
-        selectedSchool as number
-      );
-      setAssignedSchoolGradeLevels(response.data.data);
-    } catch (error) {
-      console.log(error);
-      enqueueSnackbar("فشل في جلب مستويات المدرسه المحدده", { variant: "error" });
-    }
-  }, [selectedSchool, enqueueSnackbar]);
 
-  // --- Fetch assignments when year/grade changes ---
+
+  // --- Fetch assignments when grade changes ---
   useEffect(() => {
-    fetchSchoolGradeLevelsCallback();
-    if (selectedYearId && selectedGradeId) {
-      fetchAssignments(selectedYearId, selectedGradeId);
+    if (selectedGradeId) {
+      fetchAssignments(selectedGradeId);
     } else {
       clearAssignments();
     }
-  }, [selectedYearId, selectedGradeId, fetchAssignments, clearAssignments, fetchSchoolGradeLevelsCallback]);
+  }, [selectedGradeId, fetchAssignments, clearAssignments]);
 
   // --- Calculate available subjects for Assign Dialog ---
   const availableSubjects = useMemo(() => {
@@ -141,7 +117,7 @@ const CurriculumManager: React.FC = () => {
   };
   const handleCloseAssignDialog = () => setAssignDialogOpen(false);
 
-  const handleOpenEditTeacherDialog = (assignment: AcademicYearSubject) => {
+  const handleOpenEditTeacherDialog = (assignment: GradeLevelSubject) => {
     setCurrentAssignment(assignment);
     setSelectedTeacherId(assignment.teacher_id);
     setAssignError(null);
@@ -149,7 +125,7 @@ const CurriculumManager: React.FC = () => {
   };
   const handleCloseEditTeacherDialog = () => setEditTeacherDialogOpen(false);
 
-  const handleOpenDeleteDialog = (assignment: AcademicYearSubject) => {
+  const handleOpenDeleteDialog = (assignment: GradeLevelSubject) => {
     setCurrentAssignment(assignment);
     setDeleteDialogOpen(true);
   };
@@ -157,15 +133,14 @@ const CurriculumManager: React.FC = () => {
 
   // --- Form Submission Handlers ---
   const handleAssignSubject = async () => {
-    if (!selectedYearId || !selectedGradeId || !selectedSubjectId) {
-      setAssignError("الرجاء تحديد العام والمرحلة والمادة.");
+    if (!selectedGradeId || !selectedSubjectId) {
+      setAssignError("الرجاء تحديد المرحلة والمادة.");
       return;
     }
     setAssignLoading(true);
     setAssignError(null);
     try {
       await assignSubject({
-        academic_year_id: selectedYearId,
         grade_level_id: selectedGradeId,
         subject_id: selectedSubjectId,
         teacher_id: selectedTeacherId,
@@ -173,7 +148,7 @@ const CurriculumManager: React.FC = () => {
       enqueueSnackbar("تم تعيين المادة بنجاح", { variant: "success" });
       handleCloseAssignDialog();
     } catch (error: unknown) {
-      setAssignError((error as any).message || "فشل تعيين المادة.");
+      setAssignError((error as Error).message || "فشل تعيين المادة.");
     } finally {
       setAssignLoading(false);
     }
@@ -188,7 +163,7 @@ const CurriculumManager: React.FC = () => {
       enqueueSnackbar("تم تحديث المعلم بنجاح", { variant: "success" });
       handleCloseEditTeacherDialog();
     } catch (error: unknown) {
-      setAssignError((error as any).message || "فشل تحديث المعلم.");
+      setAssignError((error as Error).message || "فشل تحديث المعلم.");
     } finally {
       setAssignLoading(false);
     }
@@ -201,7 +176,7 @@ const CurriculumManager: React.FC = () => {
         enqueueSnackbar("تم إلغاء تعيين المادة بنجاح", { variant: "success" });
       } else {
         enqueueSnackbar(
-          useAcademicYearSubjectStore.getState().error || "فشل إلغاء التعيين",
+          useGradeLevelSubjectStore.getState().error || "فشل إلغاء التعيين",
           { variant: "error" }
         );
       }
@@ -209,9 +184,7 @@ const CurriculumManager: React.FC = () => {
     }
   };
 
-  const filteredAcademicYearsMemo = useMemo(() => {
-    return academicYears.filter((a) => a.school_id == selectedSchool);
-  }, [academicYears, selectedSchool]);
+
 
   return (
     <div className="container mx-auto p-4 sm:p-6 max-w-7xl" dir="rtl">
@@ -228,46 +201,7 @@ const CurriculumManager: React.FC = () => {
           </CardTitle>
           
           {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-            <div className="space-y-2">
-              <Label>المدرسة</Label>
-              <Select 
-                value={selectedSchool.toString()} 
-                onValueChange={(value) => setSelectedSchool(value)}
-                disabled={schoolIsLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر مدرسة..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools.map((school) => (
-                    <SelectItem key={school.id} value={school.id.toString()}>
-                      {school.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>العام الدراسي</Label>
-              <Select 
-                value={selectedYearId.toString()} 
-                onValueChange={(value) => setSelectedYearId(Number(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر عاماً..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredAcademicYearsMemo.map((ay) => (
-                    <SelectItem key={ay.id} value={ay.id.toString()}>
-                      {ay.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
             <div className="space-y-2">
               <Label>المرحلة الدراسية</Label>
               <Select 
@@ -278,7 +212,7 @@ const CurriculumManager: React.FC = () => {
                   <SelectValue placeholder="اختر مرحلة..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {assignedSchoolGradeLevels.map((gl: any) => (
+                  {gradeLevels.map((gl) => (
                     <SelectItem key={gl.id} value={gl.id.toString()}>
                       {gl.name}
                     </SelectItem>
@@ -290,7 +224,7 @@ const CurriculumManager: React.FC = () => {
             <div className="flex items-end">
               <Button
                 onClick={handleOpenAssignDialog}
-                disabled={!selectedYearId || !selectedGradeId}
+                disabled={!selectedGradeId}
                 className="w-full"
               >
                 <Plus className="w-4 h-4 ml-2" />
@@ -316,16 +250,16 @@ const CurriculumManager: React.FC = () => {
           )}
 
           {/* Info State */}
-          {!loading && !selectedYearId && !selectedGradeId && (
+          {!loading && !selectedGradeId && (
             <Alert className="mb-4">
               <AlertDescription>
-                الرجاء تحديد العام الدراسي والمرحلة لعرض المواد المعينة.
+                الرجاء تحديد المرحلة لعرض المواد المعينة.
               </AlertDescription>
             </Alert>
           )}
 
           {/* Table */}
-          {!loading && !error && selectedYearId && selectedGradeId && (
+          {!loading && !error && selectedGradeId && (
             <div className="w-full flex justify-center">
               <div className="w-full border rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">

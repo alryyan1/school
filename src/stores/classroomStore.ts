@@ -10,7 +10,7 @@ type ClassroomState = {
 };
 
 type ClassroomActions = {
-    fetchClassrooms: (filters?: { school_id: number; grade_level_id?: number,active_academic_year_id: number; }) => Promise<void>;
+    fetchClassrooms: (filters?: { school_id: number; grade_level_id?: number; }) => Promise<void>;
     createClassroom: (data: ClassroomFormData) => Promise<Classroom | null>;
     updateClassroom: (id: number, data: Partial<ClassroomFormData>) => Promise<Classroom | null>;
     deleteClassroom: (id: number) => Promise<boolean>;

@@ -6,7 +6,7 @@ import dayjs from 'dayjs'; // For sorting
 
 // --- State Interface ---
 type StoreState = {
-    /** Installments for the currently selected studentAcademicYearId */
+    /** Installments for the currently selected studentId */
     installments: FeeInstallment[];
     /** Loading state for the installments list */
     loading: boolean;
@@ -20,8 +20,8 @@ type StoreState = {
 
 // --- Actions Interface ---
 type StoreActions = {
-    /** Fetches installments for a specific enrollment record */
-    fetchInstallments: (studentAcademicYearId: number) => Promise<void>;
+    /** Fetches installments for a specific student */
+    fetchInstallments: (studentId: number) => Promise<void>; // Changed parameter
     /** Creates a new installment */
     createInstallment: (data: FeeInstallmentFormData) => Promise<FeeInstallment | null>;
     /** Updates an existing installment */
@@ -63,10 +63,10 @@ export const useFeeInstallmentStore = create<StoreState & StoreActions>((set, ge
 
     // --- Action Implementations ---
 
-    fetchInstallments: async (studentAcademicYearId) => {
+    fetchInstallments: async (studentId) => { // Changed parameter
         set({ loading: true, error: null });
         try {
-            const response = await FeeInstallmentApi.getAll(studentAcademicYearId);
+            const response = await FeeInstallmentApi.getAll(studentId); // Changed parameter
             const fetchedInstallments = response.data.data ?? []; // Handle case where data might be missing
             const totals = calculateTotals(fetchedInstallments);
             set({
