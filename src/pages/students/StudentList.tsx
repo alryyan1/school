@@ -53,7 +53,7 @@ const StudentList = () => {
 
   // Pagination state
   const [page, setPage] = useState(0);
-  const [rowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Sorting state
   const [orderBy, setOrderBy] = useState<keyof Student>("id");
@@ -121,7 +121,7 @@ const StudentList = () => {
   // Update filters effect
   useEffect(() => {
     fetchStudentsWithFilters();
-  }, [searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, orderBy, order, page]);
+  }, [searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, orderBy, order, page, rowsPerPage]);
 
   // const handleDelete = async (id: number) => { /* ... same ... */ };
   const handlePrintList = () => {
@@ -231,6 +231,7 @@ const StudentList = () => {
     setOnlyEnrolled(false);
     setOnlyApproved(false);
     setPage(0); // Reset to first page
+    setRowsPerPage(10); // Reset to default rows per page
     // The useEffect will automatically refetch with new filters
   };
 
@@ -517,18 +518,44 @@ const StudentList = () => {
 
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-            <div className="text-sm text-muted-foreground order-2 sm:order-1">
-              {pagination ? (
-                <>
-                  عرض {pagination.from || 0}-{pagination.to || 0} من {pagination.total} طالب
-                  {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved ? (
-                    <span className="text-primary font-medium"> (مفلتر)</span>
-                  ) : null}
-                </>
-              ) : (
-                `عرض ${students.length} طالب`
-              )}
+            <div className="flex items-center gap-4 order-2 sm:order-1">
+              <div className="text-sm text-muted-foreground">
+                {pagination ? (
+                  <>
+                    عرض {pagination.from || 0}-{pagination.to || 0} من {pagination.total} طالب
+                    {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved ? (
+                      <span className="text-primary font-medium"> (مفلتر)</span>
+                    ) : null}
+                  </>
+                ) : (
+                  `عرض ${students.length} طالب`
+                )}
+              </div>
+              
+              {/* Rows per page selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">عرض:</span>
+                <Select value={rowsPerPage.toString()} onValueChange={(value) => {
+                  setRowsPerPage(parseInt(value));
+                  setPage(0); // Reset to first page when changing rows per page
+                }}>
+                  <SelectTrigger className="w-20 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="40">40</SelectItem>
+                    <SelectItem value="80">80</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                    <SelectItem value="500">500</SelectItem>
+                    <SelectItem value="1000">1000</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">صف</span>
+              </div>
             </div>
+            
             <div className="flex items-center gap-2 order-1 sm:order-2">
               <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0} className="hidden sm:inline-flex">
                 الأولى

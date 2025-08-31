@@ -62,15 +62,7 @@ const Dashboard: React.FC = () => {
         },
    
        
-         {
-            title: 'تعيين الطلاب', // Enrollment
-            icon: UserCheck,
-            link: '/enrollments',
-            description: 'تسجيل الطلاب في الأعوام والمراحل الدراسية.',
-            iconColor: "text-emerald-600 dark:text-emerald-400",
-            bgColor: "bg-emerald-100/80 dark:bg-emerald-900/30",
-        },
-     
+      
         {
             title: 'اقساط    خلال شهر',
             icon: Car,
