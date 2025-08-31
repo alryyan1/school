@@ -414,7 +414,7 @@ const StudentList = () => {
                       <TableHead className="text-center hidden sm:table-cell">هاتف الأب</TableHead>
                       <TableHead className="text-center hidden sm:table-cell"><SortButton column="wished_school">المدرسة</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-24"><SortButton column="approved">الحالة</SortButton></TableHead>
-                      <TableHead className="text-center hidden sm:table-cell w-40">مستحق/مدفوع (آخر عام)</TableHead>
+                 
                       <TableHead className="text-center hidden sm:table-cell w-16">التسجيل</TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="date_of_birth">ت. الميلاد</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="created_at">ت. التسجيل</SortButton></TableHead>
@@ -450,32 +450,24 @@ const StudentList = () => {
                             {student.wished_school_details?.name || '-'}
                           </TableCell>
                           <TableCell className="text-center hidden sm:table-cell">
-                            <Badge variant={student.approved ? "default" : "outline"} 
-                                   className={student.approved ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}>
-                              {student.approved ? "مقبول" : "قيد المراجعة"}
-                            </Badge>
+                            <div className="flex items-center justify-center gap-2">
+                              <Badge variant={student.approved ? "default" : "outline"} 
+                                     className={student.approved ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}>
+                                {student.approved ? "مقبول" : "قيد المراجعة"}
+                              </Badge>
+                              {student.enrollments && student.enrollments.length > 0 && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <CheckCircle2 className="h-4 w-4 text-green-600 cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>الطالب مسجل</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-center hidden sm:table-cell">
-                            {student.enrollments && student.enrollments.length > 0 ? (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      className="h-8 w-8 hover:bg-green-50" 
-                                      onClick={() => navigate(`/students/${student.id}`)}
-                                    >
-                                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>الطالب مسجل - اضغط لعرض الملف</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
+                     
                           <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
                             {(() => {
                               const totals = student.latest_academic_year_totals;
@@ -517,6 +509,7 @@ const StudentList = () => {
           </div>
 
           {/* Pagination */}
+
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
             <div className="flex items-center gap-4 order-2 sm:order-1">
               <div className="text-sm text-muted-foreground">
