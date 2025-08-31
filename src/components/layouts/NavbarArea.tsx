@@ -56,7 +56,7 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
             )}
 
             {/* Active School/Year Display */}
-            <div className="flex items-center gap-2 text-sm">
+            <div className="hidden lg:flex items-center gap-2 text-sm">
                 {activeSchoolId && (
                     <span className="flex items-center gap-1.5 text-muted-foreground">
                         <School className="h-4 w-4" />
@@ -80,20 +80,26 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
 
             {/* Student Search - Show on all pages */}
             {showStudentSearch && (
-                <div className="hidden md:flex">
+                <div className="hidden md:flex flex-1 max-w-md mx-4">
                     <StudentSearch />
                 </div>
             )}
 
-
             {/* User Menu (right side in RTL) */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src="/placeholder-user.jpg" alt={userName || "User"} /> {/* Add actual user image if available */}
-                            <AvatarFallback>{userName ? userName.charAt(0).toUpperCase() : <UserCircle />}</AvatarFallback>
-                        </Avatar>
+                    <Button variant="ghost" className="rounded-full h-auto p-2">
+                        <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src="/placeholder-user.jpg" alt={userName || "User"} />
+                                <AvatarFallback className="text-xs">
+                                    {userName ? userName.substring(0, 2).toUpperCase() : <UserCircle />}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span className="hidden sm:block text-sm font-medium text-right">
+                                {userName || "المستخدم"}
+                            </span>
+                        </div>
                         <span className="sr-only">Toggle user menu</span>
                     </Button>
                 </DropdownMenuTrigger>

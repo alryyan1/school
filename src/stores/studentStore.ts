@@ -22,6 +22,7 @@ type StudentActions = {
   fetchStudents: (filters?: any) => Promise<void>;
   getStudentById: (id: number) => Promise<void>;
   searchStudentById: (id: number) => Promise<Student | null>;
+  searchStudentsByName: (name: string) => Promise<Student[]>;
   createStudent: (student: Omit<Student, "id">) => Promise<void|Student>;
   updateStudent: (id: number, student: Partial<Student>) => Promise<void>;
   deleteStudent: (id: number) => Promise<void>;
@@ -72,6 +73,15 @@ export const useStudentStore = create<StudentState & StudentActions>((set) => ({
       return response.data.data;
     } catch (error) {
       return null;
+    }
+  },
+
+  searchStudentsByName: async (name: string) => {
+    try {
+      const response = await StudentApi.getAll({ search: name, per_page: 10 });
+      return response.data.data;
+    } catch (error) {
+      return [];
     }
   },
 
