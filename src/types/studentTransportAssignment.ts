@@ -1,4 +1,4 @@
-import { StudentAcademicYear } from './studentAcademicYear'; // Contains nested student etc.
+import { Enrollment } from './enrollment'; // Contains nested student etc.
 import { TransportRoute } from './transportRoute';
 
 export type StudentTransportAssignment = {
@@ -8,7 +8,7 @@ export type StudentTransportAssignment = {
     pickup_point: string | null;
     dropoff_point: string | null;
     // Nested data
-    student_enrollment?: StudentAcademicYear; // Renamed for clarity
+    student_enrollment?: Enrollment; // Renamed for clarity
     transport_route?: TransportRoute;
     created_at?: string;
     updated_at?: string;

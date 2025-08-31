@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle } from 'lucide-react';
 
-import { StudentAcademicYear, StudentEnrollmentUpdateFormData, EnrollmentStatus, EnrollmentType } from '@/types/studentAcademicYear'; // Adjust path
+import { Enrollment, EnrollmentUpdateFormData, EnrollmentStatus, EnrollmentType } from '@/types/enrollment';
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore'; // Adjust path
 import { useClassroomStore } from '@/stores/classroomStore'; // Adjust path
 import { useSnackbar } from 'notistack';
@@ -23,7 +23,7 @@ interface UpdateEnrollmentDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void; // For shadcn Dialog control
     onSuccess: () => void; // Callback to refetch list on success
-    enrollmentData: StudentAcademicYear | null;
+    enrollmentData: Enrollment | null;
 }
 
 const statusOptions: { value: EnrollmentStatus, label: string }[] = [
@@ -41,7 +41,7 @@ const UpdateEnrollmentDialog: React.FC<UpdateEnrollmentDialogProps> = ({
     const { enqueueSnackbar } = useSnackbar();
     const [formError, setFormError] = useState<string | null>(null);
 
-    const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<StudentEnrollmentUpdateFormData>({
+    const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<EnrollmentUpdateFormData>({
         // Default values set in useEffect
     });
 

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ArrowRight } from 'lucide-react';
 // import { Student } from '@/types/student';
-import { StudentAcademicYear, EnrollmentType } from '@/types/studentAcademicYear';
+import { Enrollment, EnrollmentType } from '@/types/enrollment';
 import { useStudentStore } from '@/stores/studentStore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSnackbar } from 'notistack';
@@ -74,7 +74,7 @@ const StudentEnrollmentsPage: React.FC = () => {
     );
   }
 
-  const enrollments: StudentAcademicYear[] = currentStudent.enrollments ?? [];
+      const enrollments: Enrollment[] = currentStudent.enrollments ?? [];
 
   return (
     <div className="container max-w-6xl mx-auto py-8 px-4" dir="rtl">

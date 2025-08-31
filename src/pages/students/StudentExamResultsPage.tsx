@@ -53,12 +53,12 @@ import { Exam } from '@/types/exam';
 import { Subject } from '@/types/subject';
 import { ExamSchedule } from '@/types/examSchedule';
 import { ExamResultFormData } from '@/types/examResult';
-import { StudentAcademicYear } from '@/types/studentAcademicYear';
+import { Enrollment } from '@/types/enrollment';
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
 import { SubjectApi } from '@/api/subjectApi';
 import { ExamScheduleApi } from '@/api/examScheduleApi';
-import { StudentAcademicYearApi } from '@/api/studentAcademicYearApi';
+import { EnrollmentApi } from '@/api/enrollmentApi';
 
 // Extended form data for student page with additional display fields
 type StudentExamResultFormData = Omit<ExamResultFormData, 'student_academic_year_id'> & {
@@ -89,7 +89,7 @@ const StudentExamResultsPage: React.FC = () => {
 
     // --- Local State ---
     const [selectedExamId, setSelectedExamId] = useState<number | ''>('');
-    const [currentStudentEnrollment, setCurrentStudentEnrollment] = useState<StudentAcademicYear | null>(null);
+    const [currentStudentEnrollment, setCurrentStudentEnrollment] = useState<Enrollment | null>(null);
     console.log(currentStudentEnrollment, "currentStudentEnrollment");
     const [subjectsForGrade, setSubjectsForGrade] = useState<Subject[]>([]);
     const [scheduleMap, setScheduleMap] = useState<Record<number, ExamSchedule>>({}); // subjectId -> ExamSchedule
@@ -118,10 +118,9 @@ const StudentExamResultsPage: React.FC = () => {
             fetchStudentEnrollments({academic_year: activeAcademicYear,school_id: activeSchoolId});   
             // Fetch all enrollments for this student to find the active one
             if (activeAcademicYear) {
-                StudentAcademicYearApi.getAll({
+                EnrollmentApi.getAll({
                     academic_year: activeAcademicYear,
-                            school_id:activeSchoolId
-                            
+                    school_id: activeSchoolId
                 })
                 .then(response => {
                     // Filter for the specific student from the response

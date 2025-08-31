@@ -1,9 +1,9 @@
 import axiosClient from '../axios-client';
 import { ExamResult, ExamResultFormData } from '@/types/examResult';
-import { StudentAcademicYear } from '@/types/studentAcademicYear'; // For pending students list
+import { Enrollment } from '@/types/enrollment'; // For pending students list
 
 type ResultCollectionResponse = { data: ExamResult[] };
-type PendingStudentsResponse = { data: StudentAcademicYear[] }; // Students not yet graded
+type PendingStudentsResponse = { data: Enrollment[] }; // Students not yet graded
 
 export const ExamResultApi = {
     getResultsForSchedule: (examScheduleId: number) =>

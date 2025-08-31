@@ -1,12 +1,12 @@
 // src/stores/examResultStore.ts
 import { create } from 'zustand';
 import { ExamResult, ExamResultFormData } from '@/types/examResult';
-import { StudentAcademicYear } from '@/types/studentAcademicYear';
+import { Enrollment } from '@/types/enrollment';
 import { ExamResultApi } from '@/api/examResultApi';
 
 type StoreState = {
     resultsForSchedule: ExamResult[];
-    pendingStudents: StudentAcademicYear[];
+    pendingStudents: Enrollment[];
     loadingResults: boolean;
     loadingPending: boolean;
     error: string | null;

@@ -44,7 +44,7 @@ import { useSchoolStore } from "@/stores/schoolStore";
 import { useClassroomStore } from "@/stores/classroomStore";
 import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { StudentAcademicYear } from "@/types/studentAcademicYear";
+import { Enrollment } from "@/types/enrollment";
 import { GradeLevel } from "@/types/gradeLevel"; // Ensure this type is correctly defined
 import { Classroom } from "@/types/classroom";
 import { SchoolApi } from "@/api/schoolApi";
@@ -53,7 +53,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 // Extended types for this component
 interface ClassroomWithEnrollments extends Classroom {
-  student_enrollments?: StudentAcademicYear[];
+      student_enrollments?: Enrollment[];
 }
 
 interface StudentWithImage {
@@ -93,10 +93,10 @@ const ClassroomStudentAssigner: React.FC = () => {
 
   // --- DND & List State ---
   const [unassignedListInternal, setUnassignedListInternal] = useState<
-    StudentAcademicYear[]
+    Enrollment[]
   >([]);
   const [classroomMapInternal, setClassroomMapInternal] = useState<
-    Record<string, StudentAcademicYear[]>
+    Record<string, Enrollment[]>
   >({});
   const [error] = useState<string | null>(null);
 
@@ -194,7 +194,7 @@ const ClassroomStudentAssigner: React.FC = () => {
     setUnassignedListInternal(unassignedStudentsForGrade);
   }, [unassignedStudentsForGrade]);
   useEffect(() => {
-    const newMap: Record<string, StudentAcademicYear[]> = {};
+            const newMap: Record<string, Enrollment[]> = {};
     classrooms.forEach((cr) => {
       // Backend ClassroomResource should include student_enrollments (aliased if needed)
       const classroomWithEnrollments = cr as ClassroomWithEnrollments;
@@ -357,7 +357,7 @@ const ClassroomStudentAssigner: React.FC = () => {
 
   // --- Render Student Card for DND ---
   const renderStudentCard = (
-    enrollment: StudentAcademicYear,
+          enrollment: Enrollment,
     index: number,
     isUnassigned = false
   ) => (

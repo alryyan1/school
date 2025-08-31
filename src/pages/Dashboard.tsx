@@ -47,23 +47,7 @@ const itemVariants = {
 
 
 const Dashboard: React.FC = () => {
-    const [isLoadingStats, setIsLoadingStats] = useState(true);
-    const {enrollments,fetchAllEnrollments,loading} = useStudentEnrollmentStore()
-    const {teachers,fetchTeachers} = useTeacherStore()
-    // --- Fetch Dashboard Stats ---
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                fetchAllEnrollments()
-                fetchTeachers()
-            } catch (error) {
-                console.error('Error fetching dashboard stats:', error);
-            } finally {
-                setIsLoadingStats(false);
-            }
-        };
-        fetchStats();
-    }, []); // Run once on mount
+  
 
     // --- Define Dashboard Navigation Items ---
     // Use Tailwind color classes now

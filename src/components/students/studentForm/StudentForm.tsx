@@ -163,7 +163,7 @@ export const StudentForm = () => {
   ];
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 max-w-4xl" dir="rtl">
+    <div dir="ltr" className="container mx-auto p-4 sm:p-6 max-w-4xl" dir="rtl">
       <Button className="mb-4" onClick={() => navigate(-1)}>الرجوع</Button>
       <FormProvider {...methods}>
         <Card>

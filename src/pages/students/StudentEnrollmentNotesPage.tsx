@@ -62,7 +62,7 @@ const StudentEnrollmentNotesPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axiosClient.get(`/student-notes?student_academic_years_id=${enrollmentId}`);
+      const res = await axiosClient.get(`/student-notes?enrollment_id=${enrollmentId}`);
       setNotes(Array.isArray(res.data.data) ? res.data.data : []);
     } catch {
       setError('فشل تحميل الملاحظات');
@@ -101,7 +101,7 @@ const StudentEnrollmentNotesPage: React.FC = () => {
         await axiosClient.put(`/student-notes/${editingNoteId}`, payload);
       } else {
         await axiosClient.post('/student-notes', {
-          student_academic_years_id: enrollmentId,
+          enrollment_id: enrollmentId,
           ...payload,
         });
       }

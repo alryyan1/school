@@ -80,6 +80,7 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
           classroom_id: null,
         status: 'active',
         school_id: Number(wishedSchoolId),
+        enrollment_type: 'regular',
         // Defaults to satisfy backend schema; inputs removed from UI
         fees: 0,
         discount: 0,
@@ -102,6 +103,8 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
         <DialogHeader>
           <DialogTitle>تسجيل الطالب</DialogTitle>
           <DialogDescription>
+            الطالب: {student?.student_name || '-'}
+            <br />
             المدرسة: {wishedSchoolName || '-'}
           </DialogDescription>
         </DialogHeader>

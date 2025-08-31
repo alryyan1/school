@@ -5,7 +5,7 @@ import {
     StudentTransportAssignmentFormData,
     AssignableStudentInfo // The type returned by the specific backend endpoint
 } from '@/types/studentTransportAssignment'; // Adjust path if needed
-import { StudentAcademicYearApi } from '@/api/studentAcademicYearApi'; // Used for getting assignable students - Adjust path
+import { EnrollmentApi } from '@/api/enrollmentApi'; // Used for getting assignable students
 import { StudentTransportAssignmentApi } from '@/api/studentTransportAssignmentApi'; // Adjust path
 import dayjs from 'dayjs'; // If needed for sorting or other logic
 
@@ -86,7 +86,7 @@ export const useStudentTransportAssignmentStore = create<StoreState & StoreActio
         set({ loadingAssignable: true, error: null }); // Use separate loading state
         try {
             // Call the dedicated API endpoint
-            const response = await StudentAcademicYearApi.getEnrollableStudents(academicYearId, schoolId);
+            const response = await EnrollmentApi.getEnrollableStudents(academicYearId, schoolId);
             // Assuming response.data.data is AssignableStudentInfo[]
             set({
                 // Sort assignable students by name for the dropdown/autocomplete

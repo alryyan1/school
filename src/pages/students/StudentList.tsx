@@ -1,5 +1,5 @@
 // src/pages/students/StudentList.tsx
-import React, { useState, useEffect, useMemo } from "react"; // Added React
+import React, { useState, useEffect } from "react"; // Added React
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -15,10 +15,8 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select"; // shadcn Select
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import {
-  Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, CalendarIcon, FilterX,
+  Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, FilterX,
   Edit3, CheckCircle2,
 } from "lucide-react";
 import { useStudentStore } from "@/stores/studentStore";
@@ -29,15 +27,19 @@ import { useAuth } from "@/context/authcontext";
 import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
 import dayjs, { Dayjs } from "dayjs"; // Import Dayjs type
-import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+
 import QuickEnrollDialog from "@/components/enrollments/QuickEnrollDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 
 const StudentList = () => {
   const {
-    students, loading, error, fetchStudents, acceptStudent,
+    students, loading, error, fetchStudents, acceptStudent, pagination,
   } = useStudentStore();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -46,6 +48,8 @@ const StudentList = () => {
   
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentForEnroll, setStudentForEnroll] = useState<Student | null>(null);
+  const [actionsDialogOpen, setActionsDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -62,12 +66,62 @@ const StudentList = () => {
   const [startDateFilter, setStartDateFilter] = useState<Dayjs | null>(null);
   const [endDateFilter, setEndDateFilter] = useState<Dayjs | null>(null);
   const [onlyEnrolled, setOnlyEnrolled] = useState(false);
+  const [onlyApproved, setOnlyApproved] = useState(false);
 
   const { schools, fetchSchools } = useSchoolStore();
   useEffect(() => {
     fetchStudents();
     fetchSchools();
   }, [fetchStudents, fetchSchools]);
+
+  // Function to build filter parameters
+  const buildFilters = () => {
+    const filters: Record<string, string | number | boolean> = {};
+    
+    if (searchTerm.trim()) {
+      filters.search = searchTerm.trim();
+    }
+    
+    if (wishedSchoolFilter !== null) {
+      filters.wished_school_id = wishedSchoolFilter;
+    }
+    
+    if (dateFilterType && dateFilterType !== " ") {
+      filters.date_type = dateFilterType;
+      if (startDateFilter) {
+        filters.start_date = startDateFilter.format('YYYY-MM-DD');
+      }
+      if (endDateFilter) {
+        filters.end_date = endDateFilter.format('YYYY-MM-DD');
+      }
+    }
+    
+    if (onlyEnrolled) {
+      filters.only_enrolled = true;
+    }
+    
+    if (onlyApproved) {
+      filters.only_approved = true;
+    }
+    
+    filters.sort_by = orderBy;
+    filters.sort_order = order;
+    filters.per_page = rowsPerPage;
+    filters.page = page + 1; // Backend uses 1-based pagination
+    
+    return filters;
+  };
+
+  // Fetch students with filters
+  const fetchStudentsWithFilters = () => {
+    const filters = buildFilters();
+    fetchStudents(filters);
+  };
+
+  // Update filters effect
+  useEffect(() => {
+    fetchStudentsWithFilters();
+  }, [searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, orderBy, order, page]);
 
   // const handleDelete = async (id: number) => { /* ... same ... */ };
   const handlePrintList = () => {
@@ -109,89 +163,11 @@ const StudentList = () => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
+    // The useEffect will automatically refetch with new sorting
   };
 
-  // Enhanced Filtering Logic
-  const filteredStudents = useMemo(() => {
-    return students
-      .filter((student) => student) // Filter out null/undefined students
-      .filter((student) =>
-        // Search Term Filter
-        Object.values(student || {}).some(
-          (value) =>
-            value &&
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
-      .filter((student) =>{
-        // Wished School Filter
-        if(wishedSchoolFilter !== null){
-          return student.wished_school === wishedSchoolFilter
-        }
-        return true
-      })
-      .filter((student) => {
-        // Date Range Filter
-        if (!dateFilterType || (!startDateFilter && !endDateFilter)) return true;
-
-        const studentDate = student[dateFilterType] ? dayjs(student[dateFilterType]) : null;
-        if (!studentDate) return false; // If date field is null, exclude
-
-        const startMatch = startDateFilter ? studentDate.isAfter(startDateFilter.startOf('day').subtract(1, 'day')) : true; // >= start
-        const endMatch = endDateFilter ? studentDate.isBefore(endDateFilter.endOf('day').add(1, 'day')) : true;       // <= end
-
-        return startMatch && endMatch;
-      })
-      .filter((student) => {
-        // Only students with enrollments filter
-        if (!onlyEnrolled) return true;
-        return Array.isArray(student.enrollments) && student.enrollments.length > 0;
-      });
-  }, [students, searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled]);
-
-
-  const sortedStudents = useMemo(() => { // useMemo for sortedStudents
-    return [...filteredStudents].sort((a, b) => { // Create a new array for sort
-      const aValue = a[orderBy];
-      const bValue = b[orderBy];
-
-      if (aValue === undefined || aValue === null || bValue === undefined || bValue === null) {
-        if (aValue === bValue) return 0; // both null/undefined
-        if (aValue === null || aValue === undefined) return order === 'asc' ? -1 : 1; // nulls/undefined first or last
-        if (bValue === null || bValue === undefined) return order === 'asc' ? 1 : -1;
-      }
-
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return order === "asc" ? aValue - bValue : bValue - aValue;
-      }
-       if (typeof aValue === "boolean" && typeof bValue === "boolean") {
-        return order === "asc" ? (aValue === bValue ? 0 : aValue ? -1 : 1) : (aValue === bValue ? 0 : aValue ? 1 : -1);
-      }
-
-      // Handle date sorting for 'created_at' and 'date_of_birth'
-      if (orderBy === 'created_at' || orderBy === 'date_of_birth') {
-        const dateA = dayjs(aValue as string);
-        const dateB = dayjs(bValue as string);
-        if (!dateA.isValid() && !dateB.isValid()) return 0;
-        if (!dateA.isValid()) return order === 'asc' ? -1 : 1;
-        if (!dateB.isValid()) return order === 'asc' ? 1 : -1;
-        return order === 'asc' ? dateA.diff(dateB) : dateB.diff(dateA);
-      }
-
-
-      return order === "asc"
-        ? String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase(), 'ar') // Arabic locale compare
-        : String(bValue).toLowerCase().localeCompare(String(aValue).toLowerCase(), 'ar');
-    });
-  }, [filteredStudents, order, orderBy]);
-
-
-  const paginatedStudents = sortedStudents.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
-  const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+  // Use students directly from backend (already filtered and paginated)
+  const paginatedStudents = students;
 
   const handleAccept = async (student: Student) => {
     try {
@@ -215,6 +191,30 @@ const StudentList = () => {
     setEnrollDialogOpen(true);
   };
 
+  const handleRowClick = (student: Student) => {
+    setSelectedStudent(student);
+    setActionsDialogOpen(true);
+  };
+
+  const handleActionClick = (action: string, student: Student) => {
+    setActionsDialogOpen(false);
+    
+    switch (action) {
+      case 'view':
+        navigate(`/students/${student.id}`);
+        break;
+      case 'enroll':
+        openEnrollDialog(student);
+        break;
+      case 'edit':
+        navigate(`/students/${student.id}/edit`);
+        break;
+      case 'accept':
+        handleAccept(student);
+        break;
+    }
+  };
+
   const SortButton = ({ column, children }: { column: keyof Student; children: React.ReactNode }) => (
     <Button variant="ghost" onClick={() => handleSort(column)} className="h-auto p-0 font-medium hover:bg-transparent hover:text-primary">
       {children}
@@ -229,7 +229,9 @@ const StudentList = () => {
     setStartDateFilter(null);
     setEndDateFilter(null);
     setOnlyEnrolled(false);
+    setOnlyApproved(false);
     setPage(0); // Reset to first page
+    // The useEffect will automatically refetch with new filters
   };
 
   if (loading && students.length === 0) {
@@ -296,7 +298,14 @@ const StudentList = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="text-xl sm:text-2xl">قائمة الطلاب</CardTitle>
+            <div>
+              <CardTitle className="text-xl sm:text-2xl">قائمة الطلاب</CardTitle>
+              {pagination && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  إجمالي الطلاب: {pagination.total} طالب
+                </p>
+              )}
+            </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button onClick={() => navigate("/students/create")} size="sm" className="w-full sm:w-auto">
                 <Plus className="ml-2 h-4 w-4" /> إضافة طالب
@@ -344,34 +353,30 @@ const StudentList = () => {
                 <SelectItem value="date_of_birth">تاريخ الميلاد</SelectItem>
               </SelectContent>
             </Select>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn(" justify-start text-right font-normal", !startDateFilter && "text-muted-foreground")}>
-                  <CalendarIcon className="ml-2 h-4 w-4" />
-                  {startDateFilter ? dayjs(startDateFilter).format('DD/MM/YYYY') : <span>من تاريخ</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar captionLayout="dropdown" mode="single" selected={startDateFilter?.toDate()} onSelect={(date) => {setStartDateFilter(date ? dayjs(date): null); setPage(0);}} initialFocus />
-              </PopoverContent>
-            </Popover>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-full justify-start text-right font-normal", !endDateFilter && "text-muted-foreground")}>
-                  <CalendarIcon className="ml-2 h-4 w-4" />
-                  {endDateFilter ? dayjs(endDateFilter).format('DD/MM/YYYY') : <span>إلى تاريخ</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar 
-                  captionLayout="dropdown" 
-                  mode="single" 
-                  selected={endDateFilter?.toDate()} 
-                  onSelect={(date) => {setEndDateFilter(date ? dayjs(date): null); setPage(0);}} 
-                  initialFocus 
-                />
-              </PopoverContent>
-            </Popover>
+            <Input
+              type="date"
+              value={startDateFilter ? startDateFilter.format('YYYY-MM-DD') : ''}
+              onChange={(e) => {
+                const date = e.target.value ? dayjs(e.target.value) : null;
+                setStartDateFilter(date);
+                setPage(0);
+              }}
+              className="w-full"
+              placeholder="من تاريخ"
+              disabled={!dateFilterType || dateFilterType === " "}
+            />
+            <Input
+              type="date"
+              value={endDateFilter ? endDateFilter.format('YYYY-MM-DD') : ''}
+              onChange={(e) => {
+                const date = e.target.value ? dayjs(e.target.value) : null;
+                setEndDateFilter(date);
+                setPage(0);
+              }}
+              className="w-full"
+              placeholder="إلى تاريخ"
+              disabled={!dateFilterType || dateFilterType === " "}
+            />
             <div className="sm:col-span-2 lg:col-span-1 xl:col-span-6 flex gap-2 justify-center lg:justify-end xl:justify-start">
               <Button
                 variant={onlyEnrolled ? "default" : "outline"}
@@ -380,6 +385,14 @@ const StudentList = () => {
                 className="w-full sm:w-auto"
               >
                 <CheckCircle2 className="ml-2 h-4 w-4" /> المسجلون فقط
+              </Button>
+              <Button
+                variant={onlyApproved ? "default" : "outline"}
+                onClick={() => { setOnlyApproved((v) => !v); setPage(0); }}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                <CheckCircle2 className="ml-2 h-4 w-4" /> المقبولون فقط
               </Button>
               <Button variant="ghost" onClick={resetFilters} size="sm" className="w-full sm:w-auto">
                 <FilterX className="ml-2 h-4 w-4" /> مسح الفلاتر
@@ -405,21 +418,24 @@ const StudentList = () => {
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="date_of_birth">ت. الميلاد</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="created_at">ت. التسجيل</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-16">طباعة</TableHead>
-                      <TableHead className="text-center hidden sm:table-cell w-24">...</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedStudents.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                          {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") 
+                          {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved
                             ? "لا توجد نتائج تطابق الفلاتر المحددة" 
                             : "لا توجد طلاب لعرضهم"}
                         </TableCell>
                       </TableRow>
                     ) : (
                       paginatedStudents.map((student) => (
-                        <TableRow key={student.id} className="hover:bg-muted/50">
+                        <TableRow 
+                          key={student.id} 
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => handleRowClick(student)}
+                        >
                           <TableCell className="text-center font-mono text-sm">{student.id}</TableCell>
                           <TableCell className="font-medium text-center">{student.student_name}</TableCell>
                           <TableCell className="text-center hidden sm:table-cell">
@@ -467,13 +483,6 @@ const StudentList = () => {
                                 const paid = Number(totals.total_amount_paid || 0);
                                 return `${due.toFixed(0)} / ${paid.toFixed(0)}`;
                               }
-                              // Fallback: compute from most recent enrollment if available in list
-                              const latest = student.enrollments?.[0];
-                              if (latest && (latest.total_amount_required != null || latest.total_amount_paid != null)) {
-                                const due = Number(latest.total_amount_required || 0);
-                                const paid = Number(latest.total_amount_paid || 0);
-                                return `${due.toFixed(0)} / ${paid.toFixed(0)}`;
-                              }
                               return '-';
                             })()}
                           </TableCell>
@@ -497,31 +506,6 @@ const StudentList = () => {
                               </Tooltip>
                             </TooltipProvider>
                           </TableCell>
-                          <TableCell className="text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-[180px]">
-                                <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}`)}><Eye className="ml-2 h-4 w-4" /> عرض الملف</DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onSelect={() => { openEnrollDialog(student)}}
-                                >
-                                  <span title={canEnroll ? '' : 'لا يملك صلاحية التسجيل'} className="flex items-center">
-                                    <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> تسجيل الطالب
-                                  </span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => navigate(`/students/${student.id}/edit`)}><Edit3 className="ml-2 h-4 w-4" /> تعديل البيانات</DropdownMenuItem>
-                                
-                              
-                                {/* --------------------- */}
-                                {!student.approved && (
-                                    <DropdownMenuItem onSelect={() => handleAccept(student)}> {/* Assuming handleAccept exists */}
-                                            <Mail className="ml-2 h-4 w-4 text-teal-500" /> قبول الطالب
-                                </DropdownMenuItem>
-                            )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -534,8 +518,16 @@ const StudentList = () => {
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
             <div className="text-sm text-muted-foreground order-2 sm:order-1">
-              عرض {paginatedStudents.length > 0 ? page * rowsPerPage + 1 : 0}-
-              {Math.min((page + 1) * rowsPerPage, filteredStudents.length)} من {filteredStudents.length}
+              {pagination ? (
+                <>
+                  عرض {pagination.from || 0}-{pagination.to || 0} من {pagination.total} طالب
+                  {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved ? (
+                    <span className="text-primary font-medium"> (مفلتر)</span>
+                  ) : null}
+                </>
+              ) : (
+                `عرض ${students.length} طالب`
+              )}
             </div>
             <div className="flex items-center gap-2 order-1 sm:order-2">
               <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0} className="hidden sm:inline-flex">
@@ -545,12 +537,12 @@ const StudentList = () => {
                 السابق
               </Button>
               <span className="text-sm px-3 py-1 rounded-md border bg-muted">
-                {page + 1} / {totalPages > 0 ? totalPages : 1}
+                {pagination ? `${pagination.current_page} / ${pagination.last_page}` : `${page + 1} / 1`}
               </span>
-              <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1}>
+              <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={pagination ? page >= pagination.last_page - 1 : true}>
                 التالي
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} className="hidden sm:inline-flex">
+              <Button variant="outline" size="sm" onClick={() => setPage(pagination ? pagination.last_page - 1 : 0)} disabled={pagination ? page >= pagination.last_page - 1 : true} className="hidden sm:inline-flex">
                 الأخيرة
               </Button>
             </div>
@@ -565,6 +557,64 @@ const StudentList = () => {
           setEnrollDialogOpen(false);
         }}
       />
+
+      {/* Student Actions Dialog */}
+      <Dialog open={actionsDialogOpen} onOpenChange={setActionsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>إجراءات الطالب</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {selectedStudent && (
+              <>
+                <div className="text-center p-4 border rounded-lg bg-muted/50">
+                  <h3 className="font-semibold text-lg">{selectedStudent.student_name}</h3>
+                  <p className="text-sm text-muted-foreground">كود الطالب: {selectedStudent.id}</p>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="justify-start"
+                    onClick={() => handleActionClick('view', selectedStudent)}
+                  >
+                    <Eye className="ml-2 h-4 w-4" /> عرض الملف
+                  </Button>
+                  
+                  {selectedStudent.approved && (!selectedStudent.enrollments || selectedStudent.enrollments.length === 0) && (
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => handleActionClick('enroll', selectedStudent)}
+                      disabled={!canEnroll}
+                    >
+                      <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> تسجيل الطالب
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    className="justify-start"
+                    onClick={() => handleActionClick('edit', selectedStudent)}
+                  >
+                    <Edit3 className="ml-2 h-4 w-4" /> تعديل البيانات
+                  </Button>
+                  
+                  {!selectedStudent.approved && (
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => handleActionClick('accept', selectedStudent)}
+                    >
+                      <Mail className="ml-2 h-4 w-4 text-teal-500" /> قبول الطالب
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -8,10 +8,18 @@ type StudentState = {
   currentStudent: Student | null;
   loading: boolean;
   error: string | null;
+  pagination: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+  } | null;
 };
 
 type StudentActions = {
-  fetchStudents: () => Promise<void>;
+  fetchStudents: (filters?: any) => Promise<void>;
   getStudentById: (id: number) => Promise<void>;
   searchStudentById: (id: number) => Promise<Student | null>;
   createStudent: (student: Omit<Student, "id">) => Promise<void|Student>;
@@ -27,17 +35,22 @@ const initialState: StudentState = {
   currentStudent: null,
   loading: false,
   error: null,
+  pagination: null,
 };
 
 export const useStudentStore = create<StudentState & StudentActions>((set) => ({
   ...initialState,
 
-  fetchStudents: async () => {
+  fetchStudents: async (filters?: Record<string, string | number | boolean>) => {
     set({ loading: true, error: null });
     try {
-      const response = await StudentApi.getAll();
+      const response = await StudentApi.getAll(filters);
       console.log(response.data, "students data");
-      set({ students: response.data.data, loading: false });
+      set({ 
+        students: response.data.data, 
+        pagination: response.data.pagination,
+        loading: false 
+      });
     } catch (error) {
       set({ error: "Failed to fetch students", loading: false });
     }

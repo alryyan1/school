@@ -41,9 +41,9 @@ import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore"; // 
 import EnrollmentFormDialog from "@/components/enrollments/EnrollmentFormDialog"; // Adjust path
 import UpdateEnrollmentDialog from "@/components/enrollments/UpdateEnrollmentDialog"; // Adjust path
 import {
-  StudentAcademicYear,
+  Enrollment,
   EnrollmentStatus,
-} from "@/types/studentAcademicYear"; // Adjust path
+} from "@/types/enrollment";
 import { GradeLevel } from "@/types/gradeLevel"; // Adjust path
 import { useSnackbar } from "notistack";
 import StudentFeePaymentList from "@/components/finances/StudentFeePaymentList";
@@ -85,14 +85,14 @@ const StudentEnrollmentManager: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [statementDialogOpen, setStatementDialogOpen] = useState(false);
   const [selectedEnrollmentForStatement, setSelectedEnrollmentForStatement] =
-    useState<StudentAcademicYear | null>(null);
+    useState<Enrollment | null>(null);
 
   // --- NEW Search State ---
   const [searchTerm, setSearchTerm] = useState("");
   const { activeAcademicYear, activeSchoolId } = useSettingsStore.getState(); // Changed from activeAcademicYearId
   console.log(activeAcademicYear, "activeAcademicYear");
   const [currentEnrollment, setCurrentEnrollment] =
-    useState<StudentAcademicYear | null>(null); // For Update/Delete
+    useState<Enrollment | null>(null); // For Update/Delete
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
     activeSchoolId ?? ""
   );
@@ -214,7 +214,7 @@ const StudentEnrollmentManager: React.FC = () => {
   const handleOpenEnrollForm = () => setEnrollFormOpen(true);
   const handleCloseEnrollForm = () => setEnrollFormOpen(false);
 
-  const handleOpenUpdateForm = (enrollment: StudentAcademicYear) => {
+  const handleOpenUpdateForm = (enrollment: Enrollment) => {
     setCurrentEnrollment(enrollment);
     setUpdateFormOpen(true);
   };
@@ -245,7 +245,7 @@ const StudentEnrollmentManager: React.FC = () => {
     }
   };
   
-  const handleOpenStatementDialog = (enrollment: StudentAcademicYear) => {
+  const handleOpenStatementDialog = (enrollment: Enrollment) => {
     setSelectedEnrollmentForStatement(enrollment);
     setStatementDialogOpen(true);
   };
@@ -263,7 +263,7 @@ const StudentEnrollmentManager: React.FC = () => {
     }
   };
   
-  const handleOpenDeleteDialog = (enrollment: StudentAcademicYear) => {
+  const handleOpenDeleteDialog = (enrollment: Enrollment) => {
     setCurrentEnrollment(enrollment);
     setDeleteDialogOpen(true);
   };
@@ -295,11 +295,11 @@ const StudentEnrollmentManager: React.FC = () => {
   //  const selectedGradeLevelObj = gradeLevels.find(gl => gl.id === selectedGradeId) || null;
   const [paymentListOpen, setPaymentListOpen] = useState(false);
   const [selectedEnrollmentForPayments, setSelectedEnrollmentForPayments] =
-    useState<StudentAcademicYear | null>(null);
+    useState<Enrollment | null>(null);
 
   // ... existing functions ...
 
-  const handleOpenPaymentList = (enrollment: StudentAcademicYear) => {
+  const handleOpenPaymentList = (enrollment: Enrollment) => {
     setSelectedEnrollmentForPayments(enrollment);
     setPaymentListOpen(true);
   };

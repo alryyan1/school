@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, ChevronsUpDown, Check } from 'lucide-react';
 
-import { StudentEnrollmentFormData, EnrollmentStatus, EnrollmentType } from '@/types/studentAcademicYear';
+import { EnrollmentFormData, EnrollmentStatus, EnrollmentType } from '@/types/enrollment';
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 import { useClassroomStore } from '@/stores/classroomStore';
 import { AcademicYear } from '@/types/academicYear';
@@ -47,7 +47,7 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
     const [studentComboboxOpen, setStudentComboboxOpen] = useState(false);
 
 
-    const { control, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<StudentEnrollmentFormData>({
+    const { control, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<EnrollmentFormData>({
         // Default values set in useEffect
     });
 

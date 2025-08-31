@@ -17,7 +17,7 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/context/authcontext';
-import alfanarLogo from '@/assets/alfanar.png';
+import alfanarLogo from '@/assets/logo.png';
 
 const Login = () => {
   const [username, setUsername] = useState('');

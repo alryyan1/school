@@ -6,7 +6,15 @@ import axiosClient from "../axios-client";
 export type StudentResourceResponse = { data: Student };
 // Assuming index returns { data: Student[] } or paginated structure
 export type StudentCollectionResponse = {
-  data: Student[] /* Add pagination if needed */;
+  data: Student[];
+  pagination: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+  };
 };
 
 export type AcceptStudentResponse = {
@@ -24,7 +32,7 @@ export const StudentApi = {
     student: Partial<Omit<Student, "id" | "photo">> // Don't send photo path in normal update
   ) => axiosClient.put<Student>(`/students/${id}`, student),
 
-  getAll: () => axiosClient.get<StudentCollectionResponse>("/students"),
+  getAll: (filters?: Record<string, string | number | boolean>) => axiosClient.get<StudentCollectionResponse>("/students", { params: filters }),
 
   getById: (id: number) =>
     axiosClient.get<StudentResourceResponse>(`/students/${id}`),

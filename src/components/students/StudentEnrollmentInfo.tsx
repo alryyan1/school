@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { StudentAcademicYear } from '@/types/studentAcademicYear';
+import { Enrollment } from '@/types/enrollment';
 import { Student } from '@/types/student';
 import { 
   GraduationCap, 
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 interface StudentEnrollmentInfoProps {
-  enrollment: StudentAcademicYear | null;
+      enrollment: Enrollment | null;
   student: Student;
 }
 

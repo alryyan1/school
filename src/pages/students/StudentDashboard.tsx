@@ -154,20 +154,7 @@ const StudentDashboard: React.FC = () => {
                     </h1>
                 </motion.div>
 
-                {/* Statistics Section */}
-                <motion.div
-                    variants={containerVariants} initial="hidden" animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 md:mb-8"
-                >
-                    <motion.div variants={statItemVariants}>
-                         <StatCard title="إجمالي الطلاب المسجلين" value={stats.studentCount} icon={Users2} isLoading={isLoadingStats} iconColor="text-blue-600" bgColor="bg-blue-100 dark:bg-blue-900/30" />
-                    </motion.div>
-              
-                     <motion.div variants={statItemVariants}>
-                         <StatCard title="تسجيلات جديدة (آخر شهر)" value={stats.newEnrollmentsThisMonth} icon={UserPlus} isLoading={isLoadingStats} iconColor="text-sky-600" bgColor="bg-sky-100 dark:bg-sky-900/30" />
-                    </motion.div>
-                    {/* Add more StatCards here */}
-                </motion.div>
+        
 
                 <Separator className="my-6 md:my-8" />
 

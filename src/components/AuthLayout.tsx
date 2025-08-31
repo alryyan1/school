@@ -5,7 +5,7 @@ import { createTheme } from '@mui/material/styles';
 import { arSA } from '@mui/material/locale';
 import { CacheProvider } from '@emotion/react';
 import { cacheRtl } from '../constants';
-import alfanarLogo from '@/assets/alfanar.png';
+import alfanarLogo from '@/assets/logo.png';
 
 const AuthLayout = () => {
 
@@ -59,18 +59,7 @@ const AuthLayout = () => {
             
             <Box sx={{ maxWidth: 500, textAlign: 'center', color: 'white' }}>
                 {/* Logo */}
-                <Box sx={{ mb: 4 }}>
-                  <img 
-                    src={alfanarLogo} 
-                    alt="Alfanar Logo" 
-                    style={{ 
-                      maxWidth: '250px', 
-                      height: 'auto',
-                      borderRadius: '12px',
-                      filter: 'brightness(0) invert(1)' // Makes the logo white
-                    }} 
-                  />
-                </Box>
+            
                 
                 <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
                   نظام إدارة الطلاب
