@@ -149,9 +149,22 @@ const StudentList = () => {
       params.append('date_type', dateFilterType);
     }
     
+    // Add enrollment and approval filters
+    if (onlyEnrolled) {
+      params.append('only_enrolled', 'true');
+    }
+    
+    if (onlyApproved) {
+      params.append('only_approved', 'true');
+    }
+    
     // Add sorting parameters
     params.append('sort_by', orderBy);
     params.append('sort_order', order);
+    
+    // Add pagination parameters (for PDF, we might want all results)
+    params.append('per_page', '1000'); // Get all results for PDF
+    params.append('page', '1');
     
     // Build the URL
     const printUrl = `${webUrl}reports/students/list-pdf?${params.toString()}`;
