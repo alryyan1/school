@@ -46,7 +46,7 @@ import {
 import { GradeLevel } from "@/types/gradeLevel";
 import { useSnackbar } from "notistack";
 import { SchoolApi } from "@/api/schoolApi";
-import { useSettingsStore } from "@/stores/settingsStore";
+// Removed useSettingsStore import
 import { ClearIcon } from "@mui/x-date-pickers";
 import { SearchIcon } from "lucide-react";
 import { formatNumber } from "@/constants";
@@ -88,7 +88,7 @@ const getStatusColor = (
 
 // Custom hook for managing filters
 const useEnrollmentFilters = () => {
-  const { activeAcademicYear, activeSchoolId } = useSettingsStore.getState();
+  // Removed useSettingsStore - implement your preferred state management
   
   const [filters, setFilters] = useState<FilterState>({
     selectedSchoolId: activeSchoolId ?? "",

@@ -16,7 +16,7 @@ import { GradeLevel } from '@/types/gradeLevel';
 import { SchoolApi } from '@/api/schoolApi'; // To fetch school-specific grades
 import { ExamScheduleApi } from '@/api/examScheduleApi'; // For quick add API
 import { useSnackbar } from 'notistack';
-import { useSettingsStore } from '@/stores/settingsStore';
+// Removed useSettingsStore import
 
 interface QuickAddScheduleDialogProps {
     open: boolean;
@@ -40,7 +40,7 @@ const QuickAddScheduleDialog: React.FC<QuickAddScheduleDialogProps> = ({ open, o
     const [availableGradeLevels, setAvailableGradeLevels] = useState<GradeLevel[]>([]);
     const [loadingSchoolGrades, setLoadingSchoolGrades] = useState(false);
     // --- Get active academic year from settings ---
-    const { activeAcademicYearId } = useSettingsStore.getState();
+    // Removed useSettingsStore - implement your preferred state management
     const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<QuickAddFormData>({
         defaultValues: {
             grade_level_id: '',

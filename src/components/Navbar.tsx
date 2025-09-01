@@ -8,16 +8,10 @@ import {
   Menu,
   MenuItem,
   Avatar,
-  Chip, // Added Chip
-  Tooltip,
-  Skeleton,
-  Stack, // Added Skeleton for loading names
+  Stack,
 } from "@mui/material";
 import AccountCircle from "@mui/icons-material/AccountCircle";
-import SchoolIcon from "@mui/icons-material/School"; // For School
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday"; // For Year
 import { useAuth } from "@/context/authcontext"; // Adjust path
-import { useSettingsStore } from "@/stores/settingsStore"; // Adjust path
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
 
 interface NavbarProps {
@@ -30,17 +24,15 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // --- Get Active Settings ---
-  const { activeSchoolId, activeAcademicYear } = useSettingsStore();
+  // Removed useSettingsStore - you may need to implement alternative state management
 
   // --- Get Names from Stores ---
-  const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
+  const { schools, fetchSchools } = useSchoolStore();
 
-  // Fetch schools if ID is set but list is empty
+  // Fetch schools if list is empty
   useEffect(() => {
-    if (activeSchoolId && schools.length === 0) fetchSchools();
-  }, [activeSchoolId, schools.length, fetchSchools]);
-
-  const activeSchool = schools.find((s) => s.id === activeSchoolId);
+    if (schools.length === 0) fetchSchools();
+  }, [schools.length, fetchSchools]);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) =>
     setAnchorEl(event.currentTarget);
@@ -64,36 +56,7 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
     >
       {/* Active School and Year Display */}
       <Stack direction="row" spacing={1} alignItems="center">
-        {activeSchoolId && (
-          <Tooltip title="المدرسة النشطة حالياً" placement="bottom-start">
-            <Chip
-              icon={<SchoolIcon fontSize="small" />}
-              label={
-                schoolsLoading ? (
-                  <Skeleton width={60} height={20} />
-                ) : (
-                  activeSchool?.name || `مدرسة (${activeSchoolId})`
-                )
-              }
-              size="small"
-              variant="outlined"
-              sx={{ cursor: "pointer" }}
-              onClick={() => {}} // Disabled link: general settings removed
-            />
-          </Tooltip>
-        )}
-        {activeAcademicYear && (
-          <Tooltip title="العام الدراسي النشط حالياً" placement="bottom-start">
-            <Chip
-              icon={<CalendarTodayIcon fontSize="small" />}
-              label={activeAcademicYear}
-              size="small"
-              variant="outlined"
-              sx={{ cursor: "pointer" }}
-              onClick={() => {}} // Disabled link: general settings removed
-            />
-          </Tooltip>
-        )}
+        {/* Removed active school/year display - implement your preferred state management */}
       </Stack>
 
       {/* Spacer to push user menu to the right */}

@@ -59,7 +59,7 @@ import { useSchoolStore } from "@/stores/schoolStore";
 import { GradeLevel } from "@/types/gradeLevel";
 import { ExamResultFormData } from "@/types/examResult";
 import { useSnackbar } from "notistack";
-import { useSettingsStore } from "@/stores/settingsStore"; // To get active school/year context
+// Removed useSettingsStore import
 import { SchoolApi } from "@/api/schoolApi";
 
 // Form structure for the entire page (array of results)
@@ -72,7 +72,7 @@ const ExamResultsEntryPage: React.FC = () => {
   // Get examId from URL if navigating directly to results for a specific exam
   const { examId: examIdFromParams } = useParams<{ examId?: string }>();
 
-  const { activeSchoolId } = useSettingsStore.getState();
+  // Removed useSettingsStore - implement your preferred state management
 
   // --- Filters & Selected State ---
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(

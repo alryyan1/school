@@ -32,7 +32,7 @@ import { motion } from 'framer-motion'; // For animations
 
 import { useSchoolStore } from '@/stores/schoolStore';       // Adjust path
 import { useGradeLevelStore } from '@/stores/gradeLevelStore'; // For ALL grades
-import { useSettingsStore } from '@/stores/settingsStore';     // Add missing import
+// Removed useSettingsStore import
 import { SchoolApi } from '@/api/schoolApi';                   // Adjust path
 import { GradeLevel } from '@/types/gradeLevel';             // Adjust path
 import { useSnackbar } from 'notistack';
@@ -199,7 +199,7 @@ const EditGradeFeeDialog: React.FC<EditGradeFeeDialogProps> = ({ open, onOpenCha
 
 const SchoolGradeLevelManager: React.FC = () => {
     const { enqueueSnackbar } = useSnackbar();
-    const initialActiveSchoolId = useSettingsStore.getState().activeSchoolId;
+    // Removed useSettingsStore - implement your preferred state management
 
     // --- Local State ---
     const [selectedSchoolId, setSelectedSchoolId] = useState<number | ''>(initialActiveSchoolId ?? '');

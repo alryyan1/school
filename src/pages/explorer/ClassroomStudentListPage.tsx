@@ -4,7 +4,7 @@ import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useClassroomStore } from '@/stores/classroomStore'; // Maybe needed for classroom details
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore'; // Get enrollments
-import { useSettingsStore } from '@/stores/settingsStore'; // Get active year
+// Removed useSettingsStore import
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User as UserIcon, ArrowRight } from 'lucide-react'; // Fallback Icon
@@ -18,7 +18,7 @@ const ClassroomStudentListPage: React.FC = () => {
     const { schoolId, classroomId } = useParams<{ schoolId: string, classroomId: string }>();
     const navigate = useNavigate();
     // Get active year from settings
-    const { activeAcademicYearId } = useSettingsStore();
+    // Removed useSettingsStore - implement your preferred state management
     // Fetch enrollments for this classroom and year
     const { enrollments, fetchEnrollments, loading, error, clearEnrollments } = useStudentEnrollmentStore();
     // Optionally fetch specific classroom details if needed for title etc.

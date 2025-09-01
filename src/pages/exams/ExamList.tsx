@@ -55,7 +55,7 @@ import {
 
 import { useExamStore } from "@/stores/examStore";
 import { useSchoolStore } from "@/stores/schoolStore";
-import { useSettingsStore } from "@/stores/settingsStore"; // For default school
+// Removed useSettingsStore import
 import ExamFormDialog from "@/components/exams/ExamFormDialog";
 import { Exam } from "@/types/exam";
 import { useSnackbar } from "notistack";
@@ -65,7 +65,7 @@ import { Link } from "react-router-dom";
 const ExamList: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const { activeSchoolId: defaultActiveSchoolId } = useSettingsStore.getState();
+  // Removed useSettingsStore - implement your preferred state management
 
   // --- Local State ---
   const [formOpen, setFormOpen] = useState(false);

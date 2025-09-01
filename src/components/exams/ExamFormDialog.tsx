@@ -37,7 +37,7 @@ dayjs.locale("ar");
 import { Exam, ExamFormData } from "@/types/exam"; // Adjust path
 import { useExamStore } from "@/stores/examStore"; // Adjust path
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
-import { useSettingsStore } from "@/stores/settingsStore"; // For default school
+// Removed useSettingsStore import
 import { useSnackbar } from "notistack";
 
 interface ExamFormDialogProps {
@@ -56,7 +56,7 @@ const ExamFormDialog: React.FC<ExamFormDialogProps> = ({
   const isEditMode = !!initialData;
   const { createExam, updateExam } = useExamStore();
   const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
-  const { activeSchoolId: defaultActiveSchoolId } = useSettingsStore.getState();
+  // Removed useSettingsStore - implement your preferred state management
   const { enqueueSnackbar } = useSnackbar();
   const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
 

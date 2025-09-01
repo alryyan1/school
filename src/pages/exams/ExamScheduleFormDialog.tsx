@@ -39,7 +39,7 @@ import { useExamScheduleStore } from "@/stores/examScheduleStore"; // Adjust pat
 import { useSubjectStore } from "@/stores/subjectStore"; // Adjust path
 import { useClassroomStore } from "@/stores/classroomStore"; // Adjust path
 import { useUserStore } from "@/stores/userStore"; // Adjust path
-import { useSettingsStore } from "@/stores/settingsStore"; // Adjust path
+// Removed useSettingsStore import
 import { SchoolApi } from "@/api/schoolApi"; // Adjust path
 import { GradeLevel } from "@/types/gradeLevel"; // Adjust path
 import { useSnackbar } from "notistack";
@@ -107,7 +107,7 @@ const ExamScheduleFormDialog: React.FC<ExamScheduleFormDialogProps> = ({
     fetchUsers: fetchAllTeachers,
     loading: teachersLoading,
   } = useUserStore();
-  const { activeAcademicYearId } = useSettingsStore.getState(); // Get current active year
+  // Removed useSettingsStore - implement your preferred state management
 
   const {
     control,

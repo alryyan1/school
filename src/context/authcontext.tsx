@@ -12,6 +12,7 @@ interface AuthState {
   userName: string | null;
   isLoading: boolean;
   permissions?: string[] | null;
+  roles?: string[] | null;
   tokenExpiresAt?: string | null;
 }
 
@@ -28,13 +29,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const persistedToken = typeof window !== 'undefined' && (localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
   const persistedExpiry = (typeof window !== 'undefined' && (localStorage.getItem('authTokenExpiresAt') || sessionStorage.getItem('authTokenExpiresAt'))) || null;
 
+  // Helper function to get the primary role from roles array
+  const getPrimaryRole = (roles: string[] | null): UserRole => {
+    if (!roles || roles.length === 0) return null;
+    // Return the first role, or map 'admin' role specifically
+    const firstRole = roles[0];
+    if (firstRole === 'admin') return 'admin';
+    if (firstRole === 'teacher') return 'teacher';
+    if (firstRole === 'student') return 'student';
+    if (firstRole === 'parent') return 'parent';
+    return firstRole as UserRole;
+  };
+
   const [state, setState] = useState<AuthState>({
     isAuthenticated: persistedToken ? true : null,
-    userRole: persistedUser?.role ?? null,
+    userRole: getPrimaryRole(persistedUser?.roles),
     userId: persistedUser?.id ? String(persistedUser.id) : null,
     userName: persistedUser?.name ?? null,
     isLoading: true,
     permissions: persistedUser?.permissions ?? [],
+    roles: persistedUser?.roles ?? [],
     tokenExpiresAt: persistedExpiry,
   });
 
@@ -52,6 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         userName: null,
         isLoading: false,
         permissions: [],
+        roles: [],
         tokenExpiresAt: null,
       });
       return;
@@ -68,21 +83,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       if (response.data.valid) {
         console.log('user is valid')
+        const userData = response.data.user;
         setState(prev => ({
           ...prev,
           isAuthenticated: true,
-          userRole: response.data.user.role,
-          userId: response.data.user.id.toString(),
-          userName: response.data.user.name,
+          userRole: getPrimaryRole(userData.roles),
+          userId: userData.id.toString(),
+          userName: userData.name,
           isLoading: false,
-          permissions: response.data.user.permissions || [],
+          permissions: userData.permissions || [],
+          roles: userData.roles || [],
           tokenExpiresAt: response.data.token_expires_at || prev.tokenExpiresAt || null,
         }));
         const userForStorage = {
-          id: response.data.user.id,
-          name: response.data.user.name,
-          role: response.data.user.role,
-          permissions: response.data.user.permissions || [],
+          id: userData.id,
+          name: userData.name,
+          roles: userData.roles || [],
+          permissions: userData.permissions || [],
         };
         if (localStorage.getItem('authToken')) {
           localStorage.setItem('authUser', JSON.stringify(userForStorage));
@@ -109,6 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           userName: null,
           isLoading: false,
           permissions: [],
+          roles: [],
         });
       }
     } catch (error) {
@@ -122,6 +140,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         userId: null,
         userName: null,
         isLoading: false,
+        permissions: [],
+        roles: [],
       });
       }
    
@@ -138,21 +158,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       storage.setItem('authToken', response.data.token);
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
 
+      const userData = response.data.user;
       setState(prev => ({
         ...prev,
         isAuthenticated: true,
-        userRole: response.data.user.role,
-        userId: response.data.user.id,
-        userName: response.data.user.name,
+        userRole: getPrimaryRole(userData.roles),
+        userId: userData.id,
+        userName: userData.name,
         isLoading: false,
+        permissions: userData.permissions || [],
+        roles: userData.roles || [],
         tokenExpiresAt: response.data.token_expires_at || null,
       }));
 
       storage.setItem('authUser', JSON.stringify({
-        id: response.data.user.id,
-        name: response.data.user.name,
-        role: response.data.user.role,
-        permissions: response.data.user.permissions || [],
+        id: userData.id,
+        name: userData.name,
+        roles: userData.roles || [],
+        permissions: userData.permissions || [],
       }));
       if (response.data.token_expires_at) {
         storage.setItem('authTokenExpiresAt', response.data.token_expires_at);
@@ -182,6 +205,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userName: null,
       isLoading: false,
       permissions: [],
+      roles: [],
       tokenExpiresAt: null,
     });
 

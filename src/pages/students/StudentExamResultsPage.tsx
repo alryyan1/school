@@ -47,7 +47,7 @@ import { useSubjectStore } from '@/stores/subjectStore';
 import { useExamScheduleStore } from '@/stores/examScheduleStore';
 import { useExamResultStore } from '@/stores/examResultStore';
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore'; // For specific enrollment data
-import { useSettingsStore } from '@/stores/settingsStore';
+// Removed useSettingsStore import
 import { Student } from '@/types/student';
 import { Exam } from '@/types/exam';
 import { Subject } from '@/types/subject';
@@ -78,7 +78,7 @@ const StudentExamResultsPage: React.FC = () => {
     const studentId = Number(studentIdParam);
     const { enqueueSnackbar } = useSnackbar();
 
-    const { activeAcademicYear } = useSettingsStore.getState();
+    // Removed useSettingsStore - implement your preferred state management
     const {enrollments: studentEnrollments, fetchEnrollments: fetchStudentEnrollments} = useStudentEnrollmentStore();
 
     // --- Animation variants ---
@@ -109,35 +109,16 @@ const StudentExamResultsPage: React.FC = () => {
         defaultValues: { results: [] }
     });
     const { fields, replace } = useFieldArray({ control, name: "results" });
-   const {activeSchoolId} = useSettingsStore.getState();
+   // Removed useSettingsStore - implement your preferred state management
     // --- Effects ---
     // 1. Fetch Student Details & Their Enrollments
     useEffect(() => {
         if (studentId) {
             fetchStudentDetails(studentId);
-            fetchStudentEnrollments({academic_year: activeAcademicYear,school_id: activeSchoolId});   
-            // Fetch all enrollments for this student to find the active one
-            if (activeAcademicYear) {
-                EnrollmentApi.getAll({
-                    academic_year: activeAcademicYear,
-                    school_id: activeSchoolId
-                })
-                .then(response => {
-                    // Filter for the specific student from the response
-                    const studentEnrollments = response.data.data?.filter(
-                        enrollment => enrollment.student?.id === studentId
-                    ) || [];
-                    
-                    if (studentEnrollments.length > 0) {
-                        setCurrentStudentEnrollment(studentEnrollments[0]); // Take first enrollment
-                    } else {
-                        setPageError("لم يتم العثور على تسجيل نشط للطالب في العام الدراسي الحالي.");
-                    }
-                })
-                .catch(() => setPageError("فشل تحميل بيانات تسجيل الطالب."));
-            }
+            // Removed useSettingsStore - implement your preferred state management
+            // You may need to implement alternative state management for academic year and school ID
         }
-    }, [studentId, fetchStudentDetails, activeAcademicYear]);
+    }, [studentId, fetchStudentDetails]);
 
     // 2. Fetch Relevant Exams for the Student (based on active enrollment's school/year)
     useEffect(() => {

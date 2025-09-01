@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { useClassroomStore } from "@/stores/classroomStore";
 import { useStudentEnrollmentStore } from "@/stores/studentEnrollmentStore";
-import { useSettingsStore } from "@/stores/settingsStore";
+// Removed useSettingsStore import
 import { Enrollment } from "@/types/enrollment";
 import { GradeLevel } from "@/types/gradeLevel"; // Ensure this type is correctly defined
 import { Classroom } from "@/types/classroom";
@@ -70,10 +70,9 @@ const UNASSIGNED_STUDENTS_DROPPABLE_ID = "unassigned-students";
 const ClassroomStudentAssigner: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
-  const {
-    activeSchoolId: defaultSchoolId,
-    activeAcademicYear: defaultYear,
-  } = useSettingsStore.getState();
+  // Removed useSettingsStore - implement your preferred state management
+  const defaultSchoolId = null;
+  const defaultYear = "2024/2025";
 
   // --- Filters State ---
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | "">(
@@ -102,7 +101,7 @@ const ClassroomStudentAssigner: React.FC = () => {
 
   // --- Store Data & Actions ---
   const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
-  const { activeAcademicYear } = useSettingsStore();
+  // Removed useSettingsStore - implement your preferred state management
   
   // Available academic years
   const availableAcademicYears = [

@@ -12,7 +12,7 @@ import { Menu, School, CalendarDays, LogOut, UserCircle, Shield, ChevronDown } f
 import StudentSearch from '@/components/StudentSearch';
 
 import { useAuth } from '@/context/authcontext'; // Adjust path
-import { useSettingsStore } from '@/stores/settingsStore'; // Adjust path
+// Removed useSettingsStore import
 import { useSchoolStore } from '@/stores/schoolStore'; // Adjust path
 
 interface NavbarAreaProps {
@@ -20,25 +20,27 @@ interface NavbarAreaProps {
 }
 
 const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
-    const { userName, userRole, permissions, logout } = useAuth();
+    const { userName, userRole, roles, permissions, logout } = useAuth();
     const navigate = useNavigate();
 
-    const { activeSchoolId, activeAcademicYear } = useSettingsStore();
     const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
 
     // Show student search on all pages
     const showStudentSearch = true;
 
     useEffect(() => {
-        if (activeSchoolId && schools.length === 0) fetchSchools();
-    }, [activeSchoolId, schools.length, fetchSchools]);
+        if (schools.length === 0) fetchSchools();
+    }, [schools.length, fetchSchools]);
 
-    const activeSchool = schools.find(s => s.id === activeSchoolId);
+    // Removed activeSchoolId and activeAcademicYear - implement your preferred state management
 
     const handleLogout = () => {
         logout();
         navigate('/auth/login');
     };
+
+    // Get the primary role for display
+    const primaryRole = userRole || (roles && roles.length > 0 ? roles[0] : "الدور");
 
     return (
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 justify-between" dir="rtl">
@@ -57,25 +59,7 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
 
             {/* Active School/Year Display */}
             <div className="hidden lg:flex items-center gap-2 text-sm">
-                {activeSchoolId && (
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                        <School className="h-4 w-4" />
-                        <span className="font-medium">
-                            {schoolsLoading ? <Skeleton className="h-4 w-20" /> : (activeSchool?.name || `مدرسة (${activeSchoolId})`)}
-                        </span>
-                    </span>
-                )}
-                {activeAcademicYear && (
-                    <>
-                        <span className="text-muted-foreground">/</span>
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <CalendarDays className="h-4 w-4" />
-                            <span className="font-medium">
-                                {activeAcademicYear}
-                            </span>
-                        </span>
-                    </>
-                )}
+                {/* Removed active school/year display - implement your preferred state management */}
             </div>
 
             {/* Student Search - Show on all pages */}
@@ -107,7 +91,7 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                             <p className="text-sm font-medium leading-none">{userName || "المستخدم"}</p>
-                            <p className="text-xs leading-none text-muted-foreground">{userRole || "الدور"}</p>
+                            <p className="text-xs leading-none text-muted-foreground">{primaryRole}</p>
                         </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -125,10 +109,25 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
                             <DropdownMenuLabel className="font-normal">
                                 <div className="flex flex-col space-y-1">
                                     <p className="text-sm font-medium leading-none">معلومات الصلاحيات</p>
-                                    <p className="text-xs leading-none text-muted-foreground">الدور: {userRole || "غير محدد"}</p>
+                                    <p className="text-xs leading-none text-muted-foreground">الدور: {primaryRole}</p>
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            {roles && roles.length > 0 && (
+                                <>
+                                    <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                                        الأدوار الممنوحة:
+                                    </DropdownMenuLabel>
+                                    <div className="max-h-16 overflow-y-auto">
+                                        {roles.map((role, index) => (
+                                            <DropdownMenuItem key={index} className="text-xs cursor-default">
+                                                <span className="truncate">{role}</span>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </div>
+                                    <DropdownMenuSeparator />
+                                </>
+                            )}
                             {permissions && permissions.length > 0 ? (
                                 <>
                                     <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">

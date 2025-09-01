@@ -47,7 +47,7 @@ import { motion } from "framer-motion";
 
 import { useClassroomStore } from "@/stores/classroomStore";
 import { useSchoolStore } from "@/stores/schoolStore";
-import { useSettingsStore } from "@/stores/settingsStore";
+// Removed useSettingsStore import
 import { SchoolApi } from "@/api/schoolApi";
 import ClassroomFormDialog from "@/components/settings/ClassroomFormDialog";
 import { Classroom } from "@/types/classroom";
@@ -56,7 +56,7 @@ import { useSnackbar } from "notistack";
 
 const ClassroomList: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const { activeSchoolId } = useSettingsStore();
+  // Removed useSettingsStore - implement your preferred state management
   const initialActiveSchoolId = activeSchoolId;
 
   // Debug logging for settings

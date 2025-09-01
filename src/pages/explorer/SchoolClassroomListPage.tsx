@@ -4,7 +4,7 @@ import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSchoolStore } from "@/stores/schoolStore"; // To get school name maybe
 import { useClassroomStore } from "@/stores/classroomStore"; // To get classrooms
-import { useSettingsStore } from "@/stores/settingsStore"; // To get active year
+// Removed useSettingsStore import
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { SchoolApi } from "@/api/schoolApi";
@@ -23,7 +23,7 @@ const SchoolClassroomListPage: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar(); // For notifications
   const [loadingGradeLevels, setLoadingGradeLevels] = useState(false); // Loading state for grade levels
   const [availableGradeLevels, setAvailableGradeLevels] = useState<GradeLevel[]>([]); // State for available grade levels
-  const { activeAcademicYearId, activeSchoolId } = useSettingsStore(); // Get active year
+  // Removed useSettingsStore - implement your preferred state management
   console.log(availableGradeLevels, "available grade levels"); // Debugging line
   console.log(
     activeAcademicYearId,

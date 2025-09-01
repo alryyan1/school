@@ -1,7 +1,7 @@
 import ClassroomCard from "@/components/explorer/ClassroomCard";
 import { useClassroomStore } from "@/stores/classroomStore";
 import { useGradeLevelStore } from "@/stores/gradeLevelStore";
-import { useSettingsStore } from "@/stores/settingsStore";
+// Removed useSettingsStore import
 import { ArrowBack } from "@mui/icons-material";
 import { Container, Typography } from "@mui/material";
 import React, { useEffect } from "react";
@@ -13,7 +13,7 @@ function GradeLevelClassroomListPage() {
     gradeLevelId: string;
   }>();
   console.log(schoolId, gradeLevelId, "school id and grade level id");
-  const { activeAcademicYearId } = useSettingsStore(); // To get active year
+  // Removed useSettingsStore - implement your preferred state management
   const { classrooms, fetchClassrooms, loading ,clearClassrooms} = useClassroomStore(); // To get classrooms
   const { gradeLevels, fetchGradeLevels } = useGradeLevelStore(); // To get classrooms
   useEffect(() => {

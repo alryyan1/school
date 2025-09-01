@@ -16,25 +16,20 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select"; // shadcn Select
 import {
-  Eye, Plus, FileText, ChevronUp, ChevronDown, Mail, FilterX,
-  Edit3, CheckCircle2,
+  Plus, FileText, ChevronUp, ChevronDown, FilterX,
+  CheckCircle2, Eye, RefreshCw, User, XCircle,
 } from "lucide-react";
 import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { Gender, Student } from "@/types/student";
 import { useSnackbar } from "notistack";
-import { useAuth } from "@/context/authcontext";
+
 import { useNavigate } from "react-router-dom";
 import { webUrl } from "@/constants";
 import dayjs, { Dayjs } from "dayjs"; // Import Dayjs type
 
 import QuickEnrollDialog from "@/components/enrollments/QuickEnrollDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import StudentActionsDialog from "@/components/students/StudentActionsDialog";
 
 
 const StudentList = () => {
@@ -43,13 +38,13 @@ const StudentList = () => {
   } = useStudentStore();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
-  const { permissions } = useAuth();
-  const canEnroll = (permissions || []).includes('enrollment permission');
+
   
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentForEnroll, setStudentForEnroll] = useState<Student | null>(null);
   const [actionsDialogOpen, setActionsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -67,6 +62,8 @@ const StudentList = () => {
   const [endDateFilter, setEndDateFilter] = useState<Dayjs | null>(null);
   const [onlyEnrolled, setOnlyEnrolled] = useState(false);
   const [onlyApproved, setOnlyApproved] = useState(false);
+  const [onlyNotEnrolled, setOnlyNotEnrolled] = useState(false);
+  const [onlyNotApproved, setOnlyNotApproved] = useState(false);
 
   const { schools, fetchSchools } = useSchoolStore();
   useEffect(() => {
@@ -104,6 +101,14 @@ const StudentList = () => {
       filters.only_approved = true;
     }
     
+    if (onlyNotEnrolled) {
+      filters.only_not_enrolled = true;
+    }
+    
+    if (onlyNotApproved) {
+      filters.only_not_approved = true;
+    }
+    
     filters.sort_by = orderBy;
     filters.sort_order = order;
     filters.per_page = rowsPerPage;
@@ -121,7 +126,7 @@ const StudentList = () => {
   // Update filters effect
   useEffect(() => {
     fetchStudentsWithFilters();
-  }, [searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, orderBy, order, page, rowsPerPage]);
+  }, [searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, onlyNotEnrolled, onlyNotApproved, orderBy, order, page, rowsPerPage]);
 
   // const handleDelete = async (id: number) => { /* ... same ... */ };
   const handlePrintList = () => {
@@ -158,6 +163,14 @@ const StudentList = () => {
       params.append('only_approved', 'true');
     }
     
+    if (onlyNotEnrolled) {
+      params.append('only_not_enrolled', 'true');
+    }
+    
+    if (onlyNotApproved) {
+      params.append('only_not_approved', 'true');
+    }
+    
     // Add sorting parameters
     params.append('sort_by', orderBy);
     params.append('sort_order', order);
@@ -187,6 +200,10 @@ const StudentList = () => {
       const success = await acceptStudent(student.id);
       if (success) {
         enqueueSnackbar(`تم قبول الطالب ${student.student_name} بنجاح`, { variant: 'success' });
+        // Highlight the approved student
+        highlightStudent(student.id, 4000);
+        // Refresh the student data to show updated status
+        setTimeout(() => refreshStudentData(student.id), 500);
       } else {
         enqueueSnackbar('فشل في قبول الطالب', { variant: 'error' });
       }
@@ -202,6 +219,39 @@ const StudentList = () => {
     }
     setStudentForEnroll(student);
     setEnrollDialogOpen(true);
+  };
+
+  // Function to refresh a specific student's data
+  const refreshStudentData = async (studentId: number) => {
+    try {
+      // Show loading state
+      enqueueSnackbar('جاري تحديث البيانات...', { variant: 'info' });
+      
+      // Refresh the entire students list to get updated data
+      await fetchStudentsWithFilters();
+      
+      // Update the selected student if it's the same one
+      if (selectedStudent && selectedStudent.id === studentId) {
+        const updatedStudent = students.find(s => s.id === studentId);
+        if (updatedStudent) {
+          setSelectedStudent(updatedStudent);
+        }
+      }
+      
+      // Show success message
+      enqueueSnackbar('تم تحديث البيانات بنجاح', { variant: 'success' });
+    } catch (error) {
+      console.error('Failed to refresh student data:', error);
+      enqueueSnackbar('فشل في تحديث البيانات', { variant: 'error' });
+    }
+  };
+
+  // Function to highlight a student temporarily
+  const highlightStudent = (studentId: number, duration: number = 3000) => {
+    setHighlightedStudentId(studentId);
+    setTimeout(() => {
+      setHighlightedStudentId(null);
+    }, duration);
   };
 
   const handleRowClick = (student: Student) => {
@@ -243,6 +293,8 @@ const StudentList = () => {
     setEndDateFilter(null);
     setOnlyEnrolled(false);
     setOnlyApproved(false);
+    setOnlyNotEnrolled(false);
+    setOnlyNotApproved(false);
     setPage(0); // Reset to first page
     setRowsPerPage(10); // Reset to default rows per page
     // The useEffect will automatically refetch with new filters
@@ -330,6 +382,19 @@ const StudentList = () => {
               <Button variant="outline" onClick={() => window.open(`${webUrl}reports/terms-and-conditions`, '_blank')} size="sm" className="w-full sm:w-auto">
                 <FileText className="ml-2 h-4 w-4" /> طباعة الشروط والأحكام
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  fetchStudentsWithFilters();
+                  enqueueSnackbar('جاري تحديث قائمة الطلاب...', { variant: 'info' });
+                }} 
+                size="sm" 
+                className="w-full sm:w-auto"
+                disabled={loading}
+              >
+                <RefreshCw className={`ml-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> 
+                تحديث
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -391,24 +456,70 @@ const StudentList = () => {
               placeholder="إلى تاريخ"
               disabled={!dateFilterType || dateFilterType === " "}
             />
-            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-6 flex gap-2 justify-center lg:justify-end xl:justify-start">
-              <Button
-                variant={onlyEnrolled ? "default" : "outline"}
-                onClick={() => { setOnlyEnrolled((v) => !v); setPage(0); }}
-                size="sm"
-                className="w-full sm:w-auto"
-              >
-                <CheckCircle2 className="ml-2 h-4 w-4" /> المسجلون فقط
-              </Button>
-              <Button
-                variant={onlyApproved ? "default" : "outline"}
-                onClick={() => { setOnlyApproved((v) => !v); setPage(0); }}
-                size="sm"
-                className="w-full sm:w-auto"
-              >
-                <CheckCircle2 className="ml-2 h-4 w-4" /> المقبولون فقط
-              </Button>
-              <Button variant="ghost" onClick={resetFilters} size="sm" className="w-full sm:w-auto">
+            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-6 flex flex-wrap gap-2 justify-center lg:justify-end xl:justify-start">
+              {/* Enrollment Status Filters */}
+              <div className="flex gap-1 items-center">
+                <span className="text-xs text-muted-foreground px-2">التسجيل:</span>
+                <Button
+                  variant={onlyEnrolled ? "default" : "outline"}
+                  onClick={() => { 
+                    setOnlyEnrolled((v) => !v); 
+                    setOnlyNotEnrolled(false);
+                    setOnlyNotApproved(false);
+                    setPage(0); 
+                  }}
+                  size="sm"
+                  className="w-auto"
+                >
+                  <CheckCircle2 className="ml-1 h-3 w-3" /> المسجلون
+                </Button>
+                <Button
+                  variant={onlyNotEnrolled ? "default" : "outline"}
+                  onClick={() => { 
+                    setOnlyNotEnrolled((v) => !v); 
+                    setOnlyEnrolled(false);
+                    setOnlyApproved(false);
+                    setPage(0); 
+                  }}
+                  size="sm"
+                  className="w-auto"
+                >
+                  <User className="ml-1 h-3 w-3" /> غير المسجلين
+                </Button>
+              </div>
+              
+              {/* Approval Status Filters */}
+              <div className="flex gap-1 items-center">
+                <span className="text-xs text-muted-foreground px-2">القبول:</span>
+                <Button
+                  variant={onlyApproved ? "default" : "outline"}
+                  onClick={() => { 
+                    setOnlyApproved((v) => !v); 
+                    setOnlyNotEnrolled(false);
+                    setOnlyNotApproved(false);
+                    setPage(0); 
+                  }}
+                  size="sm"
+                  className="w-auto"
+                >
+                  <CheckCircle2 className="ml-1 h-3 w-3" /> المقبولون
+                </Button>
+                <Button
+                  variant={onlyNotApproved ? "default" : "outline"}
+                  onClick={() => { 
+                    setOnlyNotApproved((v) => !v); 
+                    setOnlyEnrolled(false);
+                    setOnlyApproved(false);
+                    setPage(0); 
+                  }}
+                  size="sm"
+                  className="w-auto"
+                >
+                  <XCircle className="ml-1 h-3 w-3" /> غير المقبولين
+                </Button>
+              </div>
+              
+              <Button variant="ghost" onClick={resetFilters} size="sm" className="w-auto">
                 <FilterX className="ml-2 h-4 w-4" /> مسح الفلاتر
               </Button>
             </div>
@@ -422,6 +533,9 @@ const StudentList = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-center w-16"><SortButton column="id">الكود</SortButton></TableHead>
+                      <TableHead className="text-center w-20">الصورة</TableHead>
+
+
                       <TableHead className="text-center "><SortButton column="student_name">اسم الطالب</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-20"><SortButton column="gender">الجنس</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell">هاتف الأب</TableHead>
@@ -437,8 +551,8 @@ const StudentList = () => {
                   <TableBody>
                     {paginatedStudents.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                          {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved
+                        <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
+                          {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved || onlyNotEnrolled || onlyNotApproved
                             ? "لا توجد نتائج تطابق الفلاتر المحددة" 
                             : "لا توجد طلاب لعرضهم"}
                         </TableCell>
@@ -447,10 +561,63 @@ const StudentList = () => {
                       paginatedStudents.map((student) => (
                         <TableRow 
                           key={student.id} 
-                          className="hover:bg-muted/50 cursor-pointer"
+                          className={`hover:bg-muted/50 cursor-pointer transition-all duration-500 ${
+                            highlightedStudentId === student.id 
+                              ? 'bg-green-100 dark:bg-green-900/20 border-l-4 border-l-green-500 border-r-4 border-r-green-500 animate-pulse shadow-lg shadow-green-200 dark:shadow-green-800/30' 
+                              : ''
+                          }`}
                           onClick={() => handleRowClick(student)}
                         >
                           <TableCell className="text-center font-mono text-sm">{student.id}</TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center">
+                              {student.image_url ? (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className={`relative group ${
+                                        highlightedStudentId === student.id 
+                                          ? 'ring-4 ring-green-400 ring-opacity-75' 
+                                          : ''
+                                      }`}>
+                                        <img 
+                                          src={student.image_url} 
+                                          alt={student.student_name}
+                                          className="w-12 h-12 rounded-full object-cover border-2 border-muted hover:border-primary hover:scale-110 transition-all duration-200 cursor-pointer"
+                                          onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            target.nextElementSibling?.classList.remove('hidden');
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Show larger image in a modal or tooltip
+                                            window.open(student.image_url, '_blank');
+                                          }}
+                                        />
+                                        <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none"></div>
+                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <Eye className="w-2.5 h-2.5 text-white" />
+                                        </div>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>انقر لعرض الصورة كاملة</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : null}
+                              <div className={`w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-lg cursor-pointer hover:bg-primary/20 transition-colors ${
+                                student.image_url ? 'hidden' : ''
+                              } ${
+                                highlightedStudentId === student.id 
+                                  ? 'ring-4 ring-green-400 ring-opacity-75' 
+                                  : ''
+                              }`}>
+                                {student.student_name.charAt(0).toUpperCase()}
+                              </div>
+                            </div>
+                          </TableCell>
                           <TableCell className="font-medium text-center">{student.student_name}</TableCell>
                           <TableCell className="text-center hidden sm:table-cell">
                             <Badge variant={student.gender === Gender.Male ? "default" : "secondary"} 
@@ -468,15 +635,46 @@ const StudentList = () => {
                                      className={student.approved ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}>
                                 {student.approved ? "مقبول" : "قيد المراجعة"}
                               </Badge>
-                              {student.enrollments && student.enrollments.length > 0 && (
+                              {student.enrollments && student.enrollments.length > 0 ? (
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <CheckCircle2 className="h-4 w-4 text-green-600 cursor-help" />
+                                      <div className="flex items-center gap-1">
+                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                        <span className="text-xs text-green-600 font-medium">مسجل</span>
+                                      </div>
                                     </TooltipTrigger>
-                                    <TooltipContent>الطالب مسجل</TooltipContent>
+                                    <TooltipContent>
+                                      <div className="text-center">
+                                        <p className="font-medium">الطالب مسجل</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {student.enrollments.length} تسجيل
+                                        </p>
+                                      </div>
+                                    </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
+                              ) : (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="flex items-center gap-1">
+                                        <User className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">غير مسجل</span>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>الطالب غير مسجل في أي فصل</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {/* Success indicator for highlighted students */}
+                              {highlightedStudentId === student.id && (
+                                <div className="flex items-center gap-1 animate-bounce">
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  <span className="text-xs text-green-600 font-medium animate-pulse">
+                                    تم التحديث
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </TableCell>
@@ -529,7 +727,7 @@ const StudentList = () => {
                 {pagination ? (
                   <>
                     عرض {pagination.from || 0}-{pagination.to || 0} من {pagination.total} طالب
-                    {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved ? (
+                    {searchTerm || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || onlyEnrolled || onlyApproved || onlyNotEnrolled || onlyNotApproved ? (
                       <span className="text-primary font-medium"> (مفلتر)</span>
                     ) : null}
                   </>
@@ -588,66 +786,23 @@ const StudentList = () => {
         student={studentForEnroll}
         onSuccess={() => {
           setEnrollDialogOpen(false);
+          // Show success message
+          enqueueSnackbar('تم تسجيل الطالب بنجاح!', { variant: 'success' });
+          // Highlight the enrolled student
+          if (studentForEnroll) {
+            highlightStudent(studentForEnroll.id, 4000);
+            refreshStudentData(studentForEnroll.id);
+          }
         }}
       />
 
       {/* Student Actions Dialog */}
-      <Dialog open={actionsDialogOpen} onOpenChange={setActionsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>إجراءات الطالب</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {selectedStudent && (
-              <>
-                <div className="text-center p-4 border rounded-lg bg-muted/50">
-                  <h3 className="font-semibold text-lg">{selectedStudent.student_name}</h3>
-                  <p className="text-sm text-muted-foreground">كود الطالب: {selectedStudent.id}</p>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="justify-start"
-                    onClick={() => handleActionClick('view', selectedStudent)}
-                  >
-                    <Eye className="ml-2 h-4 w-4" /> عرض الملف
-                  </Button>
-                  
-                  {selectedStudent.approved && (!selectedStudent.enrollments || selectedStudent.enrollments.length === 0) && (
-                    <Button 
-                      variant="outline" 
-                      className="justify-start"
-                      onClick={() => handleActionClick('enroll', selectedStudent)}
-                      disabled={!canEnroll}
-                    >
-                      <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> تسجيل الطالب
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    className="justify-start"
-                    onClick={() => handleActionClick('edit', selectedStudent)}
-                  >
-                    <Edit3 className="ml-2 h-4 w-4" /> تعديل البيانات
-                  </Button>
-                  
-                  {!selectedStudent.approved && (
-                    <Button 
-                      variant="outline" 
-                      className="justify-start"
-                      onClick={() => handleActionClick('accept', selectedStudent)}
-                    >
-                      <Mail className="ml-2 h-4 w-4 text-teal-500" /> قبول الطالب
-                    </Button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <StudentActionsDialog
+        open={actionsDialogOpen}
+        onOpenChange={setActionsDialogOpen}
+        selectedStudent={selectedStudent}
+        onActionClick={handleActionClick}
+      />
     </div>
   );
 };
