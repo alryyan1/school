@@ -685,7 +685,7 @@ const StudentList = () => {
                               if (totals) {
                                 const due = Number(totals.total_amount_required || 0);
                                 const paid = Number(totals.total_amount_paid || 0);
-                                return `${due.toFixed(0)} / ${paid.toFixed(0)}`;
+                                return `${due.toLocaleString('en-US')} / ${paid.toLocaleString('en-US')}`;
                               }
                               return '-';
                             })()}

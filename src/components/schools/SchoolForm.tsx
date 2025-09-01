@@ -285,24 +285,24 @@ const SchoolForm: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Annual Fees */}
-                        <div className="space-y-2">
-                            <Label htmlFor="annual_fees">الرسوم السنوية (اختياري)</Label>
-                            <Controller name="annual_fees" control={control}
-                                render={({ field }) => (
-                                    <Input 
-                                        id="annual_fees" 
-                                        type="number" 
-                                        step="0.01" 
-                                        min="0"
-                                        placeholder="مثال: 5000.00" 
-                                        {...field} 
-                                        value={field.value ?? ''} 
-                                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
-                                    />
-                                )} />
-                            {errors.annual_fees && <p className="text-xs text-destructive">{errors.annual_fees.message}</p>}
-                        </div>
+                                                 {/* Annual Fees */}
+                         <div className="space-y-2">
+                             <Label htmlFor="annual_fees">الرسوم السنوية (اختياري)</Label>
+                             <Controller name="annual_fees" control={control}
+                                 render={({ field }) => (
+                                     <Input 
+                                         id="annual_fees" 
+                                         type="number" 
+                                         step="0.01" 
+                                         min="0"
+                                         placeholder="مثال: 5,000.00" 
+                                         {...field} 
+                                         value={field.value ?? ''} 
+                                         onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                                     />
+                                 )} />
+                             {errors.annual_fees && <p className="text-xs text-destructive">{errors.annual_fees.message}</p>}
+                         </div>
 
                         {/* User Assignment */}
                         <div className="space-y-2">

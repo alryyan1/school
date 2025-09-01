@@ -146,6 +146,15 @@ const SchoolView: React.FC = () => {
                             } icon={Phone} />
                             <InfoItem label="اسم المدير" value={displayData(currentSchool.principal_name)} icon={User} />
                             <InfoItem label="تاريخ التأسيس" value={displayData(currentSchool.establishment_date ? dayjs(currentSchool.establishment_date).format('DD / MMMM / YYYY') : null)} icon={CalendarDays} />
+                            <InfoItem label="الرسوم السنوية" value={
+                                currentSchool.annual_fees ? (
+                                    <span className="font-mono text-green-600 dark:text-green-400">
+                                        {currentSchool.annual_fees.toLocaleString('en-US')}
+                                    </span>
+                                ) : (
+                                    'غير محدد'
+                                )
+                            } icon={Building} />
                              {/* <InfoItem label="الحالة" value={
                                 <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", currentSchool.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400")}>
                                     {currentSchool.is_active ? "نشطة" : "غير نشطة"}

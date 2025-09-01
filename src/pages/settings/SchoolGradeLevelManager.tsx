@@ -313,7 +313,7 @@ const SchoolGradeLevelManager: React.FC = () => {
                         </CardHeader>
                         <CardContent className="flex-grow">
                             <p className="text-sm text-muted-foreground">الرسوم الأساسية:</p>
-                            <p className="text-lg font-semibold text-primary">{grade.assignment_details?.basic_fees || 0} </p>
+                            <p className="text-lg font-semibold text-primary">{(grade.assignment_details?.basic_fees || 0).toLocaleString('en-US')}</p>
                         </CardContent>
                         <CardFooter className="flex justify-end gap-2 pt-3 border-t">
                             <Button variant="outline" size="sm" onClick={() => handleOpenEditFeeDialog(grade)}>
@@ -343,7 +343,7 @@ const SchoolGradeLevelManager: React.FC = () => {
                             <TableCell className="font-medium">{grade.name}</TableCell>
                             <TableCell>{grade.code}</TableCell>
                             <TableCell className="font-semibold text-primary">
-                                {grade.assignment_details?.basic_fees || 0} 
+                                {(grade.assignment_details?.basic_fees || 0).toLocaleString('en-US')} 
                             </TableCell>
                             <TableCell>
                                 <Button variant="outline" size="sm" onClick={() => handleOpenEditFeeDialog(grade)}>
