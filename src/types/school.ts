@@ -11,6 +11,7 @@ export type School = {
     establishment_date: string | null; // Format YYYY-MM-DD or null
     logo_path: string | null; // The raw path saved in DB
     logo_url: string | null;  // The full URL for display
+    annual_fees: number | null; // Annual fees amount
     user_id: number | null; // Manager/User ID
     user?: {
         id: number;

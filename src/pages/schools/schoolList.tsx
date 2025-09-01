@@ -231,6 +231,7 @@ const SchoolList: React.FC = () => {
               <TableHead className="w-[60px] text-center">الشعار</TableHead>
               <TableHead className="text-center">اسم المدرسة</TableHead>
               <TableHead className="hidden sm:table-cell text-center">الرمز</TableHead>
+              <TableHead className="hidden md:table-cell text-center">الرسوم السنوية</TableHead>
            
               <TableHead className="hidden lg:table-cell text-center">المستخدم المسؤول</TableHead>
               <TableHead className="w-[80px] text-center">إجراءات</TableHead>
@@ -240,7 +241,7 @@ const SchoolList: React.FC = () => {
             {filteredSchools.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="h-24 text-center text-muted-foreground"
                 >
                   {searchTerm
@@ -275,6 +276,15 @@ const SchoolList: React.FC = () => {
                   <TableCell className="font-medium text-center">{school.name}</TableCell>
                   <TableCell className="hidden sm:table-cell text-center">
                     {school.code}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-center">
+                    {school.annual_fees ? (
+                      <span className="font-mono text-sm text-green-600 dark:text-green-400">
+                        {school.annual_fees.toLocaleString('ar-SA')} ريال
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">غير محدد</span>
+                    )}
                   </TableCell>
                
                
