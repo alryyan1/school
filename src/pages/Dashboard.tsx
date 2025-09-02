@@ -9,11 +9,12 @@ import { cn } from "@/lib/utils"; // Utility for combining class names
 
 // lucide-react icons
 import {
-    Users, // PeopleIcon replacement
-    GraduationCap, // SchoolIcon (for Teachers) replacement
-    UserCheck, // Example for Enrollment
-    Car, // Example for Transport
-    Settings, // SettingsIcon replacement
+    Users,
+    GraduationCap,
+    UserCheck,
+    Car,
+    Settings,
+    Calculator,
 } from 'lucide-react';
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 import { useTeacherStore } from '@/stores/teacherStore';
@@ -42,7 +43,7 @@ const containerVariants = {
 
 const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.2 } },
 };
 
 
@@ -60,13 +61,18 @@ const Dashboard: React.FC = () => {
             iconColor: "text-blue-600 dark:text-blue-400",
             bgColor: "bg-blue-100/80 dark:bg-blue-900/30",
         },
-   
-       
-      
+        {
+            title: 'المحاسبة',
+            icon: Calculator,
+            link: '/finances',
+            description: 'لوحة المحاسب: الايرادات والمصروفات.',
+            iconColor: "text-emerald-600 dark:text-emerald-400",
+            bgColor: "bg-emerald-100/80 dark:bg-emerald-900/30",
+        },
         {
             title: 'اقساط    خلال شهر',
             icon: Car,
-            link: '/finance/due-installments',
+            link: '/finances/due-installments',
             description: 'الاقساط التي يجب ان يتم سدادها هذا الاسبوع',
             iconColor: "text-cyan-600 dark:text-cyan-400",
             bgColor: "bg-cyan-100/80 dark:bg-cyan-900/30",
@@ -145,10 +151,10 @@ const Dashboard: React.FC = () => {
                             >
                                 <RouterLink to={item.link} className="h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg">
                                     <motion.div
-                                        whileHover={{ y: -4 }} // Simpler lift effect
+                                        whileHover={{ y: -4 }}
                                         whileTap={{ scale: 0.98 }}
                                         className="h-full"
-                                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                        transition={{ duration: 0.15 }}
                                     >
                                         <Card className="h-full flex flex-col overflow-hidden transition-shadow hover:shadow-md dark:hover:shadow-primary/10">
                                              <CardContent className="flex flex-col items-center justify-center text-center p-5 sm:p-6 flex-grow">

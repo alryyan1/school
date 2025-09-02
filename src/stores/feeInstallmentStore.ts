@@ -20,8 +20,8 @@ type StoreState = {
 
 // --- Actions Interface ---
 type StoreActions = {
-    /** Fetches installments for a specific student */
-    fetchInstallments: (studentId: number) => Promise<void>; // Changed parameter
+    /** Fetches installments for a specific enrollment */
+    fetchInstallments: (enrollmentId: number) => Promise<void>; // Changed parameter
     /** Creates a new installment */
     createInstallment: (data: FeeInstallmentFormData) => Promise<FeeInstallment | null>;
     /** Updates an existing installment */
@@ -63,10 +63,10 @@ export const useFeeInstallmentStore = create<StoreState & StoreActions>((set, ge
 
     // --- Action Implementations ---
 
-    fetchInstallments: async (studentId) => { // Changed parameter
+    fetchInstallments: async (enrollmentId) => { // Changed parameter
         set({ loading: true, error: null });
         try {
-            const response = await FeeInstallmentApi.getAll(studentId); // Changed parameter
+            const response = await FeeInstallmentApi.getAll(enrollmentId); // Changed parameter
             const fetchedInstallments = response.data.data ?? []; // Handle case where data might be missing
             const totals = calculateTotals(fetchedInstallments);
             set({

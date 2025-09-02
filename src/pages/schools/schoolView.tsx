@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"; // For dividers
 import { cn } from "@/lib/utils";
 
 // lucide-react icons
-import { Edit3, ArrowRight, Building, Mail, Phone, User, CalendarDays, AlertCircle } from 'lucide-react';
+import { Edit3, ArrowRight, Building, Phone, User, CalendarDays, AlertCircle } from 'lucide-react';
 
 import { useSchoolStore } from '@/stores/schoolStore';   // Adjust path
 import dayjs from 'dayjs'; // For date formatting
@@ -134,11 +134,7 @@ const SchoolView: React.FC = () => {
                         {/* Details Section */}
                         <div className="md:col-span-2 grid gap-y-5">
                             <InfoItem label="العنوان" value={displayData(currentSchool.address)} icon={Building} />
-                            <InfoItem label="البريد الإلكتروني" value={
-                                <a href={`mailto:${currentSchool.email}`} className="hover:underline text-primary">
-                                    {displayData(currentSchool.email)}
-                                </a>
-                            } icon={Mail} />
+
                             <InfoItem label="رقم الهاتف" value={
                                 <a href={`tel:${currentSchool.phone}`} className="hover:underline text-primary">
                                     {displayData(currentSchool.phone)}

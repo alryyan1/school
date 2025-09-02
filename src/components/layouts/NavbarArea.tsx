@@ -1,14 +1,13 @@
 // src/components/layout/NavbarArea.tsx
 import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem,
     DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Menu, School, CalendarDays, LogOut, UserCircle, Shield, ChevronDown } from 'lucide-react';
+import { Menu, School, LogOut, UserCircle, Shield, ChevronDown } from 'lucide-react';
 import StudentSearch from '@/components/StudentSearch';
 
 import { useAuth } from '@/context/authcontext'; // Adjust path
@@ -20,10 +19,10 @@ interface NavbarAreaProps {
 }
 
 const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
-    const { userName, userRole, roles, permissions, logout } = useAuth();
+    const { userName, userRole, roles, permissions, logout, userSchoolId } = useAuth();
     const navigate = useNavigate();
 
-    const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
+    const { schools, fetchSchools } = useSchoolStore();
 
     // Show student search on all pages
     const showStudentSearch = true;
@@ -57,9 +56,16 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
                 </div>
             )}
 
-            {/* Active School/Year Display */}
+            {/* Active School Display for logged-in user */}
             <div className="hidden lg:flex items-center gap-2 text-sm">
-                {/* Removed active school/year display - implement your preferred state management */}
+                {userSchoolId && schools.length > 0 ? (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                        <School className="h-4 w-4" />
+                        <span>
+                            {schools.find(s => s.id === Number(userSchoolId))?.name || 'مدرستي'}
+                        </span>
+                    </div>
+                ) : null}
             </div>
 
             {/* Student Search - Show on all pages */}

@@ -1,5 +1,5 @@
 // src/pages/students/StudentList.tsx
-import React, { useState, useEffect } from "react"; // Added React
+import React, { useState, useEffect, useCallback } from "react"; // Added React
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -25,6 +25,7 @@ import { Gender, Student } from "@/types/student";
 import { useSnackbar } from "notistack";
 
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/authcontext";
 import { webUrl } from "@/constants";
 import dayjs, { Dayjs } from "dayjs"; // Import Dayjs type
 
@@ -38,6 +39,7 @@ const StudentList = () => {
   } = useStudentStore();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
+  const { userSchoolId } = useAuth();
 
   
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
@@ -71,62 +73,44 @@ const StudentList = () => {
     fetchSchools();
   }, [fetchStudents, fetchSchools]);
 
+  // Initialize the school filter with the logged-in user's school, if available
+  useEffect(() => {
+    if (userSchoolId && wishedSchoolFilter === null) {
+      setWishedSchoolFilter(Number(userSchoolId));
+    }
+  }, [userSchoolId, wishedSchoolFilter]);
+
   // Function to build filter parameters
-  const buildFilters = () => {
+  const buildFilters = useCallback(() => {
     const filters: Record<string, string | number | boolean> = {};
-    
-    if (searchTerm.trim()) {
-      filters.search = searchTerm.trim();
-    }
-    
-    if (wishedSchoolFilter !== null) {
-      filters.wished_school_id = wishedSchoolFilter;
-    }
-    
+    if (searchTerm.trim()) filters.search = searchTerm.trim();
+    if (wishedSchoolFilter !== null) filters.wished_school_id = wishedSchoolFilter;
     if (dateFilterType && dateFilterType !== " ") {
       filters.date_type = dateFilterType;
-      if (startDateFilter) {
-        filters.start_date = startDateFilter.format('YYYY-MM-DD');
-      }
-      if (endDateFilter) {
-        filters.end_date = endDateFilter.format('YYYY-MM-DD');
-      }
+      if (startDateFilter) filters.start_date = startDateFilter.format('YYYY-MM-DD');
+      if (endDateFilter) filters.end_date = endDateFilter.format('YYYY-MM-DD');
     }
-    
-    if (onlyEnrolled) {
-      filters.only_enrolled = true;
-    }
-    
-    if (onlyApproved) {
-      filters.only_approved = true;
-    }
-    
-    if (onlyNotEnrolled) {
-      filters.only_not_enrolled = true;
-    }
-    
-    if (onlyNotApproved) {
-      filters.only_not_approved = true;
-    }
-    
+    if (onlyEnrolled) filters.only_enrolled = true;
+    if (onlyApproved) filters.only_approved = true;
+    if (onlyNotEnrolled) filters.only_not_enrolled = true;
+    if (onlyNotApproved) filters.only_not_approved = true;
     filters.sort_by = orderBy;
     filters.sort_order = order;
     filters.per_page = rowsPerPage;
     filters.page = page + 1; // Backend uses 1-based pagination
-    
     return filters;
-  };
+  }, [searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, onlyNotEnrolled, onlyNotApproved, orderBy, order, rowsPerPage, page]);
 
   // Fetch students with filters
-  const fetchStudentsWithFilters = () => {
+  const fetchStudentsWithFilters = useCallback(() => {
     const filters = buildFilters();
     fetchStudents(filters);
-  };
+  }, [buildFilters, fetchStudents]);
 
   // Update filters effect
   useEffect(() => {
     fetchStudentsWithFilters();
-  }, [searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, onlyNotEnrolled, onlyNotApproved, orderBy, order, page, rowsPerPage]);
+  }, [fetchStudentsWithFilters, searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, onlyNotEnrolled, onlyNotApproved, orderBy, order, page, rowsPerPage]);
 
   // const handleDelete = async (id: number) => { /* ... same ... */ };
   const handlePrintList = () => {
@@ -542,7 +526,6 @@ const StudentList = () => {
                       <TableHead className="text-center hidden sm:table-cell"><SortButton column="wished_school">المدرسة</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-24"><SortButton column="approved">الحالة</SortButton></TableHead>
                  
-                      <TableHead className="text-center hidden sm:table-cell w-16">التسجيل</TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="date_of_birth">ت. الميلاد</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-28"><SortButton column="created_at">ت. التسجيل</SortButton></TableHead>
                       <TableHead className="text-center hidden sm:table-cell w-16">طباعة</TableHead>
@@ -679,17 +662,7 @@ const StudentList = () => {
                             </div>
                           </TableCell>
                      
-                          <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
-                            {(() => {
-                              const totals = student.latest_academic_year_totals;
-                              if (totals) {
-                                const due = Number(totals.total_amount_required || 0);
-                                const paid = Number(totals.total_amount_paid || 0);
-                                return `${due.toLocaleString('en-US')} / ${paid.toLocaleString('en-US')}`;
-                              }
-                              return '-';
-                            })()}
-                          </TableCell>
+                  
                           <TableCell className="text-center hidden sm:table-cell text-sm font-mono">
                             {student.date_of_birth ? dayjs(student.date_of_birth).format('YYYY/MM/DD') : '-'}
                           </TableCell>

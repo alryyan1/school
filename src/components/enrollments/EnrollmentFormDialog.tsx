@@ -62,7 +62,7 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
                 school_id: selectedAcademicYear?.school_id || 0, // Must have value
                 classroom_id: null,
                 status: 'active',
-                fees: selectedGradeLevel?.assignment_details?.basic_fees || 0, // Default to grade level fee
+                // Fees will be automatically set by backend based on school's annual_fees
                 discount: 0, // Default discount
                 enrollment_type: 'regular',
             };
@@ -98,7 +98,7 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
             grade_level_id: Number(data.grade_level_id),
             school_id: Number(data.school_id),
             classroom_id: data.classroom_id ? Number(data.classroom_id) : null,
-            fees: Number(data.fees) || 0,
+            // Fees will be automatically set by backend based on school's annual_fees
             discount: Number(data.discount) || 0,
             enrollment_type: data.enrollment_type || 'regular',
         };
@@ -192,25 +192,7 @@ const EnrollmentFormDialog: React.FC<EnrollmentFormDialogProps> = ({
                             {errors.student_id && <p className="text-xs text-destructive mt-1">{errors.student_id.message}</p>}
                         </div>
 
-                        {/* Fees Field */}
-                        <div className="space-y-2">
-                            <Label htmlFor="fees">الرسوم *</Label>
-                            <Controller name="fees" control={control} rules={{ required: 'الرسوم مطلوبة', min: { value: 0, message: 'الرسوم لا يمكن أن تكون سالبة' } }}
-                                render={({ field }) => (
-                                    <Input
-                                        id="fees"
-                                        type="number"
-                                        {...field}
-                                        value={field.value ?? ""}
-                                        onChange={(e) => field.onChange(e.target.value)}
-                                        placeholder="مثال: 5000"
-                                        min="0"
-                                        step="1"
-                                        className={cn(errors.fees && "border-destructive")}
-                                    />
-                                )} />
-                            {errors.fees && <p className="text-xs text-destructive mt-1">{errors.fees.message}</p>}
-                        </div>
+
 
                         {/* Discount Field */}
                         <div className="space-y-2">

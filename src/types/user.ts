@@ -1,16 +1,15 @@
 // src/types/user.ts
 
 export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
-export type UserGender = 'male' | 'female' | 'ذكر' | 'انثي' | null; // Allow flexibility
+export type UserGender = never; // removed
 
 export interface User {
     id: number;
     name: string;
     username: string;
     email: string;
-    role: UserRole;
     phone: string | null;
-    gender: UserGender;
+    school_id: number | null;
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;

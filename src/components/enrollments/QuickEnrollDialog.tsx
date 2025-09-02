@@ -81,8 +81,7 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
         status: 'active',
         school_id: Number(wishedSchoolId),
         enrollment_type: 'regular',
-        // Defaults to satisfy backend schema; inputs removed from UI
-        fees: 0,
+        // Fees will be automatically set by backend based on school's annual_fees
         discount: 0,
       });
       enqueueSnackbar('تم تسجيل الطالب بنجاح', { variant: 'success' });

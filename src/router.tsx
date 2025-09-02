@@ -1,7 +1,6 @@
 // src/router.tsx
 import React from 'react'; // Needed for JSX elements
 import {
-    createBrowserRouter,
     createHashRouter,
     Navigate,
     Outlet,
@@ -35,8 +34,8 @@ import TeacherView from '@/pages/teachers/TeacherView';                   // Adj
 import TeacherForm from '@/components/teachers/TeacherForm';               // Adjust path
 
 // --- School Pages & Components ---
-import SchoolList from '@/pages/schools/SchoolList';                   // Adjust path
-import SchoolView from '@/pages/schools/SchoolView';                     // Adjust path
+import SchoolList from '@/pages/schools/schoolList';                   // Adjust path
+import SchoolView from '@/pages/schools/schoolView';                     // Adjust path
 import SchoolForm from '@/components/schools/SchoolForm';                 // Adjust path
 
 // --- Settings Pages ---
@@ -49,6 +48,10 @@ import UserList from '@/pages/settings/UserList';                       // Adjus
 
 // --- Finance Pages ---
 import DueInstallmentsPage from '@/pages/finances/DueInstallmentsPage';   // Adjust path
+import FinanceDashboard from '@/pages/finances/FinanceDashboard';
+import RevenuesPage from '@/pages/finances/RevenuesPage';
+import ExpensesPage from '@/pages/finances/ExpensesPage';
+import StudentLedgerPage from '@/pages/finances/StudentLedgerPage';
 
 // --- Exam Pages ---
 import ExamList from '@/pages/exams/ExamList';                         // Adjust path
@@ -78,7 +81,7 @@ import ExamResultsEntryPage from './pages/exams/ExamResultsEntryPage';
 import StudentExamResultsPage from './pages/students/StudentExamResultsPage';
 import GradeLevelList from './pages/settings/GradeLevelList';
 import RolePermissionManager from './pages/settings/RolePermissionManager';
-import { Grade } from '@mui/icons-material';
+// import { Grade } from '@mui/icons-material';
 import GradeLevelClassroomListPage from './pages/pages/GradeLevelClassroomListPage';
 
 // --- ProtectedRoute and AuthRoute (Define them here or import if they are in separate files) ---
@@ -223,8 +226,11 @@ const router = createHashRouter([
                   path: 'finances',
                   element: <Outlet />,
                   children: [
-                       { index: true, element: <Navigate to="due-installments" replace />},
+                       { index: true, element: <FinanceDashboard />},
+                       { path: 'revenues', element: <RevenuesPage /> },
+                       { path: 'expenses', element: <ExpensesPage /> },
                        { path: 'due-installments', element: <DueInstallmentsPage /> },
+                       { path: 'student-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },
                   ]
              },
 

@@ -6,7 +6,6 @@ export type School = {
     code: string;
     address: string;
     phone: string;
-    email: string;
     principal_name: string | null;
     establishment_date: string | null; // Format YYYY-MM-DD or null
     logo_path: string | null; // The raw path saved in DB

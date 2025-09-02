@@ -119,9 +119,7 @@ const SchoolList: React.FC = () => {
     return schools.filter(
       (school) =>
         school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        school.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (school.email &&
-          school.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        school.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [schools, searchTerm]);
 
@@ -208,7 +206,7 @@ const SchoolList: React.FC = () => {
         <div className="flex gap-2 w-full sm:w-auto">
           <Input
             type="text"
-            placeholder="بحث بالاسم, الرمز, أو البريد..."
+            placeholder="بحث بالاسم أو الرمز..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs w-full"

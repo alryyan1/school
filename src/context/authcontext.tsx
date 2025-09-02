@@ -10,6 +10,7 @@ interface AuthState {
   userRole: UserRole;
   userId: string | null;
   userName: string | null;
+  userSchoolId?: number | null;
   isLoading: boolean;
   permissions?: string[] | null;
   roles?: string[] | null;
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     userRole: getPrimaryRole(persistedUser?.roles),
     userId: persistedUser?.id ? String(persistedUser.id) : null,
     userName: persistedUser?.name ?? null,
+    userSchoolId: persistedUser?.school_id ?? null,
     isLoading: true,
     permissions: persistedUser?.permissions ?? [],
     roles: persistedUser?.roles ?? [],
@@ -90,6 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           userRole: getPrimaryRole(userData.roles),
           userId: userData.id.toString(),
           userName: userData.name,
+          userSchoolId: userData.school_id ?? null,
           isLoading: false,
           permissions: userData.permissions || [],
           roles: userData.roles || [],
@@ -98,6 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const userForStorage = {
           id: userData.id,
           name: userData.name,
+          school_id: userData.school_id ?? null,
           roles: userData.roles || [],
           permissions: userData.permissions || [],
         };
@@ -124,6 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           userRole: null,
           userId: null,
           userName: null,
+          userSchoolId: null,
           isLoading: false,
           permissions: [],
           roles: [],
@@ -165,6 +170,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         userRole: getPrimaryRole(userData.roles),
         userId: userData.id,
         userName: userData.name,
+        userSchoolId: userData.school_id ?? null,
         isLoading: false,
         permissions: userData.permissions || [],
         roles: userData.roles || [],
@@ -174,6 +180,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       storage.setItem('authUser', JSON.stringify({
         id: userData.id,
         name: userData.name,
+        school_id: userData.school_id ?? null,
         roles: userData.roles || [],
         permissions: userData.permissions || [],
       }));
@@ -203,6 +210,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userRole: null,
       userId: null,
       userName: null,
+      userSchoolId: null,
       isLoading: false,
       permissions: [],
       roles: [],

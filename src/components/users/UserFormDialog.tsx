@@ -16,9 +16,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
-import { User, UserFormData, UserRole, UserGender } from "@/types/user";
+import { User, UserFormData } from "@/types/user";
 import { useRoleStore } from '@/stores/roleStore';
 import { useUserStore } from "@/stores/userStore";
+import { useSchoolStore } from "@/stores/schoolStore";
 import { useSnackbar } from "notistack";
 
 interface UserFormDialogProps {
@@ -27,25 +28,7 @@ interface UserFormDialogProps {
     initialData?: User | null;
 }
 
-const translateRole = (name: string) => {
-  const map: Record<string, string> = {
-    'admin': 'مسؤول',
-    'teacher': 'معلم',
-    'student': 'طالب',
-    'parent': 'ولي أمر',
-    'super-manager': 'مدير النظام',
-    'general-manager': 'المدير العام',
-    'accountant': 'محاسب',
-    'school-principal': 'مدير مدرسة',
-    'nurse': 'ممرضة',
-    'transport-manager': 'مسؤول الترحيل',
-  };
-  return map[name] || name;
-};
-const genders: { value: UserGender; label: string }[] = [
-    { value: "ذكر", label: "ذكر" },
-    { value: "انثي", label: "أنثى" },
-];
+// removed roles translation and genders
 
 const UserFormDialog: React.FC<UserFormDialogProps> = ({
     open,
@@ -58,6 +41,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
     const { enqueueSnackbar } = useSnackbar();
     const [formError, setFormError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
+    const { schools, fetchSchools, loading: schoolsLoading } = useSchoolStore();
 
     const {
         control,
@@ -68,23 +52,19 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
         mode: 'onBlur',
     });
 
-    // Fetch roles and reset form when opening or data changes
+    // Fetch roles, schools and reset form when opening or data changes
     useEffect(() => {
         if (open) {
             if (spatieRoles.length === 0) fetchSpatieRoles();
+            if (schools.length === 0) fetchSchools();
             setFormError(null);
             const defaults: Partial<UserFormData> = {
                 name: "",
                 username: "",
                 email: "",
-                role: (initialData?.role as UserRole) || (spatieRoles[0]?.name as UserRole) || "student",
-                spatie_roles: initialData?.roles && initialData.roles.length > 0
-                    ? initialData.roles
-                    : [
-                        (initialData?.role as string) || (spatieRoles[0]?.name as string) || "student"
-                    ],
+                spatie_roles: initialData?.roles && initialData.roles.length > 0 ? initialData.roles : [],
                 phone: null,
-                gender: null,
+                school_id: initialData?.school_id ?? null,
                 password: "",
                 password_confirmation: "",
             };
@@ -99,7 +79,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                 reset(defaults);
             }
         }
-    }, [initialData, isEditMode, open, reset, spatieRoles, fetchSpatieRoles]);
+    }, [initialData, isEditMode, open, reset, spatieRoles, fetchSpatieRoles, schools.length, fetchSchools]);
 
     const onSubmit = async (data: UserFormData) => {
         setFormError(null);
@@ -111,11 +91,8 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
               username: String(data.username || '').trim(),
               email: String(data.email || '').trim(),
               phone: data.phone && String(data.phone).trim() !== '' ? String(data.phone).trim() : null,
-              gender: (data.gender as unknown as string) === '' ? null : data.gender,
+              school_id: data.school_id ? Number(data.school_id) : null,
             };
-            const selectedRoles = Array.isArray(normalized.spatie_roles) ? normalized.spatie_roles : [];
-            const primaryRole = selectedRoles[0] || (initialData?.role as UserRole) || (spatieRoles[0]?.name as UserRole) || "student";
-            normalized.role = primaryRole as UserRole;
             if (isEditMode && initialData) {
                 // Omit password fields in update to avoid sending empty values
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -253,7 +230,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                                                             }}
                                                             aria-invalid={!!errors.spatie_roles}
                                                         />
-                                                        <span>{translateRole(r.name)}</span>
+                                                        <span>{r.name}</span>
                                                     </label>
                                                 );
                                             })}
@@ -284,34 +261,36 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                             </div>
                         </div>
 
-                        {/* Gender */}
+                        {/* School */}
                         <div className="space-y-1.5">
-                            <Label htmlFor="gender_user_form">الجنس (اختياري)</Label>
-                                <Controller
-                                name="gender"
+                            <Label htmlFor="school_user_form">المدرسة *</Label>
+                            <Controller
+                                name="school_id"
                                 control={control}
+                                rules={{ required: "المدرسة مطلوبة" }}
                                 render={({ field }) => (
                                     <Select
-                                        value={field.value || ""}
-                                        onValueChange={(val) => field.onChange(val)}
+                                        value={field.value ? String(field.value) : ""}
+                                        onValueChange={(val) => field.onChange(Number(val))}
+                                        disabled={schoolsLoading}
                                     >
-                                        <SelectTrigger id="gender_user_form" className={cn(errors.gender && "border-destructive")}>
-                                            <SelectValue placeholder="اختر الجنس" />
+                                        <SelectTrigger id="school_user_form" className={cn(errors.school_id && "border-destructive")}>
+                                            <SelectValue placeholder={schoolsLoading ? "جاري التحميل..." : "اختر المدرسة"} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value=" ">
-                                                <em>غير محدد</em>
+                                            <SelectItem value=" " disabled>
+                                                <em>اختر المدرسة</em>
                                             </SelectItem>
-                                            {genders.map((gender) => (
-                                                <SelectItem key={gender.value} value={gender.value}>
-                                                    {gender.label}
+                                            {schools.map((s) => (
+                                                <SelectItem key={s.id} value={String(s.id)}>
+                                                    {s.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 )}
                             />
-                            {errors.gender && <p className="text-xs text-destructive mt-1">{errors.gender.message}</p>}
+                            {errors.school_id && <p className="text-xs text-destructive mt-1">{String(errors.school_id.message as unknown as string)}</p>}
                         </div>
 
                         {/* Password Fields (ONLY for Create Mode) */}

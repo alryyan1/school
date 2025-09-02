@@ -52,7 +52,7 @@ const SchoolForm: React.FC = () => {
 
     const { control, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<SchoolFormData>({
         defaultValues: {
-            name: '', code: 'sch-0000', address: ' -', phone: '', email: '-',
+            name: '', code: 'sch-0000', address: ' -', phone: '',
             principal_name: null, establishment_date: null, logo: null, logo_path: null, user_id: null, annual_fees: null
         }
     });
@@ -238,20 +238,12 @@ const SchoolForm: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Email & Phone */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email">البريد الإلكتروني *</Label>
-                                <Controller name="email" control={control} 
-                                    render={({ field }) => <Input id="email" placeholder="email@example.com" {...field} className={cn(errors.email && "border-destructive")} />} />
-                                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">رقم الهاتف *</Label>
-                                <Controller name="phone" control={control} rules={{ required: 'رقم الهاتف مطلوب' }}
-                                    render={({ field }) => <Input id="phone" placeholder="مثال: 0912345678" {...field} className={cn(errors.phone && "border-destructive")} />} />
-                                {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
-                            </div>
+                        {/* Phone */}
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">رقم الهاتف *</Label>
+                            <Controller name="phone" control={control} rules={{ required: 'رقم الهاتف مطلوب' }}
+                                render={({ field }) => <Input id="phone" placeholder="مثال: 0912345678" {...field} className={cn(errors.phone && "border-destructive")} />} />
+                            {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
                         </div>
 
                         {/* Address */}

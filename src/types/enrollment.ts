@@ -29,7 +29,9 @@ export type Enrollment = {
 };
 
 // Form for creating a new enrollment
-export type EnrollmentFormData = Omit<Enrollment, 'id' | 'created_at' | 'updated_at' | 'student' | 'school' | 'grade_level' | 'classroom'>;
+export type EnrollmentFormData = Omit<Enrollment, 'id' | 'created_at' | 'updated_at' | 'student' | 'school' | 'grade_level' | 'classroom'> & {
+    fees?: number; // Make fees optional since backend will auto-fill it
+};
 
 // Form for updating an existing enrollment
 export type EnrollmentUpdateFormData = Partial<Pick<Enrollment, 'classroom_id' | 'status' | 'fees' | 'enrollment_type' | 'discount'>>;
