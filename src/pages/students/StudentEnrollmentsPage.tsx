@@ -153,7 +153,7 @@ const StudentEnrollmentsPage: React.FC = () => {
                           <span>{(enrollment.enrollment_type || 'regular') === 'scholarship' ? 'منحة' : 'عادي'}</span>
                         )}
                       </td>
-                                              <td className="p-2 border text-green-700 font-semibold">{enrollment.fees ? `${enrollment.fees.toLocaleString('en-US')}` : 'غير محدد'}</td>
+                      <td className="p-2 border text-green-700 font-semibold">{enrollment.fees ? `${enrollment.fees.toLocaleString('en-US')} جنيه` : 'غير محدد'}</td>
                       <td className="p-2 border">{enrollment.created_at ? new Date(enrollment.created_at).toLocaleDateString('ar-EG') : '-'}</td>
                     </tr>
                   ))

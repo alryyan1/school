@@ -145,7 +145,7 @@ const SchoolView: React.FC = () => {
                             <InfoItem label="الرسوم السنوية" value={
                                 currentSchool.annual_fees ? (
                                     <span className="font-mono text-green-600 dark:text-green-400">
-                                        {currentSchool.annual_fees.toLocaleString('en-US')}
+                                        {currentSchool.annual_fees.toLocaleString('en-US')} جنيه
                                     </span>
                                 ) : (
                                     'غير محدد'

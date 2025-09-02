@@ -146,7 +146,7 @@ const StudentEnrollmentInfo: React.FC<StudentEnrollmentInfoProps> = ({
             <span className="text-sm font-medium">الرسوم:</span>
           </div>
           <span className="text-sm font-medium text-green-600">
-                                    {enrollment.fees ? `${enrollment.fees.toLocaleString('en-US')}` : 'غير محدد'}
+            {enrollment.fees ? `${enrollment.fees.toLocaleString('en-US')} جنيه` : 'غير محدد'}
           </span>
         </div>
       </CardContent>

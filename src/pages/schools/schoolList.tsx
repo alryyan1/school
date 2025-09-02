@@ -278,7 +278,7 @@ const SchoolList: React.FC = () => {
                                      <TableCell className="hidden md:table-cell text-center">
                      {school.annual_fees ? (
                        <span className="font-mono text-sm text-green-600 dark:text-green-400">
-                         {school.annual_fees.toLocaleString('en-US')}
+                         {school.annual_fees.toLocaleString('en-US')} جنيه
                        </span>
                      ) : (
                        <span className="text-muted-foreground text-sm">غير محدد</span>

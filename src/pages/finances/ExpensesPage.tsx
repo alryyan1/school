@@ -3,6 +3,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// Helper function to format numbers with thousands separator
+const numberWithCommas = (x: number): string => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
 // Placeholder expenses page; wire to a real store/API later
 const ExpensesPage: React.FC = () => {
   const expenses = [
@@ -18,7 +23,7 @@ const ExpensesPage: React.FC = () => {
           <CardTitle>المصروفات</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground mb-3">اجمالي المصروفات: {total.toLocaleString()} جنيه</div>
+          <div className="text-sm text-muted-foreground mb-3">اجمالي المصروفات: {formatNumber(total)} جنيه</div>
           <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
@@ -34,7 +39,7 @@ const ExpensesPage: React.FC = () => {
                   <TableRow key={e.id}>
                     <TableCell className="text-center">{e.id}</TableCell>
                     <TableCell className="text-center">{e.category}</TableCell>
-                    <TableCell className="text-center">{e.amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">{formatNumber(e.amount)} جنيه</TableCell>
                     <TableCell className="text-center">{e.date}</TableCell>
                   </TableRow>
                 ))}

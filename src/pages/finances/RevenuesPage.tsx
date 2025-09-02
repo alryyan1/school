@@ -12,6 +12,11 @@ import { useAuth } from "@/context/authcontext";
 import { User } from "lucide-react";
 import { Student } from "@/types/student";
 
+// Helper function to format numbers with thousands separator
+const numberWithCommas = (x: number): string => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
 // This page imagines revenues primarily from student fees (enrollments.fee or students.fee)
 const RevenuesPage: React.FC = () => {
   const { students, fetchStudents } = useStudentStore();
@@ -197,62 +202,69 @@ const RevenuesPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">عدد الطلاب: {studentsCount.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground">اجمالي متوقع: {totalRevenue.toLocaleString()} جنيه</div>
-            </div>
+                          <div className="flex items-center justify-between">
+                              <div className="text-sm text-muted-foreground">عدد الطلاب: {numberWithCommas(studentsCount)}</div>
+              <div className="text-sm text-muted-foreground">اجمالي متوقع: {numberWithCommas(totalRevenue)} جنيه</div>
+              </div>
           </div>
           <div className="border rounded-md overflow-x-auto">
             <Table className="min-w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-center text-xs sm:text-sm">#</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm">الصورة</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm">اسم الطالب</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm">رقم التسجيل</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm">المدرسة</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm">المرحلة</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm">الفصل</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm">الرسوم (متوقع)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students.map((s) => (
-                  <TableRow 
-                    key={s.id} 
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleStudentClick(s)}
-                  >
-                    <TableCell className="text-center text-xs sm:text-sm">{s.id}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                        {s.image_url ? (
-                          <img 
-                            src={s.image_url} 
-                            alt={s.student_name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              target.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : null}
-                        <div className={`w-full h-full flex items-center justify-center text-primary ${s.image_url ? 'hidden' : ''}`}>
-                          <User className="w-6 h-6 text-primary" />
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { student_name?: string }).student_name ?? '-'}</TableCell>
-                    <TableCell className="text-center text-xs sm:text-sm">{((s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id) ?? '-'}</TableCell>
-                    <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { wished_school_details?: { name?: string } }).wished_school_details?.name ?? '-'}</TableCell>
-                    <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { grade_level?: { name?: string } }[] }).enrollments?.[0]?.grade_level?.name ?? '-'}</TableCell>
-                    <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { classroom?: { name?: string } }[] }).enrollments?.[0]?.classroom?.name ?? '-'}</TableCell>
-                    <TableCell className="text-center text-xs sm:text-sm">{
-                      (((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
-                        .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0)).toLocaleString()
-                    }</TableCell>
+                              <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-center text-xs sm:text-sm">رقم التسجيل</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">الصورة</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">اسم الطالب</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">المدرسة</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">المرحلة</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">الفصل</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">الرسوم (متوقع)</TableHead>
                   </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {students
+                    .filter(s => (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id)
+                    .sort((a, b) => {
+                      const aId = (a as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id || 0;
+                      const bId = (b as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id || 0;
+                      return bId - aId; // Descending order
+                    })
+                    .map((s) => (
+                                      <TableRow 
+                      key={s.id} 
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleStudentClick(s)}
+                    >
+                      <TableCell className="text-center text-xs sm:text-sm font-mono font-bold">
+                        {((s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id) ?? '-'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                          {s.image_url ? (
+                            <img 
+                              src={s.image_url} 
+                              alt={s.student_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full flex items-center justify-center text-primary ${s.image_url ? 'hidden' : ''}`}>
+                            <User className="w-6 h-6 text-primary" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { student_name?: string }).student_name ?? '-'}</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { wished_school_details?: { name?: string } }).wished_school_details?.name ?? '-'}</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { grade_level?: { name?: string } }[] }).enrollments?.[0]?.grade_level?.name ?? '-'}</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { classroom?: { name?: string } }[] }).enrollments?.[0]?.classroom?.name ?? '-'}</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{
+                        numberWithCommas((((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
+                          .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0)))
+                      } جنيه</TableCell>
+                    </TableRow>
                 ))}
               </TableBody>
             </Table>

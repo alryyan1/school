@@ -18,6 +18,11 @@ import { Plus, Calendar, Calculator, CreditCard, FileText, DollarSign } from "lu
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+// Helper function to format numbers with thousands separator
+const numberWithCommas = (x: number): string => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
 interface StudentLedgerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -112,70 +117,85 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center text-primary">
-            دفتر حسابات الطالب - {studentName}
-          </DialogTitle>
-        </DialogHeader>
+                 <DialogHeader>
+           <DialogTitle className="text-xl font-bold text-center text-primary mb-4">
+             دفتر حسابات الطالب - {studentName}
+           </DialogTitle>
+           
+           {/* Student Details */}
+           {currentLedger?.enrollment && (
+             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+               <div className="flex flex-col items-center p-3 bg-muted/50 rounded-lg">
+                 <span className="text-muted-foreground mb-1">المدرسة</span>
+                 <span className="font-semibold text-foreground">
+                   {currentLedger.enrollment.school?.name || 'غير محدد'}
+                 </span>
+               </div>
+               
+               <div className="flex flex-col items-center p-3 bg-muted/50 rounded-lg">
+                 <span className="text-muted-foreground mb-1">المرحلة</span>
+                 <span className="font-semibold text-foreground">
+                   {currentLedger.enrollment.grade_level?.name || 'غير محدد'}
+                 </span>
+               </div>
+               
+               <div className="flex flex-col items-center p-3 bg-muted/50 rounded-lg">
+                 <span className="text-muted-foreground mb-1">الفصل</span>
+                 <span className="font-semibold text-foreground">
+                   {currentLedger.enrollment.classroom?.name || 'غير محدد'}
+                 </span>
+               </div>
+             </div>
+           )}
+         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">الرصيد الحالي</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {currentLedger.current_balance.toLocaleString()} جنيه
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">إجمالي الرسوم</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {currentLedger.summary.total_fees.toLocaleString()} جنيه
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">إجمالي المدفوع</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {currentLedger.summary.total_payments.toLocaleString()} جنيه
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">إجمالي الخصومات</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {currentLedger.summary.total_discounts.toLocaleString()} جنيه
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">إجمالي الاستردادات</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
-                  {currentLedger.summary.total_refunds.toLocaleString()} جنيه
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                     {/* Summary Cards */}
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+             <Card>
+               <CardHeader className="pb-2">
+                 <CardTitle className="text-sm text-muted-foreground">إجمالي الرسوم</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="text-2xl font-bold text-red-600">
+                   {numberWithCommas(currentLedger.summary.total_fees)} جنيه
+                 </div>
+               </CardContent>
+             </Card>
+             
+             <Card>
+               <CardHeader className="pb-2">
+                 <CardTitle className="text-sm text-muted-foreground">إجمالي المدفوع</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="text-2xl font-bold text-green-600">
+                   {numberWithCommas(currentLedger.summary.total_payments)} جنيه
+                 </div>
+               </CardContent>
+             </Card>
+             
+             <Card>
+               <CardHeader className="pb-2">
+                 <CardTitle className="text-sm text-muted-foreground">إجمالي الخصومات</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="text-2xl font-bold text-blue-600">
+                   {numberWithCommas(currentLedger.summary.total_discounts)} جنيه
+                 </div>
+               </CardContent>
+             </Card>
+             
+             <Card>
+               <CardHeader className="pb-2">
+                 <CardTitle className="text-sm text-muted-foreground">الرصيد الحالي</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="text-2xl font-bold text-primary">
+                   {numberWithCommas(currentLedger.current_balance)} جنيه
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
 
           {/* Add New Entry Button */}
           <div className="flex justify-end">
@@ -308,10 +328,10 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
                         <TableCell className={`text-center font-semibold ${
                           entry.amount > 0 ? 'text-red-600' : 'text-green-600'
                         }`}>
-                          {entry.amount > 0 ? '+' : ''}{entry.amount.toLocaleString()} جنيه
+                          {entry.amount > 0 ? '+' : ''}{formatNumber(entry.amount)} جنيه
                         </TableCell>
                         <TableCell className="text-center font-semibold">
-                          {entry.balance_after.toLocaleString()} جنيه
+                          {formatNumber(entry.balance_after)} جنيه
                         </TableCell>
                         <TableCell className="text-center">
                           {entry.reference_number || '-'}

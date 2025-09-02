@@ -9,10 +9,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLedgerStore } from "@/stores/ledgerStore";
-import { StudentLedger, CreateLedgerEntryRequest } from "@/types/ledger";
+import { CreateLedgerEntryRequest } from "@/types/ledger";
 import { Plus, Calculator, CreditCard, FileText, DollarSign, ArrowRight, User, Hash } from "lucide-react";
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+
+// Helper function to format numbers with thousands separator
+const numberWithCommas = (x: number): string => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 
 const StudentLedgerPage: React.FC = () => {
   const { enrollmentId, studentName } = useParams<{ enrollmentId: string; studentName: string }>();
@@ -78,7 +83,6 @@ const StudentLedgerPage: React.FC = () => {
       fee: 'bg-red-100 text-red-800 border-red-200',
       payment: 'bg-green-100 text-green-800 border-green-200',
       discount: 'bg-blue-100 text-blue-800 border-blue-200',
-      refund: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       adjustment: 'bg-purple-100 text-purple-800 border-purple-200',
     };
 
@@ -154,30 +158,45 @@ const StudentLedgerPage: React.FC = () => {
                 رقم التسجيل: {enrollmentId}
               </span>
             </div>
+            
+            {/* Student Details */}
+            {currentLedger?.enrollment && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 text-sm">
+                <div className="flex flex-col items-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                  <span className="text-muted-foreground mb-1">المدرسة</span>
+                  <span className="font-semibold text-foreground">
+                    {currentLedger.enrollment.school?.name || 'غير محدد'}
+                  </span>
+                </div>
+                
+                <div className="flex flex-col items-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                  <span className="text-muted-foreground mb-1">المرحلة</span>
+                  <span className="font-semibold text-foreground">
+                    {currentLedger.enrollment.grade_level?.name || 'غير محدد'}
+                  </span>
+                </div>
+                
+                <div className="flex flex-col items-center p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                  <span className="text-muted-foreground mb-1">الفصل</span>
+                  <span className="font-semibold text-foreground">
+                    {currentLedger.enrollment.classroom?.name || 'غير محدد'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">الرصيد الحالي</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {currentLedger.current_balance.toLocaleString()} جنيه
-            </div>
-          </CardContent>
-        </Card>
-        
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">إجمالي الرسوم</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {currentLedger.summary.total_fees.toLocaleString()} جنيه
+              {numberWithCommas(currentLedger.summary.total_fees)} جنيه
             </div>
           </CardContent>
         </Card>
@@ -188,7 +207,7 @@ const StudentLedgerPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {currentLedger.summary.total_payments.toLocaleString()} جنيه
+              {numberWithCommas(currentLedger.summary.total_payments)} جنيه
             </div>
           </CardContent>
         </Card>
@@ -199,18 +218,18 @@ const StudentLedgerPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {currentLedger.summary.total_discounts.toLocaleString()} جنيه
+              {numberWithCommas(currentLedger.summary.total_discounts)} جنيه
             </div>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي الاستردادات</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">الرصيد الحالي</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {currentLedger.summary.total_refunds.toLocaleString()} جنيه
+            <div className="text-2xl font-bold text-primary">
+              {numberWithCommas(currentLedger.current_balance)} جنيه
             </div>
           </CardContent>
         </Card>
@@ -240,7 +259,7 @@ const StudentLedgerPage: React.FC = () => {
                   <Label htmlFor="transaction_type">نوع المعاملة</Label>
                   <Select
                     value={formData.transaction_type}
-                    onValueChange={(value) => setFormData({ ...formData, transaction_type: value as any })}
+                    onValueChange={(value) => setFormData({ ...formData, transaction_type: value as 'fee' | 'payment' | 'discount' | 'refund' | 'adjustment' })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -249,7 +268,6 @@ const StudentLedgerPage: React.FC = () => {
                       <SelectItem value="fee">رسوم</SelectItem>
                       <SelectItem value="payment">دفع</SelectItem>
                       <SelectItem value="discount">خصم</SelectItem>
-                      <SelectItem value="refund">استرداد</SelectItem>
                       <SelectItem value="adjustment">تعديل</SelectItem>
                     </SelectContent>
                   </Select>
@@ -258,6 +276,9 @@ const StudentLedgerPage: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="amount">المبلغ</Label>
                   <Input
+                    onFocus={
+                      (e) => e.target.select()
+                    }
                     id="amount"
                     type="number"
                     step="0.01"
@@ -347,10 +368,10 @@ const StudentLedgerPage: React.FC = () => {
                     <TableCell className={`text-center font-semibold ${
                       entry.transaction_type === 'fee' ? 'text-red-600' : 'text-green-600'
                     }`}>
-                      {entry.transaction_type === 'fee' ? '+' : '-'}{entry.amount.toLocaleString()} جنيه
+                                                {entry.transaction_type === 'fee' ? '+' : '-'}{numberWithCommas(entry.amount)} جنيه
                     </TableCell>
                     <TableCell className="text-center font-semibold">
-                      {entry.balance_after.toLocaleString()} جنيه
+                                                {numberWithCommas(entry.balance_after)} جنيه
                     </TableCell>
                     <TableCell className="text-center">
                       {entry.reference_number || '-'}

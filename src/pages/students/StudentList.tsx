@@ -384,17 +384,54 @@ const StudentList = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 p-4 border rounded-lg bg-muted/50">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 p-4 border rounded-lg transition-all duration-300 ${
+            searchTerm.trim() || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || startDateFilter || endDateFilter || onlyEnrolled || onlyApproved || onlyNotEnrolled || onlyNotApproved
+              ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 shadow-md' 
+              : 'bg-muted/50'
+          }`}>
+            {/* Active Filters Counter */}
+            {(searchTerm.trim() || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || startDateFilter || endDateFilter || onlyEnrolled || onlyApproved || onlyNotEnrolled || onlyNotApproved) && (
+              <div className="sm:col-span-2 xl:col-span-6 mb-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    <span className="font-medium">فلاتر نشطة</span>
+                  </div>
+                  <span className="text-muted-foreground">
+                    {[
+                      searchTerm.trim() ? 1 : 0,
+                      wishedSchoolFilter !== null ? 1 : 0,
+                      (dateFilterType && dateFilterType !== " ") ? 1 : 0,
+                      startDateFilter ? 1 : 0,
+                      endDateFilter ? 1 : 0,
+                      onlyEnrolled ? 1 : 0,
+                      onlyApproved ? 1 : 0,
+                      onlyNotEnrolled ? 1 : 0,
+                      onlyNotApproved ? 1 : 0
+                    ].reduce((a, b) => a + b, 0)} فلتر
+                  </span>
+                </div>
+              </div>
+            )}
+            
             <div className="sm:col-span-2 xl:col-span-2">
               <Input
                 placeholder="بحث عام..."
                 value={searchTerm}
                 onChange={(e) => {setSearchTerm(e.target.value); setPage(0);}}
-                className="w-full"
+                className={`w-full transition-all duration-200 ${
+                  searchTerm.trim() 
+                    ? 'ring-2 ring-primary/50 border-primary bg-primary/5' 
+                    : ''
+                }`}
               />
             </div>
             <Select value={wishedSchoolFilter?.toString() || ""} onValueChange={(value) => {setWishedSchoolFilter(value ? parseInt(value) : null); setPage(0);}}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className={`w-full transition-all duration-200 ${
+                wishedSchoolFilter !== null 
+                  ? 'ring-2 ring-blue-500/50 border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
+                  : ''
+              }`}>
                 <SelectValue placeholder="فلترة بالمدرسة..." />
               </SelectTrigger>
               <SelectContent>
@@ -407,7 +444,11 @@ const StudentList = () => {
               </SelectContent>
             </Select>
             <Select value={dateFilterType} onValueChange={(value) => {setDateFilterType(value as "created_at" | "date_of_birth" | ""); setPage(0);}}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className={`w-full transition-all duration-200 ${
+                dateFilterType && dateFilterType !== " " 
+                  ? 'ring-2 ring-purple-500/50 border-purple-500 bg-purple-50 dark:bg-purple-950/20' 
+                  : ''
+              }`}>
                 <SelectValue placeholder="فلترة حسب تاريخ..." />
               </SelectTrigger>
               <SelectContent>
@@ -424,7 +465,11 @@ const StudentList = () => {
                 setStartDateFilter(date);
                 setPage(0);
               }}
-              className="w-full"
+              className={`w-full transition-all duration-200 ${
+                startDateFilter 
+                  ? 'ring-2 ring-purple-500/50 border-purple-500 bg-purple-50 dark:bg-purple-950/20' 
+                  : ''
+              }`}
               placeholder="من تاريخ"
               disabled={!dateFilterType || dateFilterType === " "}
             />
@@ -436,7 +481,11 @@ const StudentList = () => {
                 setEndDateFilter(date);
                 setPage(0);
               }}
-              className="w-full"
+              className={`w-full transition-all duration-200 ${
+                endDateFilter 
+                  ? 'ring-2 ring-purple-500/50 border-purple-500 bg-purple-50 dark:bg-purple-950/20' 
+                  : ''
+              }`}
               placeholder="إلى تاريخ"
               disabled={!dateFilterType || dateFilterType === " "}
             />
@@ -453,7 +502,11 @@ const StudentList = () => {
                     setPage(0); 
                   }}
                   size="sm"
-                  className="w-auto"
+                  className={`w-auto transition-all duration-200 ${
+                    onlyEnrolled 
+                      ? 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-200 dark:shadow-green-800/30' 
+                      : ''
+                  }`}
                 >
                   <CheckCircle2 className="ml-1 h-3 w-3" /> المسجلون
                 </Button>
@@ -466,7 +519,11 @@ const StudentList = () => {
                     setPage(0); 
                   }}
                   size="sm"
-                  className="w-auto"
+                  className={`w-auto transition-all duration-200 ${
+                    onlyNotEnrolled 
+                      ? 'bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-orange-800/30' 
+                      : ''
+                  }`}
                 >
                   <User className="ml-1 h-3 w-3" /> غير المسجلين
                 </Button>
@@ -484,7 +541,11 @@ const StudentList = () => {
                     setPage(0); 
                   }}
                   size="sm"
-                  className="w-auto"
+                  className={`w-auto transition-all duration-200 ${
+                    onlyApproved 
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-emerald-800/30' 
+                      : ''
+                  }`}
                 >
                   <CheckCircle2 className="ml-1 h-3 w-3" /> المقبولون
                 </Button>
@@ -497,7 +558,11 @@ const StudentList = () => {
                     setPage(0); 
                   }}
                   size="sm"
-                  className="w-auto"
+                  className={`w-auto transition-all duration-200 ${
+                    onlyNotApproved 
+                      ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-red-800/30' 
+                      : ''
+                  }`}
                 >
                   <XCircle className="ml-1 h-3 w-3" /> غير المقبولين
                 </Button>

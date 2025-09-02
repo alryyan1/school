@@ -141,7 +141,7 @@ const StudentFeePaymentFormDialog: React.FC<StudentFeePaymentFormDialogProps> = 
 
                          {/* Display remaining amount */}
                          <Typography variant="body2" color="text.primary" gutterBottom sx={{mb: 1}}>
-                             المبلغ المتبقي من القسط: <strong >{maxAllowedPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                                                           المبلغ المتبقي من القسط: <strong >{maxAllowedPayment.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} جنيه</strong>
                          </Typography>
 
 
