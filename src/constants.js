@@ -14,7 +14,9 @@ export function blurForNoramlUsers() {
 export const url = `${schema}://${host}/${projectFolder}/public/api/`;
 export const webUrl = `${schema}://${host}/${projectFolder}/public/`;
 export const imagesUrl = `${schema}://${host}/${projectFolder}/public/`;
-
+export const numberWithCommas = (x) => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 
 // Create a cache with right-to-left settings
 export const cacheRtl = createCache({

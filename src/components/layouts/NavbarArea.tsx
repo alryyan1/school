@@ -1,5 +1,5 @@
 // src/components/layout/NavbarArea.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import {
@@ -7,8 +7,9 @@ import {
     DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, School, LogOut, UserCircle, Shield, ChevronDown } from 'lucide-react';
+import { Menu, School, LogOut, UserCircle, Shield, ChevronDown, Settings } from 'lucide-react';
 import StudentSearch from '@/components/StudentSearch';
+import UserPreferencesDialog from '@/components/UserPreferencesDialog';
 
 import { useAuth } from '@/context/authcontext'; // Adjust path
 // Removed useSettingsStore import
@@ -21,6 +22,7 @@ interface NavbarAreaProps {
 const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
     const { userName, userRole, roles, permissions, logout, userSchoolId } = useAuth();
     const navigate = useNavigate();
+    const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
 
     const { schools, fetchSchools } = useSchoolStore();
 
@@ -75,96 +77,122 @@ const NavbarArea: React.FC<NavbarAreaProps> = ({ onMobileMenuToggle }) => {
                 </div>
             )}
 
-            {/* User Menu (right side in RTL) */}
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="rounded-full h-auto p-2">
-                        <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                                <AvatarImage src="/placeholder-user.jpg" alt={userName || "User"} />
-                                <AvatarFallback className="text-xs">
-                                    {userName ? userName.substring(0, 2).toUpperCase() : <UserCircle />}
-                                </AvatarFallback>
-                            </Avatar>
-                            <span className="hidden sm:block text-sm font-medium text-right">
-                                {userName || "المستخدم"}
-                            </span>
-                        </div>
-                        <span className="sr-only">Toggle user menu</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{userName || "المستخدم"}</p>
-                            <p className="text-xs leading-none text-muted-foreground">{primaryRole}</p>
-                        </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    
-                    {/* Role and Permissions Dropdown */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <DropdownMenuItem className="cursor-pointer">
-                                <Shield className="mr-2 h-4 w-4" />
-                                <span className="flex-1 text-right">الدور والصلاحيات</span>
-                                <ChevronDown className="mr-auto h-4 w-4" />
-                            </DropdownMenuItem>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent side="left" align="start" className="w-64">
-                            <DropdownMenuLabel className="font-normal">
-                                <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none">معلومات الصلاحيات</p>
-                                    <p className="text-xs leading-none text-muted-foreground">الدور: {primaryRole}</p>
-                                </div>
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {roles && roles.length > 0 && (
-                                <>
-                                    <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-                                        الأدوار الممنوحة:
-                                    </DropdownMenuLabel>
-                                    <div className="max-h-16 overflow-y-auto">
-                                        {roles.map((role, index) => (
-                                            <DropdownMenuItem key={index} className="text-xs cursor-default">
-                                                <span className="truncate">{role}</span>
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </div>
-                                    <DropdownMenuSeparator />
-                                </>
-                            )}
-                            {permissions && permissions.length > 0 ? (
-                                <>
-                                    <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-                                        الصلاحيات الممنوحة:
-                                    </DropdownMenuLabel>
-                                    <div className="max-h-32 overflow-y-auto">
-                                        {permissions.map((permission, index) => (
-                                            <DropdownMenuItem key={index} className="text-xs cursor-default">
-                                                <span className="truncate">{permission}</span>
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : (
-                                <DropdownMenuItem className="text-xs text-muted-foreground cursor-default">
-                                    لا توجد صلاحيات محددة
+            {/* Settings Button and User Menu (right side in RTL) */}
+            <div className="flex items-center gap-2">
+                {/* Settings Button */}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setPreferencesDialogOpen(true)}
+                    className="h-9 w-9"
+                    title="الإعدادات"
+                >
+                    <Settings className="h-4 w-4" />
+                </Button>
+
+                {/* User Menu */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="rounded-full h-auto p-2">
+                            <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src="/placeholder-user.jpg" alt={userName || "User"} />
+                                    <AvatarFallback className="text-xs">
+                                        {userName ? userName.substring(0, 2).toUpperCase() : <UserCircle />}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span className="hidden sm:block text-sm font-medium text-right">
+                                    {userName || "المستخدم"}
+                                </span>
+                            </div>
+                            <span className="sr-only">Toggle user menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{userName || "المستخدم"}</p>
+                                <p className="text-xs leading-none text-muted-foreground">{primaryRole}</p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        
+                        {/* Settings Menu Item */}
+                        <DropdownMenuItem onClick={() => setPreferencesDialogOpen(true)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>الإعدادات</span>
+                        </DropdownMenuItem>
+                        
+                        {/* Role and Permissions Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <DropdownMenuItem className="cursor-pointer">
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    <span className="flex-1 text-right">الدور والصلاحيات</span>
+                                    <ChevronDown className="mr-auto h-4 w-4" />
                                 </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    
-                    <DropdownMenuSeparator />
-                    {/* <DropdownMenuItem>ملفي الشخصي</DropdownMenuItem> */}
-                    {/* <DropdownMenuItem>إعدادات الحساب</DropdownMenuItem> */}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-500 focus:bg-red-100/80 dark:focus:bg-red-900/30 focus:text-red-700 dark:focus:text-red-400 cursor-pointer">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        تسجيل الخروج
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="left" align="start" className="w-64">
+                                <DropdownMenuLabel className="font-normal">
+                                    <div className="flex flex-col space-y-1">
+                                        <p className="text-sm font-medium leading-none">معلومات الصلاحيات</p>
+                                        <p className="text-xs leading-none text-muted-foreground">الدور: {primaryRole}</p>
+                                    </div>
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {roles && roles.length > 0 && (
+                                    <>
+                                        <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                                            الأدوار الممنوحة:
+                                        </DropdownMenuLabel>
+                                        <div className="max-h-16 overflow-y-auto">
+                                            {roles.map((role, index) => (
+                                                <DropdownMenuItem key={index} className="text-xs cursor-default">
+                                                    <span className="truncate">{role}</span>
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </div>
+                                        <DropdownMenuSeparator />
+                                    </>
+                                )}
+                                {permissions && permissions.length > 0 ? (
+                                    <>
+                                        <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                                            الصلاحيات الممنوحة:
+                                        </DropdownMenuLabel>
+                                        <div className="max-h-32 overflow-y-auto">
+                                            {permissions.map((permission, index) => (
+                                                <DropdownMenuItem key={index} className="text-xs cursor-default">
+                                                    <span className="truncate">{permission}</span>
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <DropdownMenuItem className="text-xs text-muted-foreground cursor-default">
+                                        لا توجد صلاحيات محددة
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <DropdownMenuSeparator />
+                        {/* <DropdownMenuItem>ملفي الشخصي</DropdownMenuItem> */}
+                        {/* <DropdownMenuItem>إعدادات الحساب</DropdownMenuItem> */}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-500 focus:bg-red-100/80 dark:focus:bg-red-900/30 focus:text-red-700 dark:focus:text-red-400 cursor-pointer">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            تسجيل الخروج
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            {/* User Preferences Dialog */}
+            <UserPreferencesDialog
+                open={preferencesDialogOpen}
+                onOpenChange={setPreferencesDialogOpen}
+            />
         </header>
     );
 };

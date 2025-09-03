@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Student } from "@/types/student";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from 'react-router-dom';
 
 interface StudentActionsDialogProps {
   open: boolean;
@@ -33,6 +34,8 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
   selectedStudent,
   onActionClick,
 }) => {
+  const navigate = useNavigate();
+
   if (!selectedStudent) return null;
 
   const getStatusBadge = () => {
@@ -67,6 +70,19 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
         غير مسجل
       </Badge>
     );
+  };
+
+  const handleDashboardClick = () => {
+    // Find the first active enrollment
+    const activeEnrollment = selectedStudent.enrollments?.find(
+      enrollment => enrollment.status === 'active'
+    );
+    
+    if (activeEnrollment) {
+      // Navigate to the enrollment dashboard
+      navigate(`/students/${selectedStudent.id}/enrollments/${activeEnrollment.id}/dashboard`);
+      onOpenChange(false); // Close the dialog
+    }
   };
 
   return (
@@ -120,6 +136,45 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
             <div className="flex items-center justify-center gap-3">
               {getStatusBadge()}
               {getEnrollmentStatus()}
+            </div>
+            
+            {/* Student Details */}
+            <div className="mt-4 space-y-2 text-sm">
+              {/* School Information */}
+              {selectedStudent.wished_school_details && (
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                  <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  </div>
+                  <span className="font-medium text-foreground">
+                    {selectedStudent.wished_school_details.name}
+                  </span>
+                </div>
+              )}
+              
+                             {/* Grade Level */}
+               {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && selectedStudent.enrollments[0]?.grade_level?.name && (
+                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                   <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
+                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                   </div>
+                   <span className="font-medium text-foreground">
+                     الصف: {selectedStudent.enrollments[0].grade_level.name}
+                   </span>
+                 </div>
+               )}
+              
+              {/* Classroom Information */}
+              {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && (
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                  <div className="w-4 h-4 rounded-full bg-purple-100 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  </div>
+                  <span className="font-medium text-foreground">
+                    الفصل: {selectedStudent.enrollments[0]?.classroom?.name || 'غير محدد'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           
@@ -200,6 +255,26 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
                 </div>
               </Button>
             ) : null}
+            
+            {/* Dashboard Link Action - Only show if student has active enrollment */}
+            {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="justify-start h-14 text-right hover:bg-purple-50 hover:border-purple-300 transition-all duration-200"
+                onClick={handleDashboardClick}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1 text-right">
+                    <div className="font-semibold text-foreground">لوحة التحكم</div>
+                    <div className="text-xs text-muted-foreground">عرض لوحة تحكم التسجيل</div>
+                  </div>
+                </div>
+              </Button>
+            )}
           </div>
           
           {/* Additional Info */}

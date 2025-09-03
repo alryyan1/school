@@ -30,8 +30,14 @@ import { CacheProvider } from "@emotion/react";
 import { cacheRtl } from "./constants"; // Assuming this is for MUI RTL
 import router from "./router";
 
+// --- User Preferences Hook ---
+import { useUserPreferences } from "./hooks/useUserPreferences";
+
 // --- Main App Component ---
 function App() {
+  // Load and apply user preferences
+  useUserPreferences();
+
   // MUI Theme (keep if MUI components are still in use)
   const muiTheme = createMuiTheme(
     {

@@ -1,18 +1,20 @@
 // src/components/Navbar.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Box,
-  Typography,
-  IconButton,
-  Menu,
-  MenuItem,
-  Avatar,
-  Stack,
-} from "@mui/material";
-import AccountCircle from "@mui/icons-material/AccountCircle";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Settings, User, LogOut } from "lucide-react";
 import { useAuth } from "@/context/authcontext"; // Adjust path
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
+import UserPreferencesDialog from "./UserPreferencesDialog";
 
 interface NavbarProps {
   userRole?: string;
@@ -21,10 +23,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
   const { userName, logout } = useAuth();
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  // --- Get Active Settings ---
-  // Removed useSettingsStore - you may need to implement alternative state management
+  const [preferencesDialogOpen, setPreferencesDialogOpen] = useState(false);
 
   // --- Get Names from Stores ---
   const { schools, fetchSchools } = useSchoolStore();
@@ -34,69 +33,80 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
     if (schools.length === 0) fetchSchools();
   }, [schools.length, fetchSchools]);
 
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) =>
-    setAnchorEl(event.currentTarget);
-  const handleClose = () => setAnchorEl(null);
-
   const handleLogout = () => {
     logout();
-    handleClose();
     navigate("/auth/login");
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        width: "100%",
-        justifyContent: "space-between",
-        px: { xs: 0, sm: 1 },
-      }}
-    >
+    <div className="flex items-center justify-between w-full px-4 py-2 bg-background border-b">
       {/* Active School and Year Display */}
-      <Stack direction="row" spacing={1} alignItems="center">
+      <div className="flex items-center space-x-4">
         {/* Removed active school/year display - implement your preferred state management */}
-      </Stack>
+      </div>
 
       {/* Spacer to push user menu to the right */}
-      <Box sx={{ flexGrow: 1 }} />
+      <div className="flex-grow" />
 
       {/* User Information and Menu */}
-      <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Typography
-          variant="subtitle1"
-          sx={{ ml: 1, display: { xs: "none", sm: "block" } }}
+      <div className="flex items-center space-x-3">
+        {/* Settings Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setPreferencesDialogOpen(true)}
+          className="h-9 w-9"
+          title="الإعدادات"
         >
+          <Settings className="h-4 w-4" />
+        </Button>
+
+        {/* User Info */}
+        <span className="hidden sm:block text-sm text-muted-foreground">
           {userName || "المستخدم"} ({userRole || "الدور"})
-        </Typography>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="menu-appbar"
-          aria-haspopup="true"
-          onClick={handleMenu}
-          color="inherit"
-        >
-          <Avatar sx={{ width: 32, height: 32, bgcolor: "secondary.main" }}>
-            {userName ? userName.charAt(0).toUpperCase() : <AccountCircle />}
-          </Avatar>
-        </IconButton>
-        <Menu
-          id="menu-appbar"
-          anchorEl={anchorEl}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          keepMounted
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-          open={Boolean(anchorEl)}
-          onClose={handleClose}
-          sx={{ "& .MuiPaper-root": { mt: 1 } }} // Margin top for menu
-        >
-          {/* <MenuItem onClick={handleClose}>ملفي الشخصي</MenuItem> */}
-          <MenuItem onClick={handleLogout}>تسجيل الخروج</MenuItem>
-        </Menu>
-      </Box>
-    </Box>
+        </span>
+
+        {/* User Avatar and Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src="" alt={userName || "المستخدم"} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {userName ? userName.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{userName || "المستخدم"}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {userRole || "الدور"}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setPreferencesDialogOpen(true)}>
+              <Settings className="ml-2 h-4 w-4" />
+              <span>الإعدادات</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="ml-2 h-4 w-4" />
+              <span>تسجيل الخروج</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* User Preferences Dialog */}
+      <UserPreferencesDialog
+        open={preferencesDialogOpen}
+        onOpenChange={setPreferencesDialogOpen}
+      />
+    </div>
   );
 };
 

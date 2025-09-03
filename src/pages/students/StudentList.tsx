@@ -69,10 +69,10 @@ const StudentList = () => {
 
   const { schools, fetchSchools } = useSchoolStore();
   useEffect(() => {
-    fetchStudents();
+    // fetchStudents();
     fetchSchools();
   }, [fetchStudents, fetchSchools]);
-
+ console.log(userSchoolId, 'userSchoolId')
   // Initialize the school filter with the logged-in user's school, if available
   useEffect(() => {
     if (userSchoolId && wishedSchoolFilter === null) {
@@ -107,10 +107,13 @@ const StudentList = () => {
     fetchStudents(filters);
   }, [buildFilters, fetchStudents]);
 
-  // Update filters effect
+  // Update filters effect - wait for school filter to be initialized
   useEffect(() => {
-    fetchStudentsWithFilters();
-  }, [fetchStudentsWithFilters, searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, onlyNotEnrolled, onlyNotApproved, orderBy, order, page, rowsPerPage]);
+    // Only fetch if we have a school filter set (either from user or manually selected)
+    if (wishedSchoolFilter !== null || !userSchoolId) {
+      fetchStudentsWithFilters();
+    }
+  }, [fetchStudentsWithFilters, searchTerm, wishedSchoolFilter, dateFilterType, startDateFilter, endDateFilter, onlyEnrolled, onlyApproved, onlyNotEnrolled, onlyNotApproved, orderBy, order, page, rowsPerPage, userSchoolId]);
 
   // const handleDelete = async (id: number) => { /* ... same ... */ };
   const handlePrintList = () => {
@@ -426,13 +429,17 @@ const StudentList = () => {
                 }`}
               />
             </div>
-            <Select value={wishedSchoolFilter?.toString() || ""} onValueChange={(value) => {setWishedSchoolFilter(value ? parseInt(value) : null); setPage(0);}}>
+            <Select 
+              value={wishedSchoolFilter?.toString() || ""} 
+              onValueChange={(value) => {setWishedSchoolFilter(value ? parseInt(value) : null); setPage(0);}}
+              disabled={userSchoolId ? true : false}
+            >
               <SelectTrigger className={`w-full transition-all duration-200 ${
                 wishedSchoolFilter !== null 
                   ? 'ring-2 ring-blue-500/50 border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
                   : ''
-              }`}>
-                <SelectValue placeholder="فلترة بالمدرسة..." />
+              } ${userSchoolId ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <SelectValue placeholder={userSchoolId ? "محدد تلقائياً حسب مدرستك" : "فلترة بالمدرسة..."} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={null}>جميع المدارس</SelectItem>
@@ -655,14 +662,14 @@ const StudentList = () => {
                                   </Tooltip>
                                 </TooltipProvider>
                               ) : null}
-                              <div className={`w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-lg cursor-pointer hover:bg-primary/20 transition-colors ${
+                              <div className={`w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary cursor-pointer hover:bg-primary/20 transition-colors ${
                                 student.image_url ? 'hidden' : ''
                               } ${
                                 highlightedStudentId === student.id 
                                   ? 'ring-4 ring-green-400 ring-opacity-75' 
                                   : ''
                               }`}>
-                                {student.student_name.charAt(0).toUpperCase()}
+                                <User className="w-6 h-6" />
                               </div>
                             </div>
                           </TableCell>

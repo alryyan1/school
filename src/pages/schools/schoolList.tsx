@@ -1,6 +1,6 @@
 // src/pages/schools/SchoolList.tsx
 import React, { useState, useEffect } from "react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion"; // Optional: for page/row animations
 
 // shadcn/ui components
@@ -21,16 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // shadcn Alert
 import { Input } from "@/components/ui/input"; // For potential search
@@ -40,32 +30,25 @@ import {
   PlusCircle,
   MoreHorizontal,
   Edit3,
-  Trash2,
   Eye,
-  Building,
   AlertCircle,
   UserPlus,
 } from "lucide-react";
 
 import { useSchoolStore } from "@/stores/schoolStore"; // Adjust path
 import { School } from "@/types/school"; // Adjust path
-import { useSnackbar } from "notistack"; // Still useful for general notifications
-import { webUrl } from "@/constants";
 import AssignUserDialog from "@/components/schools/AssignUserDialog";
+import { numberWithCommas } from "@/constants";
 // Removed MUI Pagination, DataGrid, Tooltip, etc.
 
 const SchoolList: React.FC = () => {
   const navigate = useNavigate();
-  const { enqueueSnackbar } = useSnackbar();
 
   // --- Store Data & Actions ---
   // Assuming useSchoolStore doesn't use pagination for schools as per previous request
-  const { schools, loading, error, fetchSchools, deleteSchool } =
-    useSchoolStore();
+  const { schools, loading, error, fetchSchools } = useSchoolStore();
 
   // --- Local State ---
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
   const [searchTerm, setSearchTerm] = useState(""); // For local search/filter
   const [assignUserDialogOpen, setAssignUserDialogOpen] = useState(false);
   const [schoolToAssignUser, setSchoolToAssignUser] = useState<School | null>(null);
@@ -76,41 +59,13 @@ const SchoolList: React.FC = () => {
   }, [fetchSchools]);
 
   // --- Handlers ---
-  const handleOpenDeleteDialog = (school: School) => {
-    setSchoolToDelete(school);
-    setDeleteDialogOpen(true);
-  };
-  const handleCloseDeleteDialog = () => {
-    setSchoolToDelete(null);
-    setDeleteDialogOpen(false);
-  };
-
   const handleOpenAssignUserDialog = (school: School) => {
     setSchoolToAssignUser(school);
     setAssignUserDialogOpen(true);
   };
 
-  const handleCloseAssignUserDialog = () => {
-    setSchoolToAssignUser(null);
-    setAssignUserDialogOpen(false);
-  };
-
   const handleUserAssigned = () => {
     fetchSchools(); // Refresh the schools list
-  };
-  const handleDeleteConfirm = async () => {
-    if (schoolToDelete) {
-      const success = await deleteSchool(schoolToDelete.id);
-      if (success) {
-        enqueueSnackbar("تم حذف المدرسة بنجاح", { variant: "success" });
-      } else {
-        // Error message from store or fallback
-        enqueueSnackbar(useSchoolStore.getState().error || "فشل حذف المدرسة", {
-          variant: "error",
-        });
-      }
-      handleCloseDeleteDialog();
-    }
   };
 
   // --- Filtered Schools for Display ---
@@ -124,10 +79,6 @@ const SchoolList: React.FC = () => {
   }, [schools, searchTerm]);
 
   // --- Animation Variants (Optional) ---
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
-  };
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 },
@@ -149,7 +100,7 @@ const SchoolList: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                {[...Array(6)].map((_, i) => (
+                {[...Array(4)].map((_, i) => (
                   <TableHead key={i}>
                     <Skeleton className="h-5 w-full" />
                   </TableHead>
@@ -159,7 +110,7 @@ const SchoolList: React.FC = () => {
             <TableBody>
               {[...Array(5)].map((_, i) => (
                 <TableRow key={i}>
-                  {[...Array(6)].map((_, j) => (
+                  {[...Array(4)].map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-full" />
                     </TableCell>
@@ -226,11 +177,8 @@ const SchoolList: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px] text-center">#</TableHead>
-              <TableHead className="w-[60px] text-center">الشعار</TableHead>
               <TableHead className="text-center">اسم المدرسة</TableHead>
-              <TableHead className="hidden sm:table-cell text-center">الرمز</TableHead>
               <TableHead className="hidden md:table-cell text-center">الرسوم السنوية</TableHead>
-           
               <TableHead className="hidden lg:table-cell text-center">المستخدم المسؤول</TableHead>
               <TableHead className="w-[80px] text-center">إجراءات</TableHead>
             </TableRow>
@@ -239,7 +187,7 @@ const SchoolList: React.FC = () => {
             {filteredSchools.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={5}
                   className="h-24 text-center text-muted-foreground"
                 >
                   {searchTerm
@@ -259,33 +207,16 @@ const SchoolList: React.FC = () => {
                   <TableCell className="text-center font-mono text-sm font-medium">
                     {index + 1}
                   </TableCell>
-                  <TableCell className="text-center">
-                    <Avatar className="h-9 w-9 mx-auto">
-                      {/* {console.log(`${webUrl}${school.logo_url ?? undefined}`)} */}
-                      <AvatarImage
-                        src={`${webUrl}${school.logo_url ?? undefined}`}
-                        alt={school.name}
-                      />
-                      <AvatarFallback>
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </TableCell>
                   <TableCell className="font-medium text-center">{school.name}</TableCell>
-                  <TableCell className="hidden sm:table-cell text-center">
-                    {school.code}
-                  </TableCell>
-                                     <TableCell className="hidden md:table-cell text-center">
+                  <TableCell className="hidden md:table-cell text-center">
                      {school.annual_fees ? (
                        <span className="font-mono text-sm text-green-600 dark:text-green-400">
-                         {school.annual_fees.toLocaleString('en-US')} جنيه
+                         { numberWithCommas(school.annual_fees)} جنيه
                        </span>
                      ) : (
                        <span className="text-muted-foreground text-sm">غير محدد</span>
                      )}
                    </TableCell>
-               
-               
                   <TableCell className="hidden lg:table-cell text-center">
                     {school.user ? (
                       <div className="flex flex-col items-center">
@@ -307,7 +238,6 @@ const SchoolList: React.FC = () => {
                       <DropdownMenuContent
                         align="end"
                         className="w-[160px]"
-                        dir="rtl"
                       >
                         <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
                         <DropdownMenuItem
@@ -338,42 +268,6 @@ const SchoolList: React.FC = () => {
           </TableBody>
         </Table>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        dir="rtl"
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
-            <DialogDescription>
-              هل أنت متأكد من حذف المدرسة "{schoolToDelete?.name}"؟ لا يمكن
-              التراجع عن هذا الإجراء.
-              <br />
-              <span className="text-destructive font-medium text-sm">
-                (تحذير: قد يؤدي حذف المدرسة إلى حذف جميع البيانات المرتبطة بها
-                مثل الفصول، الطلاب، إلخ.)
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:justify-start">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                إلغاء
-              </Button>
-            </DialogClose>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-            >
-              تأكيد الحذف
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Assign User Dialog */}
       <AssignUserDialog

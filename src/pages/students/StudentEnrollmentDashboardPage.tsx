@@ -2,18 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, StickyNote, CreditCard, AlertTriangle, CalendarX, User } from 'lucide-react';
+import { ArrowRight, StickyNote, CreditCard, AlertTriangle, CalendarX, User, GraduationCap, Building } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from 'lucide-react';
 import FeeInstallmentViewerDialog from '@/components/finances/FeeInstallmentViewerDialog';
 import axiosClient from '@/axios-client';
-
-interface Student {
-  id: number;
-  student_name: string;
-  image_url?: string;
-}
+import { Student } from '@/types/student';
 
 const StudentEnrollmentDashboardPage: React.FC = () => {
   const { studentId, enrollmentId } = useParams<{ studentId: string; enrollmentId: string }>();
@@ -38,6 +33,11 @@ const StudentEnrollmentDashboardPage: React.FC = () => {
     fetchStudent();
   }, [studentId]);
 
+  // Find the current enrollment from the student's enrollments array
+  const currentEnrollment = student?.enrollments?.find(
+    (enrollment) => enrollment.id.toString() === enrollmentId
+  );
+
   return (
     <div className="container max-w-3xl mx-auto py-8 px-4" dir="rtl">
       {/* Student Information Header */}
@@ -55,11 +55,34 @@ const StudentEnrollmentDashboardPage: React.FC = () => {
                   <User className="h-8 w-8" />
                 </AvatarFallback>
               </Avatar>
-              <div>
+              <div className="flex-1">
                 <h1 className="text-2xl font-bold text-primary">{student.student_name}</h1>
                 <Badge variant="secondary" className="mt-1">
                   لوحة تسجيل الطالب
                 </Badge>
+                
+                {/* Enrollment Details */}
+                {currentEnrollment ? (
+                  <div className="flex flex-wrap gap-4 mt-3">
+                    {currentEnrollment.grade_level && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <GraduationCap className="h-4 w-4" />
+                        <span>الصف: {currentEnrollment.grade_level.name}</span>
+                      </div>
+                    )}
+                    {currentEnrollment.school && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Building className="h-4 w-4" />
+                        <span>المدرسة: {currentEnrollment.school.name}</span>
+                      </div>
+                    )}
+                    {currentEnrollment.academic_year && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>العام الدراسي: {currentEnrollment.academic_year}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </div>
           </CardContent>

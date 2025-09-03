@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLedgerStore } from "@/stores/ledgerStore";
 import { StudentLedger, CreateLedgerEntryRequest } from "@/types/ledger";
-import { Plus, Calendar, Calculator, CreditCard, FileText, DollarSign } from "lucide-react";
+import { Plus, Calendar, Calculator, CreditCard, FileText, DollarSign, Printer } from "lucide-react";
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -110,6 +110,119 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
         </span>
       </Badge>
     );
+  };
+
+  const handlePrintReceipt = (entry: { 
+    transaction_date: string; 
+    amount: number; 
+    description: string; 
+    reference_number?: string; 
+    balance_after: number; 
+    created_by?: { name: string } 
+  }) => {
+    // Open print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html dir="rtl">
+          <head>
+            <title>إيصال دفع</title>
+            <style>
+              body { 
+                font-family: 'Arial', sans-serif; 
+                margin: 20px; 
+                direction: rtl; 
+                text-align: right;
+              }
+              .receipt { 
+                border: 2px solid #000; 
+                padding: 20px; 
+                max-width: 400px; 
+                margin: 0 auto;
+              }
+              .header { 
+                text-align: center; 
+                font-size: 18px; 
+                font-weight: bold; 
+                margin-bottom: 20px;
+              }
+              .divider { 
+                border-top: 1px solid #000; 
+                margin: 10px 0;
+              }
+              .field { 
+                margin: 8px 0; 
+                display: flex; 
+                justify-content: space-between;
+              }
+              .label { 
+                font-weight: bold; 
+                margin-left: 10px;
+              }
+              .value { 
+                text-align: right;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="receipt">
+              <div class="header">إيصال دفع</div>
+              <div class="divider"></div>
+              
+              <div class="field">
+                <span class="label">اسم الطالب:</span>
+                <span class="value">${studentName}</span>
+              </div>
+              
+              <div class="field">
+                <span class="label">رقم التسجيل:</span>
+                <span class="value">${enrollmentId}</span>
+              </div>
+              
+              <div class="field">
+                <span class="label">تاريخ الدفع:</span>
+                <span class="value">${format(new Date(entry.transaction_date), 'dd/MM/yyyy', { locale: ar })}</span>
+              </div>
+              
+              <div class="field">
+                <span class="label">المبلغ:</span>
+                <span class="value">${numberWithCommas(entry.amount)} جنيه</span>
+              </div>
+              
+              <div class="field">
+                <span class="label">الوصف:</span>
+                <span class="value">${entry.description}</span>
+              </div>
+              
+              <div class="field">
+                <span class="label">رقم المرجع:</span>
+                <span class="value">${entry.reference_number || 'غير محدد'}</span>
+              </div>
+              
+              <div class="field">
+                <span class="label">الرصيد بعد الدفع:</span>
+                <span class="value">${numberWithCommas(entry.balance_after)} جنيه</span>
+              </div>
+              
+              <div class="divider"></div>
+              
+              <div class="field">
+                <span class="label">تم الإنشاء بواسطة:</span>
+                <span class="value">${entry.created_by?.name || 'غير محدد'}</span>
+              </div>
+              
+              <div class="field">
+                <span class="label">تاريخ الطباعة:</span>
+                <span class="value">${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}</span>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    }
   };
 
   if (!currentLedger) return null;
@@ -313,6 +426,7 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
                       <TableHead className="text-center">الرصيد بعد المعاملة</TableHead>
                       <TableHead className="text-center">رقم المرجع</TableHead>
                       <TableHead className="text-center">تم الإنشاء بواسطة</TableHead>
+                      <TableHead className="text-center">الإجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -338,6 +452,19 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
                         </TableCell>
                         <TableCell className="text-center">
                           {entry.created_by?.name || '-'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {entry.transaction_type === 'payment' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePrintReceipt(entry)}
+                              className="flex items-center gap-2 text-xs"
+                            >
+                              <Printer className="w-3 h-3" />
+                              طباعة إيصال
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

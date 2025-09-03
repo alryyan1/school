@@ -1,0 +1,130 @@
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+/* User Preferences CSS Classes */
+
+/* High Contrast Mode */
+.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #ffffff;
+  --muted: #333333;
+  --muted-foreground: #cccccc;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffffff;
+}
+
+/* Large Text Mode */
+.large-text {
+  font-size: 1.2em;
+}
+
+.large-text h1 { font-size: 2.5em; }
+.large-text h2 { font-size: 2em; }
+.large-text h3 { font-size: 1.75em; }
+.large-text h4 { font-size: 1.5em; }
+.large-text h5 { font-size: 1.25em; }
+.large-text h6 { font-size: 1.1em; }
+.large-text p { font-size: 1.1em; }
+.large-text span { font-size: 1.1em; }
+
+/* Compact Mode */
+.compact-mode {
+  --spacing-unit: 0.5rem;
+}
+
+.compact-mode .p-4 { padding: 0.5rem; }
+.compact-mode .p-6 { padding: 0.75rem; }
+.compact-mode .py-6 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.compact-mode .px-6 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.compact-mode .mb-6 { margin-bottom: 0.75rem; }
+.compact-mode .space-y-6 > * + * { margin-top: 0.75rem; }
+.compact-mode .gap-4 { gap: 0.5rem; }
+.compact-mode .gap-6 { gap: 0.75rem; }
+
+/* No Animations */
+.no-animations *,
+.no-animations *::before,
+.no-animations *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Reduce Motion */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Custom CSS Variables for Accent Colors */
+:root {
+  --accent-color: #3b82f6;
+}
+
+/* Apply accent color to various elements */
+.text-accent {
+  color: var(--accent-color);
+}
+
+.bg-accent {
+  background-color: var(--accent-color);
+}
+
+.border-accent {
+  border-color: var(--accent-color);
+}
+
+.ring-accent {
+  --tw-ring-color: var(--accent-color);
+}
+
+/* Responsive font sizes */
+@media (max-width: 640px) {
+  .large-text {
+    font-size: 1.1em;
+  }
+  
+  .large-text h1 { font-size: 2em; }
+  .large-text h2 { font-size: 1.75em; }
+  .large-text h3 { font-size: 1.5em; }
+}
+
+/* Dark mode adjustments for high contrast */
+.dark.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #ffffff;
+  --muted: #333333;
+  --muted-foreground: #cccccc;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffffff;
+}

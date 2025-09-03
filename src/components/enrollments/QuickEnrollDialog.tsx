@@ -102,9 +102,14 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
         <DialogHeader>
           <DialogTitle>تسجيل الطالب</DialogTitle>
           <DialogDescription>
-            الطالب: {student?.student_name || '-'}
-            <br />
-            المدرسة: {wishedSchoolName || '-'}
+            <div className="text-center space-y-2">
+              <div className="text-lg font-bold text-center">
+                الطالب: {student?.student_name || '-'}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                المدرسة: {wishedSchoolName || '-'}
+              </div>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
