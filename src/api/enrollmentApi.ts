@@ -60,6 +60,10 @@ export const EnrollmentApi = {
   getUnassignedForGrade: (filters: { school_id: number; academic_year: string; grade_level_id: number }) =>
     axiosClient.get<CollectionResponse>('/unassigned-students-for-grade', { params: filters }),
 
+  // Get assigned students for a grade
+  getAssignedForGrade: (filters: { school_id: number; grade_level_id: number; academic_year?: string }) =>
+    axiosClient.get<CollectionResponse>('/assigned-students-for-grade', { params: filters }),
+
   // Assign student to classroom
   assignToClassroom: (enrollmentId: number, classroomId: number | null) =>
     axiosClient.put<ResourceResponse>(`/enrollments/${enrollmentId}/assign-classroom`, { classroom_id: classroomId }),

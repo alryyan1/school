@@ -69,14 +69,7 @@ const Dashboard: React.FC = () => {
             iconColor: "text-emerald-600 dark:text-emerald-400",
             bgColor: "bg-emerald-100/80 dark:bg-emerald-900/30",
         },
-        {
-            title: 'اقساط    خلال شهر',
-            icon: Car,
-            link: '/finances/due-installments',
-            description: 'الاقساط التي يجب ان يتم سدادها هذا الاسبوع',
-            iconColor: "text-cyan-600 dark:text-cyan-400",
-            bgColor: "bg-cyan-100/80 dark:bg-cyan-900/30",
-        },
+     
         {
             title: 'الإعدادات',
             icon: Settings,

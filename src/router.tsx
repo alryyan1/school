@@ -27,6 +27,7 @@ import StudentEnrollmentDashboardPage from '@/pages/students/StudentEnrollmentDa
 import StudentEnrollmentNotesPage from '@/pages/students/StudentEnrollmentNotesPage';
 import StudentWarningsPage from '@/pages/students/StudentWarningsPage';
 import StudentAbsencesPage from '@/pages/students/StudentAbsencesPage';
+import StudentEnrollmentLayout from '@/components/layouts/StudentEnrollmentLayout';
 
 // --- Teacher Pages & Components ---
 import TeacherList from '@/pages/teachers/TeacherList';                 // Adjust path
@@ -145,10 +146,17 @@ const router = createHashRouter([
                     { path: ':id', element: <StudentView /> },
                     { path: ':id/edit', element: <StudentForm /> },
                     { path: ':id/enrollments', element: <StudentEnrollmentsPage /> },
-                    { path: ':studentId/enrollments/:enrollmentId/dashboard', element: <StudentEnrollmentDashboardPage /> },
-                    { path: ':studentId/enrollments/:enrollmentId/notes', element: <StudentEnrollmentNotesPage /> },
-                     { path: ':studentId/enrollments/:enrollmentId/warnings', element: <StudentWarningsPage /> },
-                     { path: ':studentId/enrollments/:enrollmentId/absences', element: <StudentAbsencesPage /> },
+                    {
+                        path: ':studentId/enrollments/:enrollmentId',
+                        element: <StudentEnrollmentLayout />,
+                        children: [
+                            { index: true, element: <Navigate to="dashboard" replace /> },
+                            { path: 'dashboard', element: <StudentEnrollmentDashboardPage /> },
+                            { path: 'notes', element: <StudentEnrollmentNotesPage /> },
+                            { path: 'warnings', element: <StudentWarningsPage /> },
+                            { path: 'absences', element: <StudentAbsencesPage /> },
+                        ]
+                    },
                 ]
             },
             {

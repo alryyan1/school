@@ -16,6 +16,8 @@ type StoreState = {
     isSearchResult: boolean;
     unassignedStudentsForGrade: Enrollment[];
     loadingUnassigned: boolean;
+    assignedStudentsForGrade: Enrollment[];
+    loadingAssigned: boolean;
 };
 
 type StoreActions = {
@@ -30,6 +32,7 @@ type StoreActions = {
     clearEnrollments: () => void;
     clearEnrollableStudents: () => void;
     fetchUnassignedStudentsForGrade: (filters: { school_id: number; academic_year: string; grade_level_id: number }) => Promise<void>;
+    fetchAssignedStudentsForGrade: (filters: { school_id: number; grade_level_id: number; academic_year?: string }) => Promise<void>;
     assignStudentToClassroom: (enrollmentId: number, classroomId: number | null, targetSchoolId: number, targetAcademicYear: string, targetGradeId: number) => Promise<boolean>;
 };
 
@@ -41,7 +44,9 @@ const initialState: StoreState = {
     error: null,
     isSearchResult: false,
     unassignedStudentsForGrade: [],
-    loadingUnassigned: false
+    loadingUnassigned: false,
+    assignedStudentsForGrade: [],
+    loadingAssigned: false
 };
 
 export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set, get) => ({
@@ -141,12 +146,23 @@ export const useStudentEnrollmentStore = create<StoreState & StoreActions>((set,
         }
     },
 
+    fetchAssignedStudentsForGrade: async (filters) => {
+        set({ loadingAssigned: true, error: null });
+        try {
+            const response = await EnrollmentApi.getAssignedForGrade(filters);
+            set({ assignedStudentsForGrade: response.data.data, loadingAssigned: false });
+        } catch (error: unknown) {
+            console.error("Fetch assigned students error:", error);
+            set({ loadingAssigned: false });
+        }
+    },
+
     assignStudentToClassroom: async (enrollmentId, classroomId, targetSchoolId, targetAcademicYear, targetGradeId) => {
         try {
             await EnrollmentApi.assignToClassroom(enrollmentId, classroomId);
             // Refetch both lists to reflect the change accurately
             get().fetchUnassignedStudentsForGrade({ school_id: targetSchoolId, academic_year: targetAcademicYear, grade_level_id: targetGradeId });
-            useClassroomStore.getState().fetchClassrooms({ school_id: targetSchoolId, grade_level_id: targetGradeId });
+            get().fetchAssignedStudentsForGrade({ school_id: targetSchoolId, grade_level_id: targetGradeId, academic_year: targetAcademicYear });
             return true;
         } catch (error: unknown) {
             console.error("Assign to classroom error:", error);

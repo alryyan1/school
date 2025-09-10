@@ -3,9 +3,7 @@ import { useParams, Link as RouterLink } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowRight, Plus, Edit, Trash2, FileText, User } from 'lucide-react';
+import { Loader2, ArrowRight, Plus, Edit, Trash2, FileText } from 'lucide-react';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -33,7 +31,6 @@ const StudentEnrollmentNotesPage: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
-  const [studentLoading, setStudentLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -72,14 +69,11 @@ const StudentEnrollmentNotesPage: React.FC = () => {
   };
 
   const fetchStudent = async () => {
-    setStudentLoading(true);
     try {
       const res = await axiosClient.get(`/students/${studentId}`);
       setStudent(res.data.data);
     } catch {
       setError('فشل تحميل بيانات الطالب');
-    } finally {
-      setStudentLoading(false);
     }
   };
 
@@ -138,35 +132,17 @@ const StudentEnrollmentNotesPage: React.FC = () => {
     setFormValue(template);
     setShowTemplates(false);
   };
+
+
+  const handleOpenPdfInNewTab = () => {
+    const pdfUrl = `http://192.168.100.12/school-backend/public/student-notes/pdf?enrollment_id=${enrollmentId}`;
+    window.open(pdfUrl, '_blank');
+  };
   console.log(student, 'student');
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4" dir="rtl">
       {/* معلومات الطالب */}
-      {studentLoading ? (
-        <div className="flex justify-center items-center mb-6">
-          <Loader2 className="animate-spin h-6 w-6 text-primary" />
-        </div>
-      ) : student ? (
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={student.image_url} alt={student.student_name} />
-                <AvatarFallback>
-                  <User className="h-8 w-8" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold text-primary">{student.student_name}</h1>
-                <Badge variant="secondary" className="mt-1">
-                  <FileText className="h-4 w-4 ml-1" />
-                  ملاحظات الطالب
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
+    
 
       <div className="flex justify-between items-center mb-6">
         <Button variant="outline" asChild>
@@ -175,9 +151,15 @@ const StudentEnrollmentNotesPage: React.FC = () => {
           </RouterLink>
         </Button>
         <h2 className="text-2xl font-bold">إدارة الملاحظات</h2>
-        <Button variant="default" onClick={() => { setShowForm(true); setEditingNoteId(null); setFormValue(''); setSelectedDate(dayjs()); }}>
-          <Plus className="ml-2 h-4 w-4" />إضافة ملاحظة
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleOpenPdfInNewTab}>
+            <FileText className="ml-2 h-4 w-4" />
+            عرض PDF
+          </Button>
+          <Button variant="default" onClick={() => { setShowForm(true); setEditingNoteId(null); setFormValue(''); setSelectedDate(dayjs()); }}>
+            <Plus className="ml-2 h-4 w-4" />إضافة ملاحظة
+          </Button>
+        </div>
       </div>
       <Card>
         <CardHeader>

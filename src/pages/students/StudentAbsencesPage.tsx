@@ -42,7 +42,7 @@ const StudentAbsencesPage: React.FC = () => {
     if (!enrollmentId || !date) { enqueueSnackbar('يرجى تحديد التاريخ', { variant: 'warning' }); return; }
     setSaving(true);
     try {
-      await StudentAbsenceApi.create({ student_academic_year_id: Number(enrollmentId), absent_date: date, reason: reason || null, excused });
+      await StudentAbsenceApi.create({ enrollment_id: Number(enrollmentId), absent_date: date, reason: reason || null, excused });
       setDate('');
       setReason('');
       setExcused(false);

@@ -31,18 +31,14 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2024/2025');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('2025/2026');
   const [selectedGradeLevelId, setSelectedGradeLevelId] = useState<number | ''>('');
   // Fees and discount removed per request
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Available academic years
   const availableAcademicYears = [
-    "2024/2025",
-    "2023/2024", 
-    "2022/2023",
-    "2021/2022",
-    "2020/2021"
+    "2025/2026",
   ];
 
   // Load lists when opening

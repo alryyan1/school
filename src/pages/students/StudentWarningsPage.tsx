@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+// removed unused Input import
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ArrowRight, Plus, Trash2, FileText } from 'lucide-react';
+import { Loader2, ArrowRight, Plus, Trash2, FileText, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StudentWarning, WarningSeverity } from '@/types/studentWarning';
 import { StudentWarningApi } from '@/api/studentWarningApi';
 import { useSnackbar } from 'notistack';
@@ -21,34 +23,43 @@ const StudentWarningsPage: React.FC = () => {
   const [severity, setSeverity] = useState<WarningSeverity>('low');
   const [reason, setReason] = useState('');
   const [issuing, setIssuing] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewText, setViewText] = useState<string>('');
+  const [editingReasons, setEditingReasons] = useState<Record<number, string>>({});
+  const [savingId, setSavingId] = useState<number | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!enrollmentId) return;
     setLoading(true);
     setError(null);
     try {
       const resp = await StudentWarningApi.list(Number(enrollmentId));
       setWarnings(resp.data.data);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || 'فشل تحميل الإنذارات');
+    } catch (e: unknown) {
+      const message = extractErrorMessage(e, 'فشل تحميل الإنذارات');
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [enrollmentId]);
 
-  useEffect(() => { load(); }, [enrollmentId]);
+  useEffect(() => { load(); }, [load]);
+
+  // Normalize only newline characters for cross-platform consistency without collapsing whitespace
+  const normalizeForSave = (text: string) => (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   const addWarning = async () => {
     if (!enrollmentId || !reason.trim()) { enqueueSnackbar('يرجى إدخال السبب', { variant: 'warning' }); return; }
     setIssuing(true);
     try {
-      await StudentWarningApi.create({ student_academic_year_id: Number(enrollmentId), severity, reason, issued_at: new Date().toISOString(), issued_by_user_id: 0 as any });
+      await StudentWarningApi.create({ enrollment_id: Number(enrollmentId), severity, reason: normalizeForSave(reason), issued_at: new Date().toISOString(), issued_by_user_id: null });
       setReason('');
       setSeverity('low');
       await load();
       enqueueSnackbar('تم تسجيل الإنذار', { variant: 'success' });
-    } catch (e:any) {
-      enqueueSnackbar(e?.response?.data?.message || 'فشل تسجيل الإنذار', { variant: 'error' });
+    } catch (e: unknown) {
+      const message = extractErrorMessage(e, 'فشل تسجيل الإنذار');
+      enqueueSnackbar(message, { variant: 'error' });
     } finally {
       setIssuing(false);
     }
@@ -59,9 +70,39 @@ const StudentWarningsPage: React.FC = () => {
       await StudentWarningApi.delete(id);
       setWarnings(prev => prev.filter(w => w.id !== id));
       enqueueSnackbar('تم حذف الإنذار', { variant: 'success' });
-    } catch (e:any) {
-      enqueueSnackbar(e?.response?.data?.message || 'فشل حذف الإنذار', { variant: 'error' });
+    } catch (e: unknown) {
+      const message = extractErrorMessage(e, 'فشل حذف الإنذار');
+      enqueueSnackbar(message, { variant: 'error' });
     }
+  };
+
+  const handleReasonChange = (id: number, value: string) => {
+    setEditingReasons(prev => ({ ...prev, [id]: value }));
+  };
+
+  const saveReason = async (id: number) => {
+    const newText = (editingReasons[id] ?? '');
+    try {
+      setSavingId(id);
+      const normalized = normalizeForSave(newText);
+      await StudentWarningApi.update(id, { reason: normalized });
+      setWarnings(prev => prev.map(w => (w.id === id ? { ...w, reason: normalized } : w)));
+      enqueueSnackbar('تم حفظ السبب', { variant: 'success' });
+    } catch (e: unknown) {
+      const message = extractErrorMessage(e, 'فشل حفظ السبب');
+      enqueueSnackbar(message, { variant: 'error' });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const extractErrorMessage = (e: unknown, fallback: string): string => {
+    if (typeof e === 'object' && e !== null) {
+      const maybeResp = (e as { response?: { data?: { message?: string } } }).response;
+      const msg = maybeResp?.data?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg;
+    }
+    return fallback;
   };
 
   return (
@@ -94,7 +135,7 @@ const StudentWarningsPage: React.FC = () => {
               </Select>
             </div>
             <div className="md:col-span-3">
-              <Input placeholder="السبب" value={reason} onChange={(e) => setReason(e.target.value)} />
+              <Textarea placeholder="اكتب سبب الإنذار..." value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
             </div>
             <div className="md:col-span-1">
               <Button onClick={addWarning} disabled={issuing || !reason.trim()} className="w-full">
@@ -133,8 +174,17 @@ const StudentWarningsPage: React.FC = () => {
                     <tr key={w.id}>
                       <td className="p-2 border">{w.issued_at ? new Date(w.issued_at).toLocaleString('ar-EG') : '-'}</td>
                       <td className="p-2 border">{w.severity === 'high' ? 'مرتفع' : w.severity === 'medium' ? 'متوسط' : 'منخفض'}</td>
-                      <td className="p-2 border">{w.reason}</td>
+                      <td className="p-2 border align-top">
+                        <Textarea
+                          rows={2}
+                          value={editingReasons[w.id] ?? w.reason ?? ''}
+                          onChange={(e) => handleReasonChange(w.id, e.target.value)}
+                          onBlur={() => saveReason(w.id)}
+                          disabled={savingId === w.id}
+                        />
+                      </td>
                       <td className="p-2 border text-center space-x-1 space-x-reverse">
+                     
                         <Button variant="ghost" size="icon" onClick={() => deleteWarning(w.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -152,6 +202,17 @@ const StudentWarningsPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="sm:max-w-xl" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>تفاصيل الإنذار</DialogTitle>
+          </DialogHeader>
+          <div className="border rounded-md p-3 whitespace-pre-wrap text-right" dir="rtl">
+            {viewText || '-'}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -6,9 +6,9 @@ type CollectionResponse = { data: StudentWarning[] };
 type ResourceResponse = { data: StudentWarning };
 
 export const StudentWarningApi = {
-  getAll: (studentId: number) => // Changed parameter
+  list: (enrollmentId: number) =>
     axiosClient.get<CollectionResponse>("/student-warnings", {
-      params: { student_id: studentId }, // Changed parameter
+      params: { enrollment_id: enrollmentId },
     }),
   create: (data: Omit<StudentWarning, "id" | "created_at" | "updated_at">) =>
     axiosClient.post<ResourceResponse>("/student-warnings", data),

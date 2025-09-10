@@ -6,9 +6,9 @@ type CollectionResponse = { data: StudentAbsence[] };
 type ResourceResponse = { data: StudentAbsence };
 
 export const StudentAbsenceApi = {
-  getAll: (studentId: number) => // Changed parameter
+  list: (enrollmentId: number) =>
     axiosClient.get<CollectionResponse>("/student-absences", {
-      params: { student_id: studentId }, // Changed parameter
+      params: { enrollment_id: enrollmentId },
     }),
   create: (data: Omit<StudentAbsence, "id" | "created_at" | "updated_at">) =>
     axiosClient.post<ResourceResponse>("/student-absences", data),

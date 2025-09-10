@@ -25,12 +25,6 @@ const SchoolClassroomListPage: React.FC = () => {
   const [availableGradeLevels, setAvailableGradeLevels] = useState<GradeLevel[]>([]); // State for available grade levels
   // Removed useSettingsStore - implement your preferred state management
   console.log(availableGradeLevels, "available grade levels"); // Debugging line
-  console.log(
-    activeAcademicYearId,
-    activeSchoolId,
-    "activeAcademiyYear",
-    "active school id"
-  ); // Debugging line
   const school = schools.find((s) => s.id === Number(schoolId)); // Find school from store
   // console.log(gradeLevels,'grade levels'); // Debugging line
   // Fetch Grade Levels SPECIFIC TO THE SELECTED SCHOOL
@@ -53,21 +47,13 @@ const SchoolClassroomListPage: React.FC = () => {
     [enqueueSnackbar]
   );
   useEffect(() => {
-    // Fetch classrooms for this school and the active year
-    if (schoolId && activeAcademicYearId) {
-    fetchSchoolGrades(Number(schoolId)); // Fetch grade levels for the school
-      // fetchClassrooms({
-      //   school_id: Number(schoolId),
-      //   active_academic_year_id: activeAcademicYearId,
-      // });
-      // fetchGradeLevels()
-    } else if (schoolId && !activeAcademicYearId) {
-      console.warn("Active Academic Year not set in settings!"); // Handle missing active year
-      // Optionally show an error or prompt user
+    // Fetch grade levels for this school
+    if (schoolId) {
+      fetchSchoolGrades(Number(schoolId)); // Fetch grade levels for the school
     }
     // Fetch specific school details if not already loaded in store? Optional.
     // if (schoolId && !school) getSchoolById(Number(schoolId));
-  }, [schoolId, activeAcademicYearId, fetchClassrooms,fetchSchoolGrades]); // Removed getSchoolById dependency for simplicity
+  }, [schoolId, fetchSchoolGrades]); // Removed getSchoolById dependency for simplicity
   console.log(classrooms, "classrooms"); // Debugging line
   return (
     <section
@@ -93,15 +79,6 @@ const SchoolClassroomListPage: React.FC = () => {
           </Button>
         </motion.div>
 
-        {!activeAcademicYearId && (
-          <Alert variant="destructive" className="mb-6">
-            <p className="font-semibold">تنبيه:</p>
-            <p>
-              الرجاء تحديد العام الدراسي النشط في الإعدادات العامة لعرض الطلاب
-              المسجلين بالفصول.
-            </p>
-          </Alert>
-        )}
 
         {/* {!loading && classrooms.length > 0 && (
           <ClassroomCard schoolId={schoolId} classrooms={classrooms}/>

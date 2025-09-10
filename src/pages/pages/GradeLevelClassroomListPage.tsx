@@ -25,13 +25,13 @@ function GradeLevelClassroomListPage() {
       fetchClassrooms({
         school_id: Number(schoolId),
         grade_level_id: Number(gradeLevelId),
-        active_academic_year_id: activeAcademicYearId,
+        // active_academic_year_id: activeAcademicYearId, // Temporarily removed until settings store is restored
       });
     }
    return ()=>{
     clearClassrooms()
     }
-  }, [schoolId, gradeLevelId, fetchClassrooms, activeAcademicYearId,fetchGradeLevels]); // Fetch classrooms when schoolId or gradeLevelId changes
+  }, [schoolId, gradeLevelId, fetchClassrooms, fetchGradeLevels]); // Fetch classrooms when schoolId or gradeLevelId changes
   console.log(classrooms, "classrooms"); // Debugging line
   console.log(classrooms, "classrooms"); // Debugging line
   return <Container className="">

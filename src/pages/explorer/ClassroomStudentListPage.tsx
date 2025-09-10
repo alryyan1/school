@@ -26,10 +26,11 @@ const ClassroomStudentListPage: React.FC = () => {
     // const classroom = classrooms.find(c => c.id === Number(classroomId));
 
     useEffect(() => {
-        if (schoolId && classroomId && activeAcademicYearId) {
+        if (schoolId && classroomId) {
+            // Note: academic_year_id temporarily removed until settings store is restored
             fetchEnrollments({
                 school_id: Number(schoolId),
-                academic_year_id: activeAcademicYearId,
+                // academic_year_id: activeAcademicYearId, // Temporarily removed
                 classroom_id: Number(classroomId) // Specific classroom filter
             });
         } else {
@@ -37,7 +38,7 @@ const ClassroomStudentListPage: React.FC = () => {
         }
         // Cleanup on unmount
         return () => clearEnrollments();
-    }, [schoolId, classroomId, activeAcademicYearId, fetchEnrollments, clearEnrollments]);
+    }, [schoolId, classroomId, fetchEnrollments, clearEnrollments]);
 
     return (
          <section className="min-h-[calc(100vh-64px)] w-full py-6 px-4 md:py-8 md:px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
