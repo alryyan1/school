@@ -51,6 +51,7 @@ import DueInstallmentsPage from '@/pages/finances/DueInstallmentsPage';   // Adj
 import FinanceDashboard from '@/pages/finances/FinanceDashboard';
 import RevenuesPage from '@/pages/finances/RevenuesPage';
 import ExpensesPage from '@/pages/finances/ExpensesPage';
+import ExpenseCategoriesPage from '@/pages/finances/ExpenseCategoriesPage';
 import StudentLedgerPage from '@/pages/finances/StudentLedgerPage';
 
 // --- Exam Pages ---
@@ -229,6 +230,7 @@ const router = createHashRouter([
                        { index: true, element: <FinanceDashboard />},
                        { path: 'revenues', element: <RevenuesPage /> },
                        { path: 'expenses', element: <ExpensesPage /> },
+                       { path: 'expense-categories', element: <ExpenseCategoriesPage /> },
                        { path: 'due-installments', element: <DueInstallmentsPage /> },
                        { path: 'student-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },
                   ]

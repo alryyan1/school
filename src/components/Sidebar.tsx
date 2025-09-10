@@ -13,7 +13,7 @@ import {
     ChevronRight, ChevronLeft,
     LayoutDashboard, Building2, Users, GraduationCap, Settings,
     Milestone, Library, Network,
-    School, KeyRound
+    School, KeyRound, DollarSign, Receipt, CreditCard
 } from 'lucide-react';
 
 // Define Menu Item Structure
@@ -66,12 +66,14 @@ const SidebarContent: React.FC<{
     const [openStudents, setOpenStudents] = useState(false);
     const [openTeachers, setOpenTeachers] = useState(false);
     const [openSchools, setOpenSchools] = useState(false);
+    const [openFinances, setOpenFinances] = useState(false);
 
     useEffect(() => {
         setOpenSettings(currentPathname.startsWith('/settings'));
         setOpenStudents(currentPathname.startsWith('/students'));
         setOpenTeachers(currentPathname.startsWith('/teachers'));
         setOpenSchools(currentPathname.startsWith('/schools'));
+        setOpenFinances(currentPathname.startsWith('/finances'));
     }, [currentPathname]);
 
     const NavLink: React.FC<{ item: NavItem; isCollapsed: boolean; isSubItem?: boolean; onClick?: () => void }> =
@@ -236,6 +238,43 @@ const SidebarContent: React.FC<{
                                     {!isCollapsed && openSchools && (
                                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
                                             {schoolSubItems.map((item) => (
+                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Finances Section */}
+                    {(() => {
+                        const financeSubItems: NavItem[] = [
+                            { label: 'لوحة المالية', href: '/finances', icon: DollarSign, requiredPermissions: ['view financial data'] },
+                            { label: 'المصروفات', href: '/finances/expenses', icon: Receipt, requiredPermissions: ['manage expenses'] },
+                            { label: 'فئات المصروفات', href: '/finances/expense-categories', icon: CreditCard, requiredPermissions: ['manage expense categories'] },
+                            { label: 'الإيرادات', href: '/finances/revenues', icon: DollarSign, requiredPermissions: ['view revenues'] },
+                            { label: 'الأقساط المستحقة', href: '/finances/due-installments', icon: CreditCard, requiredPermissions: ['view due installments'] },
+                        ].filter(canAccess);
+                        if (financeSubItems.length === 0) return null;
+                        return (
+                            <div>
+                                <Button
+                                    variant={currentPathname.startsWith('/finances') && !isCollapsed && openFinances ? 'secondary' : 'ghost'}
+                                    className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                                    onClick={() => setOpenFinances(!openFinances)}
+                                    title="الشؤون المالية"
+                                >
+                                    <DollarSign className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                                    {!isCollapsed && (
+                                        <span className="truncate flex-1 text-right">الشؤون المالية</span>
+                                    )}
+                                    {!isCollapsed && (openFinances ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                                </Button>
+                                <AnimatePresence>
+                                    {!isCollapsed && openFinances && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                            {financeSubItems.map((item) => (
                                                 <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
                                             ))}
                                         </motion.div>

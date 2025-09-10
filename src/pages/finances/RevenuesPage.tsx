@@ -2,15 +2,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { useGradeLevelStore } from "@/stores/gradeLevelStore";
 import { useClassroomStore } from "@/stores/classroomStore";
-import { useAuth } from "@/context/authcontext";
 import { User } from "lucide-react";
 import { Student } from "@/types/student";
+import { useLedgerStore } from "@/stores/ledgerStore";
+import { webUrl } from "@/constants";
 
 // Helper function to format numbers with thousands separator
 const numberWithCommas = (x: number): string => {
@@ -19,17 +21,21 @@ const numberWithCommas = (x: number): string => {
 
 // This page imagines revenues primarily from student fees (enrollments.fee or students.fee)
 const RevenuesPage: React.FC = () => {
-  const { students, fetchStudents } = useStudentStore();
+  const { students, fetchStudents, pagination } = useStudentStore();
   const { schools, fetchSchools } = useSchoolStore();
   const { gradeLevels, fetchGradeLevels } = useGradeLevelStore();
   const { classrooms, fetchClassrooms, clearClassrooms } = useClassroomStore();
-  const { userSchoolId } = useAuth();
   const navigate = useNavigate();
+  const { getLedgerSummary } = useLedgerStore();
 
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [gradeLevelId, setGradeLevelId] = useState<number | null>(null);
   const [classroomId, setClassroomId] = useState<number | null>(null);
   const [availableGradeLevels, setAvailableGradeLevels] = useState<typeof gradeLevels>([]);
+  const [ledgerSummaryMap, setLedgerSummaryMap] = useState<Record<number, { total_fees: number; total_payments: number; total_discounts?: number; total_refunds?: number; total_adjustments?: number }>>({});
+  const [onlyDiscounts, setOnlyDiscounts] = useState<boolean>(false);
+  const [perPage, setPerPage] = useState<number>(30);
+  const [page, setPage] = useState<number>(1);
 
   // bootstrap lists
   useEffect(() => {
@@ -37,13 +43,7 @@ const RevenuesPage: React.FC = () => {
     if (gradeLevels.length === 0) fetchGradeLevels();
   }, [fetchSchools, fetchGradeLevels, schools.length, gradeLevels.length]);
 
-  // preselect school from user
-  useEffect(() => {
-    if (userSchoolId && schoolId === null) {
-      console.log('Setting initial school from user:', userSchoolId);
-      setSchoolId(Number(userSchoolId));
-    }
-  }, [userSchoolId, schoolId]);
+  // Do not preselect school; show all schools by default
 
   // load classrooms when school or grade changes
   useEffect(() => {
@@ -88,14 +88,19 @@ const RevenuesPage: React.FC = () => {
     const filters: Record<string, string | number | boolean> = {
       only_enrolled: true,
       only_approved: true,
-      per_page: 1000,
-      page: 1,
+      per_page: perPage,
+      page: page,
     };
     if (schoolId && schoolId !== null) filters.school_id = schoolId;
     if (gradeLevelId && gradeLevelId !== null) filters.grade_level_id = gradeLevelId;
     if (classroomId && classroomId !== null) filters.classroom_id = classroomId;
     return filters;
-  }, [schoolId, gradeLevelId, classroomId]);
+  }, [schoolId, gradeLevelId, classroomId, perPage, page]);
+
+  // Reset to first page on filter/perPage change
+  useEffect(() => {
+    setPage(1);
+  }, [schoolId, gradeLevelId, classroomId, perPage]);
 
   // fetch students on filter changes
   useEffect(() => {
@@ -112,12 +117,52 @@ const RevenuesPage: React.FC = () => {
     }
   }, [students]);
 
+  // Fetch ledger summaries for visible enrollments (first enrollment per student)
+  useEffect(() => {
+    const enrollmentIds = students
+      .map((s) => (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id)
+      .filter((id): id is number => typeof id === 'number');
+    const uniqueIds = Array.from(new Set(enrollmentIds));
+    if (uniqueIds.length === 0) return;
+
+    (async () => {
+      try {
+        const res = await getLedgerSummary({ enrollment_ids: uniqueIds });
+        const arr = (res?.summary ?? []) as Array<{ enrollment_id: number; total_fees: number; total_payments: number; total_discounts?: number; total_refunds?: number; total_adjustments?: number }>;
+        const map: Record<number, { total_fees: number; total_payments: number; total_discounts?: number; total_refunds?: number; total_adjustments?: number }> = {};
+        for (const item of arr) {
+          map[item.enrollment_id] = {
+            total_fees: Number(item.total_fees || 0),
+            total_payments: Number(item.total_payments || 0),
+            total_discounts: Number(item.total_discounts || 0),
+            total_refunds: Number(item.total_refunds || 0),
+            total_adjustments: Number(item.total_adjustments || 0),
+          };
+        }
+        setLedgerSummaryMap(map);
+      } catch (e) {
+        console.error('Failed to load ledger summaries', e);
+      }
+    })();
+  }, [students, getLedgerSummary]);
+
   const totalRevenue = students.reduce((sum, s) => {
     const enrollments = (s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [];
     const studentTotal = enrollments.reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0);
     return sum + studentTotal;
   }, 0);
   const studentsCount = students.length;
+  const totalStudents = pagination?.total ?? studentsCount;
+
+  const handleExportPdf = async () => {
+    const params = new URLSearchParams();
+    const filters = buildFilters();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+    });
+    const pdfUrl = `${webUrl}reports/revenues?${params.toString()}`;
+    window.open(pdfUrl, '_blank');
+  };
 
   const handleStudentClick = (student: Student) => {
     // Get the first enrollment ID for the student
@@ -132,11 +177,22 @@ const RevenuesPage: React.FC = () => {
     <section className="container mx-auto p-4 sm:p-6 max-w-6xl" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle>الايرادات - رسوم الطلاب</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>الايرادات - رسوم الطلاب</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={onlyDiscounts ? "default" : "outline"}
+                onClick={() => setOnlyDiscounts(v => !v)}
+              >
+                خصومات فقط
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>تصدير PDF</Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3 mb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               {/* School filter */}
               <Select value={schoolId ? String(schoolId) : ""} onValueChange={(v) => { 
                 if (v === " ") {
@@ -190,9 +246,9 @@ const RevenuesPage: React.FC = () => {
                 } else {
                   setClassroomId(v ? Number(v) : null);
                 }
-              }} disabled={!schoolId}>
+              }} disabled={!gradeLevelId}>
                 <SelectTrigger>
-                  <SelectValue placeholder={schoolId ? "فلترة بالفصل" : "اختر مدرسة أولاً"} />
+                  <SelectValue placeholder={gradeLevelId ? "فلترة بالفصل" : "اختر مرحلة أولاً"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value=" ">جميع الفصول</SelectItem>
@@ -201,9 +257,24 @@ const RevenuesPage: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Per page selector */}
+              <Select value={String(perPage)} onValueChange={(v) => setPerPage(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="عدد الصفوف" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30</SelectItem>
+                  <SelectItem value="60">60</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                  <SelectItem value="1000">1000</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
                           <div className="flex items-center justify-between">
-                              <div className="text-sm text-muted-foreground">عدد الطلاب: {numberWithCommas(studentsCount)}</div>
+                              <div className="text-sm text-muted-foreground">عدد الطلاب: {numberWithCommas(totalStudents)}</div>
               <div className="text-sm text-muted-foreground">اجمالي متوقع: {numberWithCommas(totalRevenue)} جنيه</div>
               </div>
           </div>
@@ -217,12 +288,20 @@ const RevenuesPage: React.FC = () => {
                     <TableHead className="text-center text-xs sm:text-sm">المدرسة</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المرحلة</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">الفصل</TableHead>
-                    <TableHead className="text-center text-xs sm:text-sm">الرسوم (متوقع)</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">الرسوم (دفتر)</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">المدفوع (دفتر)</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">المتبقي</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {students
                     .filter(s => (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id)
+                    .filter(s => {
+                      if (!onlyDiscounts) return true;
+                      const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
+                      if (!eid) return false;
+                      return Number(ledgerSummaryMap[eid]?.total_discounts || 0) > 0;
+                    })
                     .sort((a, b) => {
                       const aId = (a as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id || 0;
                       const bId = (b as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id || 0;
@@ -231,7 +310,11 @@ const RevenuesPage: React.FC = () => {
                     .map((s) => (
                                       <TableRow 
                       key={s.id} 
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      className={`cursor-pointer transition-colors ${(() => {
+                        const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
+                        const hasDiscount = eid ? Number(ledgerSummaryMap[eid]?.total_discounts || 0) > 0 : false;
+                        return hasDiscount ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-muted/50';
+                      })()}`}
                       onClick={() => handleStudentClick(s)}
                     >
                       <TableCell className="text-center text-xs sm:text-sm font-mono font-bold">
@@ -261,13 +344,72 @@ const RevenuesPage: React.FC = () => {
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { grade_level?: { name?: string } }[] }).enrollments?.[0]?.grade_level?.name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { classroom?: { name?: string } }[] }).enrollments?.[0]?.classroom?.name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{
-                        numberWithCommas((((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
-                          .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0)))
+                        (() => {
+                          const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
+                          const summary = eid ? ledgerSummaryMap[eid] : undefined;
+                          const expected = summary ? Number(summary.total_fees || 0) : (((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
+                            .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0));
+                          return numberWithCommas(expected);
+                        })()
+                      } جنيه</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{
+                        (() => {
+                          const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
+                          const summary = eid ? ledgerSummaryMap[eid] : undefined;
+                          const paid = summary ? Number(summary.total_payments || 0) : (((s as unknown as { enrollments?: { total_amount_paid?: number }[] }).enrollments ?? [])
+                            .reduce((acc, e) => acc + (Number(e.total_amount_paid ?? 0) || 0), 0));
+                          return numberWithCommas(paid);
+                        })()
+                      } جنيه</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{
+                        (() => {
+                          const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
+                          const summary = eid ? ledgerSummaryMap[eid] : undefined;
+                          const expectedFallback = (((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
+                            .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0));
+                          const paidFallback = (((s as unknown as { enrollments?: { total_amount_paid?: number }[] }).enrollments ?? [])
+                            .reduce((acc, e) => acc + (Number(e.total_amount_paid ?? 0) || 0), 0));
+                          const expected = summary ? Number(summary.total_fees || 0) : expectedFallback;
+                          const paid = summary ? Number(summary.total_payments || 0) : paidFallback;
+                          return numberWithCommas(Math.max(expected - paid, 0));
+                        })()
                       } جنيه</TableCell>
                     </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination controls */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {pagination ? (
+                <span>
+                  عرض {numberWithCommas(pagination.from ?? 0)} - {numberWithCommas(pagination.to ?? 0)} من {numberWithCommas(pagination.total)}
+                </span>
+              ) : (
+                <span>عرض {numberWithCommas(studentsCount)}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                disabled={!pagination || pagination.current_page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                السابق
+              </Button>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                صفحة {pagination?.current_page ?? page} من {pagination?.last_page ?? 1}
+              </div>
+              <Button
+                variant="outline"
+                disabled={!pagination || (pagination.current_page >= pagination.last_page)}
+                onClick={() => setPage((p) => (pagination ? Math.min(pagination.last_page, p + 1) : p + 1))}
+              >
+                التالي
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

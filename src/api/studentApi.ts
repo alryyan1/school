@@ -34,6 +34,13 @@ export const StudentApi = {
 
   getAll: (filters?: Record<string, string | number | boolean>) => axiosClient.get<StudentCollectionResponse>("/students", { params: filters }),
 
+  getRevenuesPdf: (filters?: Record<string, string | number | boolean>) =>
+    axiosClient.get<ArrayBuffer>("/revenues-pdf", {
+      params: filters,
+      responseType: 'arraybuffer',
+      headers: { 'Accept': 'application/pdf' },
+    }),
+
   getById: (id: number) =>
     axiosClient.get<StudentResourceResponse>(`/students/${id}`),
 
