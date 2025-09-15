@@ -1,6 +1,7 @@
 import { useFormContext } from 'react-hook-form';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { validatePhoneNumber } from '@/utils/validators';
 
 export const FatherInfoTab = () => {
   const { register, formState: { errors } } = useFormContext();
@@ -80,10 +81,7 @@ export const FatherInfoTab = () => {
               value: true,
               message: "رقم هاتف الأب مطلوب",
             },
-            pattern: {
-              value: /^(0|09)\d{8}$/,
-              message: "يجب أن يكون رقم هاتف صحيح (يبدأ بـ 0 أو 09 ويتكون من 10 أرقام)",
-            },
+            validate: validatePhoneNumber,
           })}
           className={errors.father_phone ? "border-red-500" : ""}
         />
@@ -98,10 +96,7 @@ export const FatherInfoTab = () => {
           id="father_whatsapp"
           type="tel"
           {...register("father_whatsapp", {
-            pattern: {
-              value: /^(0|09)\d{8}$/,
-              message: "يجب أن يكون رقم هاتف صحيح (يبدأ بـ 0 أو 09 ويتكون من 10 أرقام)",
-            },
+            validate: (value) => !value || validatePhoneNumber(value) || "رقم واتساب غير صحيح",
           })}
           className={errors.father_whatsapp ? "border-red-500" : ""}
         />

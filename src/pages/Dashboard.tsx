@@ -19,6 +19,7 @@ import {
 import { useStudentEnrollmentStore } from '@/stores/studentEnrollmentStore';
 import { useTeacherStore } from '@/stores/teacherStore';
 import StatisticsRow from '@/components/dashboard/StatisticsRow';
+import { useAuth } from '@/context/authcontext';
 
 // Import API client if needed for actual stats fetching
 // import axiosClient from '@/axios-client';
@@ -48,11 +49,11 @@ const itemVariants = {
 
 
 const Dashboard: React.FC = () => {
-  
+    const { userRole } = useAuth();
 
     // --- Define Dashboard Navigation Items ---
     // Use Tailwind color classes now
-    const dashboardItems: DashboardItem[] = [
+    const baseDashboardItems: DashboardItem[] = [
         {
             title: 'التسجيل',
             icon: Users,
@@ -61,15 +62,6 @@ const Dashboard: React.FC = () => {
             iconColor: "text-blue-600 dark:text-blue-400",
             bgColor: "bg-blue-100/80 dark:bg-blue-900/30",
         },
-        {
-            title: 'المحاسبة',
-            icon: Calculator,
-            link: '/finances',
-            description: 'لوحة المحاسب: الايرادات والمصروفات.',
-            iconColor: "text-emerald-600 dark:text-emerald-400",
-            bgColor: "bg-emerald-100/80 dark:bg-emerald-900/30",
-        },
-     
         {
             title: 'الإعدادات',
             icon: Settings,
@@ -104,6 +96,21 @@ const Dashboard: React.FC = () => {
         //     bgColor: "bg-pink-100/80 dark:bg-pink-900/30",
         // },
     ];
+
+    // Conditionally add accountant card based on user role
+    const accountantCard: DashboardItem = {
+        title: 'المحاسبة',
+        icon: Calculator,
+        link: '/finances',
+        description: 'لوحة المحاسب: الايرادات والمصروفات.',
+        iconColor: "text-emerald-600 dark:text-emerald-400",
+        bgColor: "bg-emerald-100/80 dark:bg-emerald-900/30",
+    };
+
+    // Create final dashboard items array with conditional accountant card
+    const dashboardItems: DashboardItem[] = userRole === 'accountant' 
+        ? [accountantCard, ...baseDashboardItems]
+        : baseDashboardItems;
 
     // --- Render ---
     return (

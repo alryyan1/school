@@ -14,8 +14,8 @@ export var validateArabicName = function (value) {
  * @returns true if valid, error message if invalid
  */
 export var validatePhoneNumber = function (value) {
-    var syrianPhoneRegex = /^(?:\+?963|0)?9\d{8}$/;
-    return syrianPhoneRegex.test(value) || "يجب إدخال رقم هاتف  صحيح (يبدأ بـ 09 أو +963)";
+    var tenDigitsRegex = /^\d{10}$/;
+    return tenDigitsRegex.test(value) || "يجب إدخال رقم هاتف صحيح من 10 أرقام";
 };
 /**
  * Validates that a string contains a minimum number of words

@@ -9,9 +9,10 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { scan } from "react-scan";
 
 
-scan({
-  enabled: true,
-});
+if (import.meta.env.DEV) {
+  // const { scan } = await import('react-scan');
+  scan(); // pass options if needed
+}
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <AuthProvider>
       {/* <CssBaseline/> */}

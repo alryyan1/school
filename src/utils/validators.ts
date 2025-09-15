@@ -11,13 +11,13 @@ export const validateArabicName = (value: string): true | string => {
   };
   
   /**
-   * Validates Syrian phone numbers (10 digits starting with 09 or +963)
+   * Validates phone numbers: exactly 10 digits
    * @param value The phone number to validate
    * @returns true if valid, error message if invalid
    */
   export const validatePhoneNumber = (value: string): true | string => {
-    const syrianPhoneRegex = /^(?:\+?963|0)?9\d{8}$/;
-    return syrianPhoneRegex.test(value) || "يجب إدخال رقم هاتف  صحيح (يبدأ بـ 09 أو +963)";
+    const tenDigitsRegex = /^\d{10}$/;
+    return tenDigitsRegex.test(value) || "يجب إدخال رقم هاتف صحيح من 10 أرقام";
   };
   
   /**

@@ -52,6 +52,7 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
     amount: 0,
     transaction_date: new Date().toISOString().split('T')[0],
     reference_number: '',
+    payment_method: 'cash',
   });
 
   useEffect(() => {
@@ -72,6 +73,7 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
         amount: 0,
         transaction_date: new Date().toISOString().split('T')[0],
         reference_number: '',
+        payment_method: 'cash',
       });
     } catch (error) {
       console.error('Failed to create ledger entry:', error);
@@ -229,7 +231,7 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className=" max-h-[90vh] overflow-y-auto">
                  <DialogHeader>
            <DialogTitle className="text-xl font-bold text-center text-primary mb-4">
              دفتر حسابات الطالب - {studentName}
@@ -380,6 +382,24 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
                         onChange={(e) => setFormData({ ...formData, reference_number: e.target.value })}
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_method">طريقة الدفع</Label>
+                      <Select
+                        value={formData.payment_method}
+                        onValueChange={(value) => setFormData({ ...formData, payment_method: value as any })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">نقداً</SelectItem>
+                          <SelectItem value="bankak">بنكك</SelectItem>
+                          <SelectItem value="Fawri">فوري</SelectItem>
+                          <SelectItem value="OCash">أوكاش</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -423,6 +443,7 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
                       <TableHead className="text-center">النوع</TableHead>
                       <TableHead className="text-center">الوصف</TableHead>
                       <TableHead className="text-center">المبلغ</TableHead>
+                      <TableHead className="text-center">طريقة الدفع</TableHead>
                       <TableHead className="text-center">الرصيد بعد المعاملة</TableHead>
                       <TableHead className="text-center">رقم المرجع</TableHead>
                       <TableHead className="text-center">تم الإنشاء بواسطة</TableHead>
@@ -442,10 +463,20 @@ const StudentLedgerDialog: React.FC<StudentLedgerDialogProps> = ({
                         <TableCell className={`text-center font-semibold ${
                           entry.amount > 0 ? 'text-red-600' : 'text-green-600'
                         }`}>
-                          {entry.amount > 0 ? '+' : ''}{formatNumber(entry.amount)} جنيه
+                          {entry.amount > 0 ? '+' : ''}{numberWithCommas(entry.amount)} جنيه
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {entry.payment_method ? (
+                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                              {entry.payment_method === 'cash' && 'نقداً'}
+                              {entry.payment_method === 'bankak' && 'بنكك'}
+                              {entry.payment_method === 'Fawri' && 'فوري'}
+                              {entry.payment_method === 'OCash' && 'أوكاش'}
+                            </Badge>
+                          ) : '-'}
                         </TableCell>
                         <TableCell className="text-center font-semibold">
-                          {formatNumber(entry.balance_after)} جنيه
+                          {numberWithCommas(entry.balance_after)} جنيه
                         </TableCell>
                         <TableCell className="text-center">
                           {entry.reference_number || '-'}

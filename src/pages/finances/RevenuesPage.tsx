@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudentStore } from "@/stores/studentStore";
@@ -36,7 +37,8 @@ const RevenuesPage: React.FC = () => {
   const [onlyDiscounts, setOnlyDiscounts] = useState<boolean>(false);
   const [perPage, setPerPage] = useState<number>(30);
   const [page, setPage] = useState<number>(1);
-
+  const [search, setSearch] = useState<string>("");
+  console.log("ledgerSummaryMap", ledgerSummaryMap);
   // bootstrap lists
   useEffect(() => {
     if (schools.length === 0) fetchSchools();
@@ -146,6 +148,17 @@ const RevenuesPage: React.FC = () => {
     })();
   }, [students, getLedgerSummary]);
 
+  // Local search filter (by student name or first enrollment id)
+  const filteredStudents = students.filter((s) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const name = (s as unknown as { student_name?: string }).student_name || "";
+    const enrollmentId = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
+    const matchName = name.toLowerCase().includes(q);
+    const matchEnrollment = enrollmentId ? String(enrollmentId).includes(q) : false;
+    return matchName || matchEnrollment;
+  });
+
   const totalRevenue = students.reduce((sum, s) => {
     const enrollments = (s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [];
     const studentTotal = enrollments.reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0);
@@ -174,12 +187,21 @@ const RevenuesPage: React.FC = () => {
   };
 
   return (
-    <section className="container mx-auto p-4 sm:p-6 max-w-6xl" dir="rtl">
+    <section className="container mx-auto p-4 sm:p-6 max-w-8xl" dir="rtl">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>الايرادات - رسوم الطلاب</CardTitle>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              <CardTitle>الايرادات - رسوم الطلاب</CardTitle>
+              <div className="max-w-xs w-full">
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="بحث بالاسم أو رقم التسجيل"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant={onlyDiscounts ? "default" : "outline"}
                 onClick={() => setOnlyDiscounts(v => !v)}
@@ -290,11 +312,12 @@ const RevenuesPage: React.FC = () => {
                     <TableHead className="text-center text-xs sm:text-sm">الفصل</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">الرسوم (دفتر)</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المدفوع (دفتر)</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">الخصومات</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المتبقي</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {students
+                  {filteredStudents
                     .filter(s => (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id)
                     .filter(s => {
                       if (!onlyDiscounts) return true;
@@ -365,13 +388,22 @@ const RevenuesPage: React.FC = () => {
                         (() => {
                           const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
                           const summary = eid ? ledgerSummaryMap[eid] : undefined;
+                          const discounts = summary ? Number(summary.total_discounts || 0) : 0;
+                          return numberWithCommas(discounts);
+                        })()
+                      } جنيه</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{
+                        (() => {
+                          const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
+                          const summary = eid ? ledgerSummaryMap[eid] : undefined;
                           const expectedFallback = (((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
                             .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0));
                           const paidFallback = (((s as unknown as { enrollments?: { total_amount_paid?: number }[] }).enrollments ?? [])
                             .reduce((acc, e) => acc + (Number(e.total_amount_paid ?? 0) || 0), 0));
                           const expected = summary ? Number(summary.total_fees || 0) : expectedFallback;
                           const paid = summary ? Number(summary.total_payments || 0) : paidFallback;
-                          return numberWithCommas(Math.max(expected - paid, 0));
+                          const discounts = summary ? Number(summary.total_discounts || 0) : 0;
+                          return numberWithCommas(Math.max(expected - paid - discounts, 0));
                         })()
                       } جنيه</TableCell>
                     </TableRow>

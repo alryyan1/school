@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useSnackbar } from 'notistack';
 import axiosClient from '@/axios-client';
 
-type UserRole = 'admin' | 'teacher' | 'student' | 'parent' | null;
+type UserRole = 'admin' | 'teacher' | 'student' | 'parent' | 'accountant' | null;
 
 interface AuthState {
   isAuthenticated: boolean | null;
@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (firstRole === 'teacher') return 'teacher';
     if (firstRole === 'student') return 'student';
     if (firstRole === 'parent') return 'parent';
+    if (firstRole === 'accountant') return 'accountant';
     return firstRole as UserRole;
   };
 

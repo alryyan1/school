@@ -8,6 +8,7 @@ export interface StudentLedger {
   balance_after: number;
   transaction_date: string;
   reference_number?: string;
+  payment_method?: 'cash' | 'bankak' | 'Fawri' | 'OCash';
   metadata?: Record<string, any>;
   created_by?: {
     id: number;
@@ -82,6 +83,7 @@ export interface CreateLedgerEntryRequest {
   amount: number;
   transaction_date: string;
   reference_number?: string;
+  payment_method?: 'cash' | 'bankak' | 'Fawri' | 'OCash';
   metadata?: Record<string, any>;
 }
 

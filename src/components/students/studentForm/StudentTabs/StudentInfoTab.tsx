@@ -12,6 +12,10 @@ import { Gender, Student } from "@/types/student";
 import { useSchoolStore } from "@/stores/schoolStore";
 import dayjs from "dayjs";
 import { useEffect } from "react";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import "dayjs/locale/ar";
 
 export const StudentInfoTab = () => {
   const {
@@ -62,6 +66,7 @@ export const StudentInfoTab = () => {
         <Controller
           name="date_of_birth"
           control={control}
+          
           rules={{
             required: "تاريخ الميلاد مطلوب",
             validate: (value) => {
@@ -77,18 +82,27 @@ export const StudentInfoTab = () => {
             },
           }}
           render={({ field }) => (
-            <div>
-              <Input
-                id="date_of_birth"
-                type="date"
-                {...field}
-                value={field.value || ""}
-                className={errors.date_of_birth ? "border-red-500" : ""}
-              />
-              {errors.date_of_birth && (
-                <p className="text-sm text-red-500 mt-1">{errors.date_of_birth.message}</p>
-              )}
-            </div>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ar">
+              <div>
+                <DatePicker
+                  value={field.value ? dayjs(field.value) : null}
+                  onChange={(newValue) => {
+                    field.onChange(newValue ? newValue.format("YYYY-MM-DD") : "");
+                  }}
+                  format="DD-MM-YYYY"
+                  slotProps={{
+                    textField: {
+                      id: "date_of_birth",
+                      fullWidth: true,
+                      error: Boolean(errors.date_of_birth),
+                    },
+                  }}
+                />
+                {errors.date_of_birth && (
+                  <p className="text-sm text-red-500 mt-1">{errors.date_of_birth.message}</p>
+                )}
+              </div>
+            </LocalizationProvider>
           )}
         />
       </div>
