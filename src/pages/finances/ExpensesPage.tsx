@@ -140,6 +140,21 @@ const ExpensesPage: React.FC = () => {
     return `${day}-${month}-${year}`;
   };
 
+  const translatePaymentMethod = (method: string) => {
+    switch (method) {
+      case 'cash':
+        return 'نقدي';
+      case 'bankak':
+        return 'بنكاك';
+      case 'ocash':
+        return 'أوكاش';
+      case 'fawri':
+        return 'فوري';
+      default:
+        return method;
+    }
+  };
+
   const generatePDF = async () => {
     try {
       const params = new URLSearchParams();
@@ -310,7 +325,7 @@ const ExpensesPage: React.FC = () => {
                               {formatDate(expense.expense_date)}
                             </TableCell>
                             <TableCell className="text-center">
-                              {expense.payment_method === 'cash' ? 'نقدي' : expense.payment_method === 'bankak' ? 'بنكاك' : expense.payment_method}
+                              {translatePaymentMethod(expense.payment_method)}
                             </TableCell>
                             <TableCell className="text-center">
                               {expense.created_by?.name || "غير محدد"}
@@ -419,7 +434,7 @@ const ExpensesPage: React.FC = () => {
                           {(statistics.totals_by_payment_method || []).map((item, index) => (
                             <div key={index} className="flex justify-between items-center">
                               <span>
-                                {item.payment_method === 'cash' ? 'نقدي' : item.payment_method === 'bankak' ? 'بنكاك' : item.payment_method}
+                                {translatePaymentMethod(item.payment_method)}
                               </span>
                               <div className="text-right font-medium">{formatNumber(item.total_amount)}</div>
                             </div>

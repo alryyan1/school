@@ -16,16 +16,25 @@ import {
   Shield,
   Calendar,
   Hash,
+  BookOpen,
 } from "lucide-react";
 import { Student } from "@/types/student";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from 'react-router-dom';
+import { EnrollmentType } from "@/types/enrollment";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface StudentActionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedStudent: Student | null;
-  onActionClick: (action: string, student: Student) => void;
+  onActionClick: (action: string, student: Student, enrollmentType?: EnrollmentType) => void;
 }
 
 const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
@@ -70,6 +79,20 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
         غير مسجل
       </Badge>
     );
+  };
+
+  const getEnrollmentTypeLabel = (type: EnrollmentType) => {
+    const labels = {
+      regular: 'عادي',
+      scholarship: 'منحة',
+      free: 'إعفاء'
+    };
+    return labels[type];
+  };
+
+  const handleEnrollmentTypeChange = (value: string) => {
+    const enrollmentType = value as EnrollmentType;
+    onActionClick('change-enrollment-type', selectedStudent, enrollmentType);
   };
 
   const handleDashboardClick = () => {
@@ -137,6 +160,43 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
               {getStatusBadge()}
               {getEnrollmentStatus()}
             </div>
+            
+            {/* Enrollment Type Select - Only show if student has enrollments */}
+            {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && (
+              <div className="mt-3">
+                <div className="text-xs text-muted-foreground text-center mb-2">نوع التسجيل</div>
+                <div className="flex items-center justify-center">
+                  <Select 
+                    value={selectedStudent.enrollments[0]?.enrollment_type || 'regular'} 
+                    onValueChange={handleEnrollmentTypeChange}
+                  >
+                    <SelectTrigger className="w-32 h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="regular">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="w-4 h-4" />
+                          عادي
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="scholarship">
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4" />
+                          منحة
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="free">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          إعفاء
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             
             {/* Student Details */}
             <div className="mt-4 space-y-2 text-sm">
@@ -235,6 +295,26 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
                 </div>
               </div>
             </Button>
+            
+            {/* Edit Grade Level Action - Only show if student has enrollment */}
+            {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="justify-start h-14 text-right hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200"
+                onClick={() => onActionClick('edit-grade-level', selectedStudent)}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div className="flex-1 text-right">
+                    <div className="font-semibold text-foreground">تعديل الصف الدراسي</div>
+                    <div className="text-xs text-muted-foreground">تغيير مستوى الصف للطالب</div>
+                  </div>
+                </div>
+              </Button>
+            )}
             
             {/* Accept Action - Only show if not approved */}
             {!selectedStudent.approved ? (

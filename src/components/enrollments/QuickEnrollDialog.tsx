@@ -18,13 +18,22 @@ interface QuickEnrollDialogProps {
   onOpenChange: (open: boolean) => void;
   student: Student | null;
   onSuccess: () => void;
+  editMode?: boolean; // New prop to indicate if we're editing existing enrollment
+  enrollmentId?: number; // ID of enrollment to edit (if in edit mode)
 }
 
-const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChange, student, onSuccess }) => {
+const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ 
+  open, 
+  onOpenChange, 
+  student, 
+  onSuccess, 
+  editMode = false, 
+  enrollmentId 
+}) => {
   const wishedSchoolId = student?.wished_school ?? null;
   const wishedSchoolName = student?.wished_school_details?.name ?? '';
 
-  const { enrollStudent } = useStudentEnrollmentStore();
+  const { enrollStudent, updateEnrollment } = useStudentEnrollmentStore();
   const { enqueueSnackbar } = useSnackbar();
 
   const [gradeLevels, setGradeLevels] = useState<GradeLevel[]>([]);
@@ -59,6 +68,22 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
       .finally(() => setLoadingGrades(false));
   }, [open, wishedSchoolId]);
 
+  // Pre-fill form when in edit mode
+  useEffect(() => {
+    if (editMode && student?.enrollments && student.enrollments.length > 0) {
+      const enrollment = student.enrollments.find(e => e.id === enrollmentId) || student.enrollments[0];
+      console.log(enrollment,'enrollment')
+      if (enrollment) {
+        setSelectedAcademicYear(enrollment.academic_year);
+        setSelectedGradeLevelId(enrollment.grade_level.id);
+      }
+    } else if (!editMode) {
+      // Reset form for new enrollment
+      setSelectedAcademicYear('2025/2026');
+      setSelectedGradeLevelId('');
+    }
+  }, [editMode, student, enrollmentId]);
+
   // Removed fees auto-fill behavior
 
   const handleSubmit = async () => {
@@ -69,24 +94,35 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
     setFormError(null);
     setIsSubmitting(true);
     try {
-              await enrollStudent({
+      if (editMode && enrollmentId) {
+        // Update existing enrollment
+        await updateEnrollment(enrollmentId, {
+          grade_level_id: Number(selectedGradeLevelId),
+          academic_year: selectedAcademicYear,
+        });
+        enqueueSnackbar('تم تحديث تسجيل الطالب بنجاح', { variant: 'success' });
+      } else {
+        // Create new enrollment
+        await enrollStudent({
           student_id: Number(student.id),
           academic_year: selectedAcademicYear,
           grade_level_id: Number(selectedGradeLevelId),
           classroom_id: null,
-        status: 'active',
-        school_id: Number(wishedSchoolId),
-        enrollment_type: 'regular',
-        // Fees will be automatically set by backend based on school's annual_fees
-        discount: 0,
-      });
-      enqueueSnackbar('تم تسجيل الطالب بنجاح', { variant: 'success' });
+          status: 'active',
+          school_id: Number(wishedSchoolId),
+          enrollment_type: 'regular',
+          // Fees will be automatically set by backend based on school's annual_fees
+          discount: 0,
+        });
+        enqueueSnackbar('تم تسجيل الطالب بنجاح', { variant: 'success' });
+      }
       onSuccess();
       onOpenChange(false);
     } catch (e) {
       const err = e as { message?: string };
-      enqueueSnackbar(err?.message || 'فشل تسجيل الطالب', { variant: 'error' });
-      setFormError(err?.message || 'فشل تسجيل الطالب');
+      const errorMessage = editMode ? 'فشل تحديث تسجيل الطالب' : 'فشل تسجيل الطالب';
+      enqueueSnackbar(err?.message || errorMessage, { variant: 'error' });
+      setFormError(err?.message || errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +132,7 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" dir="rtl">
         <DialogHeader>
-          <DialogTitle>تسجيل الطالب</DialogTitle>
+          <DialogTitle>{editMode ? 'تعديل تسجيل الطالب' : 'تسجيل الطالب'}</DialogTitle>
           <DialogDescription>
             <div className="text-center space-y-2">
               <div className="text-lg font-bold text-center">
@@ -162,7 +198,7 @@ const QuickEnrollDialog: React.FC<QuickEnrollDialogProps> = ({ open, onOpenChang
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting || !selectedAcademicYear || !selectedGradeLevelId}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            تسجيل
+            {editMode ? 'تحديث' : 'تسجيل'}
           </Button>
         </DialogFooter>
       </DialogContent>

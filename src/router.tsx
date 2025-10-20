@@ -33,6 +33,8 @@ import StudentEnrollmentLayout from '@/components/layouts/StudentEnrollmentLayou
 import TeacherList from '@/pages/teachers/TeacherList';                 // Adjust path
 import TeacherView from '@/pages/teachers/TeacherView';                   // Adjust path
 import TeacherForm from '@/components/teachers/TeacherForm';               // Adjust path
+import TeachersWhatsappBulkPage from '@/pages/teachers/TeachersWhatsappBulkPage';
+import StudentsWhatsappBulkPage from '@/pages/students/StudentsWhatsappBulkPage';
 
 // --- School Pages & Components ---
 import SchoolList from '@/pages/schools/schoolList';                   // Adjust path
@@ -65,6 +67,7 @@ import CurriculumManager from '@/pages/curriculum/CurriculumManager';     // Adj
 
 // --- Enrollment Pages ---
 import StudentEnrollmentManager from '@/pages/enrollments/StudentEnrollmentManager'; // Adjust path
+import EnrollmentLogsPage from '@/pages/EnrollmentLogsPage';
 
 // --- Explorer Pages ---
 import SchoolExplorerPage from '@/pages/explorer/SchoolExplorerPage';         // Adjust path
@@ -146,6 +149,7 @@ const router = createHashRouter([
                     { path: ':id', element: <StudentView /> },
                     { path: ':id/edit', element: <StudentForm /> },
                     { path: ':id/enrollments', element: <StudentEnrollmentsPage /> },
+                    { path: 'whatsapp-bulk', element: <StudentsWhatsappBulkPage /> },
                     {
                         path: ':studentId/enrollments/:enrollmentId',
                         element: <StudentEnrollmentLayout />,
@@ -171,6 +175,7 @@ const router = createHashRouter([
                     { index: true, element: <Navigate to="list" replace /> }, // Default to list
                     { path: 'list', element: <TeacherList /> },
                     { path: 'create', element: <TeacherForm /> },
+                    { path: 'whatsapp-bulk', element: <TeachersWhatsappBulkPage /> },
                     { path: ':id', element: <TeacherView /> },
                     { path: ':id/edit', element: <TeacherForm /> },
                 ]
@@ -217,6 +222,10 @@ const router = createHashRouter([
             {
                 path: 'enrollments',
                 element: <StudentEnrollmentManager />,
+            },
+            {
+                path: 'enrollment-logs',
+                element: <EnrollmentLogsPage />,
             },
 
             // --- Exams Section ---

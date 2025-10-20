@@ -13,7 +13,8 @@ import {
     ChevronRight, ChevronLeft,
     LayoutDashboard, Building2, Users, GraduationCap, Settings,
     Milestone, Library, Network,
-    School, KeyRound, DollarSign, Receipt, CreditCard
+    School, KeyRound, DollarSign, Receipt, CreditCard,
+    ClipboardList, History, Send
 } from 'lucide-react';
 
 // Define Menu Item Structure
@@ -22,8 +23,6 @@ interface NavItem {
 	href: string;
 	icon: React.ElementType;
 	subItems?: NavItem[];
-	requiredRoles?: string[];
-	requiredPermissions?: string[];
 }
 
 const mainNavItems: NavItem[] = [
@@ -31,13 +30,13 @@ const mainNavItems: NavItem[] = [
 ];
 
 const settingsNavItems: NavItem[] = [
-	{ label: 'الإعدادات الرئيسية', href: '/settings', icon: Settings, requiredPermissions: ['manage system settings'] },
-	{ label: 'المراحل الدراسية', href: '/settings/grade-levels', icon: Milestone, requiredPermissions: ['manage grade levels'] },
-	{ label: 'المواد التعليمية', href: '/settings/subjects', icon: Library, requiredPermissions: ['manage subjects'] },
-	{ label: 'الفصول الدراسية', href: '/settings/classrooms', icon: Network, requiredPermissions: ['manage classrooms'] },
-	{ label: 'مراحل المدرسة', href: '/settings/school-grades', icon: School, requiredPermissions: ['manage school-grade_levels'] }, // Using School icon from lucide
-	{ label: 'إدارة المستخدمين', href: '/settings/users', icon: Users, requiredPermissions: ['manage users'] },
-	{ label: 'الأدوار والصلاحيات', href: '/settings/roles-permissions', icon: KeyRound, requiredPermissions: ['manage roles'] },
+	{ label: 'الإعدادات الرئيسية', href: '/settings', icon: Settings },
+	{ label: 'المراحل الدراسية', href: '/settings/grade-levels', icon: Milestone },
+	{ label: 'المواد التعليمية', href: '/settings/subjects', icon: Library },
+	{ label: 'الفصول الدراسية', href: '/settings/classrooms', icon: Network },
+	{ label: 'مراحل المدرسة', href: '/settings/school-grades', icon: School }, // Using School icon from lucide
+	{ label: 'إدارة المستخدمين', href: '/settings/users', icon: Users },
+	{ label: 'الأدوار والصلاحيات', href: '/settings/roles-permissions', icon: KeyRound },
 ];
 
 
@@ -59,14 +58,13 @@ const SidebarContent: React.FC<{
     // const effectivePermissions = permissions || [];
     // const isAdmin = (userRole === 'admin');
 
-    const canAccess = (): boolean => {
-      return true;
-    };
     const [openSettings, setOpenSettings] = useState(false);
     const [openStudents, setOpenStudents] = useState(false);
     const [openTeachers, setOpenTeachers] = useState(false);
     const [openSchools, setOpenSchools] = useState(false);
     const [openFinances, setOpenFinances] = useState(false);
+    const [openWhatsappBulk, setOpenWhatsappBulk] = useState(false);
+    const [openEnrollments, setOpenEnrollments] = useState(false);
 
     useEffect(() => {
         setOpenSettings(currentPathname.startsWith('/settings'));
@@ -74,6 +72,11 @@ const SidebarContent: React.FC<{
         setOpenTeachers(currentPathname.startsWith('/teachers'));
         setOpenSchools(currentPathname.startsWith('/schools'));
         setOpenFinances(currentPathname.startsWith('/finances'));
+        setOpenEnrollments(currentPathname.startsWith('/enrollments') || currentPathname.startsWith('/enrollment-logs'));
+        setOpenWhatsappBulk(
+            currentPathname.startsWith('/teachers/whatsapp-bulk') ||
+            currentPathname.startsWith('/students/whatsapp-bulk')
+        );
     }, [currentPathname]);
 
     const NavLink: React.FC<{ item: NavItem; isCollapsed: boolean; isSubItem?: boolean; onClick?: () => void }> =
@@ -81,7 +84,6 @@ const SidebarContent: React.FC<{
         const isActive = currentPathname === item.href || (item.href !== '/' && currentPathname.startsWith(item.href) && !item.subItems);
         const Icon = item.icon;
 
-        if (!canAccess()) return null;
 
         return (
             <Link to={item.href} className="block" onClick={onClick}>
@@ -140,17 +142,22 @@ const SidebarContent: React.FC<{
             <ScrollArea className="flex-1 overflow-hidden">
                 <nav className="grid gap-1 py-3 px-2 min-h-0">
                     {/* Dashboard */}
-                    {canAccess() && (
+                    {(
                         <NavLink item={{ label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard }} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
                     )}
 
                     {/* Students Section */}
                     {(() => {
+                        const whatsappBulkSubItems: NavItem[] = [
+                            { label: 'للمعلمين', href: '/teachers/whatsapp-bulk', icon: Send },
+                            { label: 'للطلاب', href: '/students/whatsapp-bulk', icon: Send },
+                        ];
+                        
                         const studentSubItems: NavItem[] = [
-                            { label: 'لوحة الطلاب', href: '/students', icon: Users, requiredPermissions: ['view any student', 'view own school students'] },
-                            { label: 'قائمة الطلاب', href: '/students/list', icon: Users, requiredPermissions: ['view any student', 'view own school students'] },
-                            { label: 'إضافة طالب', href: '/students/create', icon: Users, requiredPermissions: ['create students'] },
-                        ].filter(canAccess);
+                            { label: 'لوحة الطلاب', href: '/students', icon: Users },
+                            { label: 'قائمة الطلاب', href: '/students/list', icon: Users },
+                            { label: 'إضافة طالب', href: '/students/create', icon: Users },
+                        ];
                         if (studentSubItems.length === 0) return null;
                         return (
                             <div>
@@ -182,9 +189,9 @@ const SidebarContent: React.FC<{
                     {/* Teachers Section */}
                     {(() => {
                         const teacherSubItems: NavItem[] = [
-                            { label: 'قائمة المعلمين', href: '/teachers/list', icon: GraduationCap, requiredPermissions: ['view any teacher', 'view own school teachers'] },
-                            { label: 'إضافة معلم', href: '/teachers/create', icon: GraduationCap, requiredPermissions: ['create teachers'] },
-                        ].filter(canAccess);
+                            { label: 'قائمة المعلمين', href: '/teachers/list', icon: GraduationCap },
+                            { label: 'إضافة معلم', href: '/teachers/create', icon: GraduationCap },
+                        ];
                         if (teacherSubItems.length === 0) return null;
                         return (
                             <div>
@@ -216,9 +223,9 @@ const SidebarContent: React.FC<{
                     {/* Schools Section */}
                     {(() => {
                         const schoolSubItems: NavItem[] = [
-                            { label: 'قائمة المدارس', href: '/schools/list', icon: Building2, requiredPermissions: ['view any school', 'view own school'] },
-                            { label: 'إضافة مدرسة', href: '/schools/create', icon: Building2, requiredPermissions: ['create schools'] },
-                        ].filter(canAccess);
+                            { label: 'قائمة المدارس', href: '/schools/list', icon: Building2 },
+                            { label: 'إضافة مدرسة', href: '/schools/create', icon: Building2 },
+                        ];
                         if (schoolSubItems.length === 0) return null;
                         return (
                             <div>
@@ -247,15 +254,64 @@ const SidebarContent: React.FC<{
                         );
                     })()}
 
+                    {/* WhatsApp Bulk Parent */}
+                    {(() => {
+                        const whatsappBulkParent: NavItem = {
+                            label: 'إرسال واتساب جماعي',
+                            href: '/whatsapp-bulk',
+                            icon: Send,
+                            subItems: [
+                                { label: 'للمعلمين', href: '/teachers/whatsapp-bulk', icon: Send },
+                                { label: 'للطلاب', href: '/students/whatsapp-bulk', icon: Send },
+                            ]
+                        };
+
+                        return (
+                            <div>
+                                <Button
+                                    variant={openWhatsappBulk ? 'secondary' : 'ghost'}
+                                    className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                                    onClick={() => setOpenWhatsappBulk(!openWhatsappBulk)}
+                                    title={whatsappBulkParent.label}
+                                >
+                                    <Send className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                                    {!isCollapsed && (
+                                        <span className="truncate flex-1 text-right">{whatsappBulkParent.label}</span>
+                                    )}
+                                    {!isCollapsed && (openWhatsappBulk ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                                </Button>
+                                <AnimatePresence>
+                                    {!isCollapsed && openWhatsappBulk && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                            {whatsappBulkParent.subItems!.map((item) => (
+                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })()}
+
                     {/* Finances Section */}
                     {(() => {
+                        const whatsappBulkParent: NavItem = {
+                            label: 'إرسال واتساب جماعي',
+                            href: '/whatsapp-bulk',
+                            icon: Send,
+                            subItems: [
+                                { label: 'للمعلمين', href: '/teachers/whatsapp-bulk', icon: Send },
+                                { label: 'للطلاب', href: '/students/whatsapp-bulk', icon: Send },
+                            ]
+                        };
+
                         const financeSubItems: NavItem[] = [
-                            { label: 'لوحة المالية', href: '/finances', icon: DollarSign, requiredPermissions: ['view financial data'] },
-                            { label: 'المصروفات', href: '/finances/expenses', icon: Receipt, requiredPermissions: ['manage expenses'] },
-                            { label: 'فئات المصروفات', href: '/finances/expense-categories', icon: CreditCard, requiredPermissions: ['manage expense categories'] },
-                            { label: 'الإيرادات', href: '/finances/revenues', icon: DollarSign, requiredPermissions: ['view revenues'] },
-                            { label: 'الأقساط المستحقة', href: '/finances/due-installments', icon: CreditCard, requiredPermissions: ['view due installments'] },
-                        ].filter(canAccess);
+                            { label: 'لوحة المالية', href: '/finances', icon: DollarSign },
+                            { label: 'المصروفات', href: '/finances/expenses', icon: Receipt },
+                            { label: 'فئات المصروفات', href: '/finances/expense-categories', icon: CreditCard },
+                            { label: 'الإيرادات', href: '/finances/revenues', icon: DollarSign },
+                            // { label: 'الأقساط المستحقة', href: '/finances/due-installments', icon: CreditCard },
+                        ];
                         if (financeSubItems.length === 0) return null;
                         return (
                             <div>
@@ -284,8 +340,42 @@ const SidebarContent: React.FC<{
                         );
                     })()}
 
+                    {/* Enrollments Section */}
+                    {(() => {
+                        const enrollmentSubItems: NavItem[] = [
+                            // { label: 'إدارة التسجيلات', href: '/enrollments', icon: ClipboardList },
+                            { label: 'سجل التغييرات', href: '/enrollment-logs', icon: History },
+                        ];
+                        if (enrollmentSubItems.length === 0) return null;
+                        return (
+                            <div>
+                                <Button
+                                    variant={currentPathname.startsWith('/enrollments') && !isCollapsed && openEnrollments ? 'secondary' : 'ghost'}
+                                    className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
+                                    onClick={() => setOpenEnrollments(!openEnrollments)}
+                                    title="التسجيلات"
+                                >
+                                    <ClipboardList className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
+                                    {!isCollapsed && (
+                                        <span className="truncate flex-1 text-right">التسجيلات</span>
+                                    )}
+                                    {!isCollapsed && (openEnrollments ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
+                                </Button>
+                                <AnimatePresence>
+                                    {!isCollapsed && openEnrollments && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
+                                            {enrollmentSubItems.map((item) => (
+                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })()}
+
                     {/* Other top-level items */}
-                    {mainNavItems.filter(canAccess).map((item) => (
+                    {mainNavItems.map((item) => (
                         <NavLink key={item.href} item={item} isCollapsed={isCollapsed} onClick={onNavLinkClick} />
                     ))}
 
@@ -293,7 +383,7 @@ const SidebarContent: React.FC<{
 
                     {/* Settings Section with Submenu */}
                     {(() => {
-                        const visibleSettings = settingsNavItems.filter(canAccess);
+                        const visibleSettings = settingsNavItems;
                         if (visibleSettings.length === 0) return null;
                         return (
                             <div>

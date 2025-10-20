@@ -20,7 +20,7 @@ export type Expense = {
   expense_category_id: number;
   created_by: number;
   expense_date: string; // ISO format (YYYY-MM-DD)
-  payment_method: 'cash' | 'bankak';
+  payment_method: 'cash' | 'bankak' | 'ocash' | 'fawri';
   created_at?: string;
   updated_at?: string;
   
@@ -39,7 +39,7 @@ export type CreateExpenseRequest = {
   amount: number;
   expense_category_id: number;
   expense_date: string;
-  payment_method: 'cash' | 'bankak';
+  payment_method: 'cash' | 'bankak' | 'ocash' | 'fawri';
 };
 
 export type UpdateExpenseRequest = Partial<CreateExpenseRequest>;
@@ -65,7 +65,7 @@ export type ExpenseStatistics = {
     count: number;
   }>;
   totals_by_payment_method?: Array<{
-    payment_method: 'cash' | 'bankak' | string;
+    payment_method: 'cash' | 'bankak' | 'ocash' | 'fawri' | string;
     total_amount: number;
   }>;
 };

@@ -22,6 +22,8 @@ import {
 import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { Gender, Student } from "@/types/student";
+import { EnrollmentType } from "@/types/enrollment";
+import { EnrollmentApi } from "@/api/enrollmentApi";
 import { useSnackbar } from "notistack";
 
 import { useNavigate } from "react-router-dom";
@@ -47,6 +49,11 @@ const StudentList = () => {
   const [actionsDialogOpen, setActionsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
+  
+  // State for edit grade level dialog
+  const [editGradeLevelDialogOpen, setEditGradeLevelDialogOpen] = useState(false);
+  const [studentForEditGrade, setStudentForEditGrade] = useState<Student | null>(null);
+  const [enrollmentIdForEdit, setEnrollmentIdForEdit] = useState<number | undefined>(undefined);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -246,7 +253,7 @@ const StudentList = () => {
     setActionsDialogOpen(true);
   };
 
-  const handleActionClick = (action: string, student: Student) => {
+  const handleActionClick = (action: string, student: Student, enrollmentType?: EnrollmentType) => {
     setActionsDialogOpen(false);
     
     switch (action) {
@@ -262,6 +269,50 @@ const StudentList = () => {
       case 'accept':
         handleAccept(student);
         break;
+      case 'edit-grade-level': {
+        // Find the first active enrollment for editing
+        const activeEnrollment = student.enrollments?.find(
+          enrollment => enrollment.status === 'active'
+        );
+        if (activeEnrollment) {
+          setStudentForEditGrade(student);
+          setEnrollmentIdForEdit(Number(activeEnrollment.id));
+          setEditGradeLevelDialogOpen(true);
+        } else {
+          enqueueSnackbar('لا يوجد تسجيل نشط للطالب', { variant: 'error' });
+        }
+        break;
+      }
+      case 'change-enrollment-type': {
+        if (!enrollmentType) {
+          enqueueSnackbar('نوع التسجيل مطلوب', { variant: 'error' });
+          return;
+        }
+        
+        // Find the first active enrollment
+        const activeEnrollment = student.enrollments?.find(
+          enrollment => enrollment.status === 'active'
+        );
+        
+        if (!activeEnrollment) {
+          enqueueSnackbar('لا يوجد تسجيل نشط للطالب', { variant: 'error' });
+          return;
+        }
+        
+        // Call the API to change enrollment type
+        EnrollmentApi.changeEnrollmentType(Number(activeEnrollment.id), enrollmentType)
+          .then(() => {
+            enqueueSnackbar('تم تغيير نوع التسجيل بنجاح', { variant: 'success' });
+            // Refresh the students list to show updated data
+            fetchStudents();
+          })
+          .catch((error) => {
+            console.error('Error changing enrollment type:', error);
+            const errorMessage = error.response?.data?.message || 'حدث خطأ أثناء تغيير نوع التسجيل';
+            enqueueSnackbar(errorMessage, { variant: 'error' });
+          });
+        break;
+      }
     }
   };
 
@@ -837,6 +888,25 @@ const StudentList = () => {
           if (studentForEnroll) {
             highlightStudent(studentForEnroll.id, 4000);
             refreshStudentData(studentForEnroll.id);
+          }
+        }}
+      />
+
+      {/* Edit Grade Level Dialog */}
+      <QuickEnrollDialog
+        open={editGradeLevelDialogOpen}
+        onOpenChange={(o) => setEditGradeLevelDialogOpen(o)}
+        student={studentForEditGrade}
+        editMode={true}
+        enrollmentId={enrollmentIdForEdit}
+        onSuccess={() => {
+          setEditGradeLevelDialogOpen(false);
+          // Show success message
+          enqueueSnackbar('تم تحديث تسجيل الطالب بنجاح!', { variant: 'success' });
+          // Highlight the updated student
+          if (studentForEditGrade) {
+            highlightStudent(studentForEditGrade.id, 4000);
+            refreshStudentData(studentForEditGrade.id);
           }
         }}
       />

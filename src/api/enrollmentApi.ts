@@ -5,6 +5,7 @@ import {
   EnrollmentFormData,
   EnrollmentUpdateFormData,
   EnrollableStudent,
+  EnrollmentType,
 } from "@/types/enrollment";
 
 type CollectionResponse = { data: Enrollment[] };
@@ -81,4 +82,10 @@ export const EnrollmentApi = {
     };
     return axiosClient.post<CollectionResponse>(url, payload);
   },
+
+  // Change enrollment type
+  changeEnrollmentType: (enrollmentId: number, enrollmentType: EnrollmentType) =>
+    axiosClient.put<ResourceResponse>(`/enrollments/${enrollmentId}/change-type`, {
+      enrollment_type: enrollmentType,
+    }),
 };

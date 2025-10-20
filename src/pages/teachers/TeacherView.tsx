@@ -1,280 +1,213 @@
-// src/components/teachers/TeacherView.tsx
+// src/pages/teachers/TeacherView.tsx
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
-
-// shadcn/ui components
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// lucide-react icons
-import { Edit, ArrowLeft, User, AlertCircle, Calendar, Mail, Phone, MapPin, GraduationCap, Briefcase } from 'lucide-react';
-
+import 'dayjs/locale/ar';
+import {
+  Box,
+  Paper,
+  Typography,
+  Avatar,
+  Chip,
+  Divider,
+  Stack,
+  Button,
+  Alert,
+  CircularProgress,
+  Card,
+  CardHeader,
+  CardContent,
+} from '@mui/material';
+import { ArrowBack, Edit, CalendarMonth, Mail, Phone, Place, School, Work, Person } from '@mui/icons-material';
 import { useTeacherStore } from '@/stores/teacherStore';
 
-// Helper function to display data or a placeholder
-const displayData = (data: string | null | undefined, placeholder = 'غير محدد') => {
-    return data || placeholder;
-};
+dayjs.locale('ar');
+
+const formatDate = (d?: string | null) => (d ? dayjs(d).format('DD/MM/YYYY') : 'غير محدد');
+const show = (v?: string | number | null) => (v === undefined || v === null || v === '' ? 'غير محدد' : String(v));
+
+const LabelRow: React.FC<{ label: string; value: React.ReactNode; icon?: React.ReactNode; ltr?: boolean }> = ({ label, value, icon, ltr = false }) => (
+  <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 0.5 }}>
+    {icon}
+    <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>{label}</Typography>
+    <Typography variant="body2" sx={{ direction: ltr ? 'ltr' : 'rtl', textAlign: ltr ? 'left' : 'right' }}>{value}</Typography>
+  </Stack>
+);
 
 const TeacherView: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const {
-        currentTeacher,
-        loading,
-        error,
-        getTeacherById,
-        resetCurrentTeacher
-    } = useTeacherStore();
+  const { currentTeacher, loading, error, getTeacherById, resetCurrentTeacher } = useTeacherStore();
 
     useEffect(() => {
         const teacherId = parseInt(id ?? '', 10);
         if (!isNaN(teacherId)) {
             getTeacherById(teacherId);
         } else {
-            console.error("Invalid Teacher ID provided in URL");
             navigate('/teachers/list');
         }
-        return () => resetCurrentTeacher(); // Cleanup
+    return () => resetCurrentTeacher();
     }, [id, getTeacherById, resetCurrentTeacher, navigate]);
 
     if (loading) {
         return (
-            <div className="container max-w-4xl mx-auto py-8 px-4" dir="rtl">
-                <div className="space-y-6">
-                    <Skeleton className="h-10 w-64" />
-                    <Card>
-                        <CardHeader>
-                            <Skeleton className="h-8 w-48" />
-                            <Skeleton className="h-4 w-32" />
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <div className="space-y-4">
-                                    <Skeleton className="h-32 w-32 rounded-full mx-auto" />
-                                    <Skeleton className="h-6 w-20 mx-auto" />
-                                </div>
-                                <div className="md:col-span-3 space-y-4">
-                                    {[...Array(8)].map((_, i) => (
-                                        <Skeleton key={i} className="h-4 w-full" />
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        );
-    }
-
+      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }} dir="rtl">
+        <CircularProgress />
+      </Box>
+    );
+  }
     if (error) {
         return (
-            <div className="container max-w-4xl mx-auto py-8 px-4" dir="rtl">
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>خطأ</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            </div>
-        );
-    }
-
+      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }} dir="rtl">
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
     if (!currentTeacher) {
         return (
-            <div className="container max-w-4xl mx-auto py-8 px-4" dir="rtl">
-                <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>تحذير</AlertTitle>
-                    <AlertDescription>لم يتم العثور على المدرس.</AlertDescription>
-                </Alert>
-            </div>
-        );
-    }
+      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }} dir="rtl">
+        <Alert severity="warning">لم يتم العثور على المدرس.</Alert>
+      </Box>
+    );
+  }
 
-    const teacherName = currentTeacher.data.name || "مدرس";
+  const t = currentTeacher.data as {
+    id: number;
+    name?: string;
+    national_id?: string;
+    email?: string;
+    phone?: string;
+    gender?: string;
+    birth_date?: string | null;
+    place_of_birth?: string | null;
+    nationality?: string | null;
+    document_type?: string | null;
+    document_number?: string | null;
+    marital_status?: string | null;
+    number_of_children?: number | null;
+    children_in_school?: number | null;
+    secondary_phone?: string | null;
+    whatsapp_number?: string | null;
+    qualification?: string;
+    highest_qualification?: string | null;
+    specialization?: string | null;
+    academic_degree?: string | null;
+    hire_date?: string | null;
+    appointment_date?: string | null;
+    years_of_teaching_experience?: number | null;
+    training_courses?: string | null;
+    address?: string | null;
+    photo_url?: string | null;
+    is_active?: boolean;
+  };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="container max-w-4xl mx-auto py-8 px-4"
-            dir="rtl"
-        >
-            {/* Header with navigation */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">ملف المدرس: {currentTeacher.data.name}</h1>
-                <div className="flex gap-2">
-                        <Button
-                        variant="outline"
-                        onClick={() => navigate('/teachers/list')}
-                    >
-                        <ArrowLeft className="ml-2 h-4 w-4" />
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }} dir="rtl">
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Typography variant="h4">ملف المدرس: {t.name || 'مدرس'}</Typography>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate('/teachers/list')}>
                             العودة للقائمة
                         </Button>
-                        <Button
-                        onClick={() => navigate(`/teachers/${currentTeacher.data.id}/edit`)}
-                        >
-                        <Edit className="ml-2 h-4 w-4" />
+          <Button variant="contained" startIcon={<Edit />} onClick={() => navigate(`/teachers/${t.id}/edit`)}>
                             تعديل
                         </Button>
-                </div>
-            </div>
+        </Stack>
+      </Stack>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-2xl">معلومات المدرس</CardTitle>
-                    <CardDescription>
-                        عرض تفصيلي لبيانات المدرس ومعلوماته الشخصية والوظيفية
-                    </CardDescription>
-                </CardHeader>
+      <Paper sx={{ p: 3 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 3fr' }, gap: 3 }}>
+          <Box>
+            <Stack alignItems="center" spacing={2}>
+              <Avatar src={t.photo_url || undefined} sx={{ width: 120, height: 120 }}>
+                <Person />
+              </Avatar>
+              <Chip
+                label={t.is_active ? 'الحساب نشط' : 'الحساب غير نشط'}
+                color={t.is_active ? 'success' : 'default'}
+                variant={t.is_active ? 'filled' : 'outlined'}
+              />
+            </Stack>
+          </Box>
+          <Box>
+            <Card variant="outlined" sx={{ mb: 3 }}>
+              <CardHeader title="المعلومات الأساسية" />
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        {/* Profile Image Section */}
-                        <div className="flex flex-col items-center space-y-4">
-                            <Avatar className="h-32 w-32">
-                                <AvatarImage 
-                                    src={currentTeacher.data.photo_url || undefined} 
-                            alt={teacherName}
-                                />
-                                <AvatarFallback className="text-2xl">
-                                    <User className="h-16 w-16" />
-                                </AvatarFallback>
-                            </Avatar>
-                            <Badge 
-                                variant={currentTeacher.data.is_active ? "default" : "secondary"}
-                                className={currentTeacher.data.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}
-                            >
-                                {currentTeacher.data.is_active ? 'الحساب نشط' : 'الحساب غير نشط'}
-                            </Badge>
-                        </div>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  <LabelRow label="الاسم الكامل" value={show(t.name)} icon={<Person fontSize="small" />} />
+                  <LabelRow label="الرقم الوطني" value={show(t.national_id)} />
+                  <LabelRow label="البريد الإلكتروني" value={show(t.email)} icon={<Mail fontSize="small" />} ltr={true} />
+                  <LabelRow label="رقم الهاتف" value={show(t.phone)} icon={<Phone fontSize="small" />} ltr={true} />
+                  <LabelRow label="الجنس" value={show(t.gender)} />
+                  <LabelRow label="تاريخ الميلاد" value={formatDate(t.birth_date)} icon={<CalendarMonth fontSize="small" />} />
+                </Box>
+              </CardContent>
+            </Card>
 
-                    {/* Details Section */}
-                        <div className="md:col-span-3 space-y-6">
-                            {/* Basic Information */}
-                            <div>
-                                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                                    <User className="ml-2 h-5 w-5" />
-                                    المعلومات الأساسية
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground">الاسم الكامل</p>
-                                        <p className="text-sm">{displayData(currentTeacher.data.name)}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground">الرقم الوطني</p>
-                                        <p className="text-sm">{displayData(currentTeacher.data.national_id)}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center">
-                                            <Mail className="ml-1 h-4 w-4" />
-                                            البريد الإلكتروني
-                                        </p>
-                                        <p className="text-sm">{displayData(currentTeacher.data.email)}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center">
-                                            <Phone className="ml-1 h-4 w-4" />
-                                            رقم الهاتف
-                                        </p>
-                                        <p className="text-sm">{displayData(currentTeacher.data.phone)}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground">الجنس</p>
-                                        <p className="text-sm">{displayData(currentTeacher.data.gender)}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center">
-                                            <Calendar className="ml-1 h-4 w-4" />
-                                            تاريخ الميلاد
-                                        </p>
-                                        <p className="text-sm">
-                                            {currentTeacher.data.birth_date 
-                                                ? dayjs(currentTeacher.data.birth_date).format('DD/MM/YYYY')
-                                                : 'غير محدد'
-                                            }
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+            <Card variant="outlined" sx={{ mb: 3 }}>
+              <CardHeader title="بيانات التواصل" />
+              <CardContent>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  <LabelRow label="هاتف آخر" value={show(t.secondary_phone)} ltr={true} />
+                  <LabelRow label="رقم الواتساب" value={show(t.whatsapp_number)} ltr={true} />
+                  <Box sx={{ gridColumn: '1 / -1' }}>
+                    <LabelRow label="العنوان" value={show(t.address)} icon={<Place fontSize="small" />} />
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
 
-                            <Separator />
+            <Card variant="outlined" sx={{ mb: 3 }}>
+              <CardHeader title="المؤهلات العلمية" />
+              <CardContent>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  <LabelRow label="أعلى مؤهل" value={show(t.highest_qualification)} icon={<School fontSize="small" />} />
+                  <LabelRow label="الدرجة العلمية" value={show(t.academic_degree)} />
+                  <LabelRow label="التخصص" value={show(t.specialization)} />
+                  <LabelRow label="المؤهل" value={show(t.qualification)} />
+                </Box>
+              </CardContent>
+            </Card>
 
-                            {/* Professional Information */}
-                            <div>
-                                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                                    <Briefcase className="ml-2 h-5 w-5" />
-                                    المعلومات الوظيفية
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center">
-                                            <GraduationCap className="ml-1 h-4 w-4" />
-                                            المؤهل العلمي
-                                        </p>
-                                        <p className="text-sm">{displayData(currentTeacher.data.qualification)}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center">
-                                            <Calendar className="ml-1 h-4 w-4" />
-                                            تاريخ التعيين
-                                        </p>
-                                        <p className="text-sm">
-                                            {currentTeacher.data.hire_date 
-                                                ? dayjs(currentTeacher.data.hire_date).format('DD/MM/YYYY')
-                                                : 'غير محدد'
-                                            }
-                                        </p>
-                                    </div>
-                                    <div className="sm:col-span-2 space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center">
-                                            <MapPin className="ml-1 h-4 w-4" />
-                                            العنوان
-                                        </p>
-                                        <p className="text-sm">{displayData(currentTeacher.data.address)}</p>
-                                    </div>
-                                </div>
-                            </div>
+            <Card variant="outlined" sx={{ mb: 3 }}>
+              <CardHeader title="الخبرة الوظيفية" />
+              <CardContent>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  <LabelRow label="تاريخ التعيين" value={formatDate(t.hire_date)} icon={<CalendarMonth fontSize="small" />} />
+                  <LabelRow label="تاريخ التعيين بالمدرسة" value={formatDate(t.appointment_date)} icon={<CalendarMonth fontSize="small" />} />
+                  <LabelRow label="سنوات الخبرة" value={show(t.years_of_teaching_experience)} icon={<Work fontSize="small" />} />
+                  <Box sx={{ gridColumn: '1 / -1' }}>
+                    <LabelRow label="الدورات التدريبية" value={show(t.training_courses)} />
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
 
-                            <Separator />
-
-                            {/* System Information */}
-                            <div>
-                                <h3 className="text-lg font-semibold mb-4">معلومات النظام</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground">تاريخ الإنشاء</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {currentTeacher.data.created_at 
-                                                ? dayjs(currentTeacher.data.created_at).format('DD/MM/YYYY hh:mm A')
-                                                : 'غير محدد'
-                                            }
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-medium text-muted-foreground">آخر تحديث</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {currentTeacher.data.updated_at 
-                                                ? dayjs(currentTeacher.data.updated_at).format('DD/MM/YYYY hh:mm A')
-                                                : 'غير محدد'
-                                            }
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <Card variant="outlined">
+              <CardHeader title="معلومات إضافية" />
+              <CardContent>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  <LabelRow label="مكان الميلاد" value={show(t.place_of_birth)} />
+                  <LabelRow label="الجنسية" value={show(t.nationality)} />
+                  <LabelRow label="نوع الوثيقة" value={show(t.document_type)} />
+                  <LabelRow label="رقم الوثيقة" value={show(t.document_number)} />
+                  <LabelRow label="الحالة الاجتماعية" value={show(t.marital_status)} />
+                  <LabelRow label="عدد الأطفال" value={show(t.number_of_children)} />
+                  <LabelRow label="أطفال بالمدرسة" value={show(t.children_in_school)} />
+                </Box>
                 </CardContent>
             </Card>
-        </motion.div>
+
+            <Divider sx={{ my: 3 }} />
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button variant="contained" startIcon={<Edit />} onClick={() => navigate(`/teachers/${t.id}/edit`)}>
+                تعديل
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
+      </Paper>
+    </Box>
     );
 };
 

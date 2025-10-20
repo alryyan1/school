@@ -281,13 +281,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                   id="payment_method"
                   select
                   value={formData.payment_method}
-                  onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'cash' | 'bankak' })}
+                  onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'cash' | 'bankak' | 'ocash' | 'fawri' })}
                   error={!!errors.payment_method}
                   variant="outlined"
                   size="small"
                 >
                   <MenuItem value="cash">نقدي (Cash)</MenuItem>
                   <MenuItem value="bankak">بنكاك (Bankak)</MenuItem>
+                  <MenuItem value="ocash">أوكاش (OCash)</MenuItem>
+                  <MenuItem value="fawri">فوري (Fawri)</MenuItem>
                 </TextField>
                 {errors.payment_method && (
                   <p className="text-sm text-red-500">{errors.payment_method}</p>

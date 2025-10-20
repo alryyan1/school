@@ -1,54 +1,47 @@
-// src/components/teachers/TeacherForm.tsx (or pages/teachers/TeacherFormPage.tsx)
+// src/components/teachers/TeacherForm.tsx
 import React, { useEffect, useState, useRef } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import "dayjs/locale/ar";
 dayjs.locale("ar");
 
-// shadcn/ui components
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+// Material-UI components
 import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Switch,
+  Avatar,
+  IconButton,
+  Alert,
+  CircularProgress,
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CardActions,
+  Stepper,
+  Step,
+  StepLabel,
+} from "@mui/material";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch"; // For is_active
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
+// Material-UI icons
+import { PhotoCamera, Delete, Save, ArrowBack, Upload, Person } from "@mui/icons-material";
 
-// lucide-react icons
-import {
-  Upload,
-  User,
-  XCircle,
-  Save,
-  ArrowRight,
-  AlertCircle,
-  Loader2,
-} from "lucide-react";
-
-import { useTeacherStore } from "@/stores/teacherStore"; // Adjust path
-import { TeacherFormData } from "@/types/teacher"; // Adjust path
-import { Gender } from "@/types/student"; // Import Gender enum
+import { useTeacherStore } from "@/stores/teacherStore";
+import { TeacherFormData } from "@/types/teacher";
+import { Gender } from "@/types/student";
 import { useSnackbar } from "notistack";
+import axiosClient from "@/axios-client";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { webUrl } from "@/constants";
+
+const today = dayjs().format("YYYY-MM-DD");
 
 const TeacherForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -62,534 +55,916 @@ const TeacherForm: React.FC = () => {
     updateTeacher,
     getTeacherById,
     currentTeacher,
-    error: storeError,
     resetCurrentTeacher,
   } = useTeacherStore();
 
   const [isFetchingData, setIsFetchingData] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<TeacherFormData>({
-    defaultValues: {
+  // Step-local state (isolated per tab)
+  const [personal, setPersonal] = useState<{
+    national_id: string;
+    name: string;
+    gender: Gender;
+    birth_date: string;
+    place_of_birth: string;
+    nationality: string;
+    document_type: "" | "جواز سفر" | "البطاقة الشخصية" | "الرقم الوطني";
+    document_number: string;
+    marital_status: "" | "ارمل" | "مطلق" | "متزوج" | "اعزب";
+    number_of_children: number | "";
+    children_in_school: number | "";
+  }>({
       national_id: "",
       name: "",
-      email: "",
-      phone: null,
-      gender: "ذكر" as Gender,
-      birth_date: null,
-      qualification: "",
-      hire_date: dayjs().format("YYYY-MM-DD"),
-      address: null,
-      photo: null,
-      is_active: true,
-    },
+    gender: ("ذكر" as Gender),
+    birth_date: "",
+    place_of_birth: "",
+    nationality: "",
+    document_type: "",
+    document_number: "",
+    marital_status: "",
+    number_of_children: "",
+    children_in_school: "",
   });
 
-  const watchedPhoto = watch("photo");
+  const [contact, setContact] = useState<{
+    phone: string;
+    secondary_phone: string;
+    whatsapp_number: string;
+    email: string;
+    address: string;
+  }>({
+    phone: "",
+    secondary_phone: "",
+    whatsapp_number: "",
+      email: "",
+    address: "",
+  });
 
-  // Fetch data in Edit Mode
+  const [education, setEducation] = useState<{
+    highest_qualification: "" | "جامعي" | "ثانوي";
+    academic_degree: "" | "دبلوم" | "بكالوريوس" | "ماجستير" | "دكتوراه";
+    specialization: string;
+    qualification: string;
+  }>({
+    highest_qualification: "",
+    academic_degree: "",
+    specialization: "",
+      qualification: "",
+  });
+
+  const [experience, setExperience] = useState<{
+    hire_date: string;
+    appointment_date: string;
+    years_of_teaching_experience: number | "";
+    training_courses: string;
+  }>({
+    hire_date: today,
+    appointment_date: "",
+    years_of_teaching_experience: "",
+    training_courses: "",
+  });
+
+  const [documents, setDocuments] = useState<{ photo: File | null }>({ photo: null });
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isActive, setIsActive] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isUploadingDocs, setIsUploadingDocs] = useState(false);
+  const [uploadedDocPaths, setUploadedDocPaths] = useState<string[]>([]);
+  const [isDocsDialogOpen, setIsDocsDialogOpen] = useState(false);
+
+  // Helpers
+  const steps = isEditMode
+    ? [
+      "البيانات الشخصية",
+      "بيانات التواصل",
+      "المؤهلات العلمية",
+      "الخبرة المهنية",
+      "المستندات المطلوبة",
+    ]
+    : [
+      "البيانات الشخصية",
+      "بيانات التواصل",
+      "المؤهلات العلمية",
+      "الخبرة المهنية",
+    ];
+
+  const handleNext = () => {
+    const valid = validateStep(activeStep);
+    if (!valid) return;
+    setActiveStep((s) => Math.min(s + 1, steps.length - 1));
+  };
+  const handleBack = () => setActiveStep((s) => Math.max(s - 1, 0));
+  const handleStepClick = (s: number) => setActiveStep(s);
+
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 0:
+        if (!personal.national_id) return notify("الرقم الوطني مطلوب");
+        if (!personal.name) return notify("الاسم الكامل مطلوب");
+        if (!personal.gender) return notify("الجنس مطلوب");
+        return true;
+      case 1:
+        if (!contact.email) return notify("البريد الإلكتروني مطلوب");
+        return true;
+      case 2:
+        if (!education.qualification) return notify("المؤهل العلمي مطلوب");
+        return true;
+      case 3:
+        if (!experience.hire_date) return notify("تاريخ التعيين مطلوب");
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const notify = (msg: string) => {
+    enqueueSnackbar(msg, { variant: "error" });
+    return false;
+  };
+
+  // Fetch data in Edit Mode -> hydrate local step states
   useEffect(() => {
     if (isEditMode && teacherId) {
       const fetchData = async () => {
         setIsFetchingData(true);
         resetCurrentTeacher();
-        const teacherData = await getTeacherById(teacherId); // Store updates currentTeacher
+        const teacherData = await getTeacherById(teacherId);
         setIsFetchingData(false);
         if (!teacherData) {
           enqueueSnackbar("المدرس المطلوب غير موجود", { variant: "error" });
           navigate("/teachers/list");
+          return;
         }
+        const t = teacherData.data as {
+          national_id?: string; name?: string; gender?: Gender; birth_date?: string; place_of_birth?: string; nationality?: string;
+          document_type?: "" | "جواز سفر" | "البطاقة الشخصية" | "الرقم الوطني"; document_number?: string; marital_status?: "" | "ارمل" | "مطلق" | "متزوج" | "اعزب";
+          number_of_children?: number | null; children_in_school?: number | null; phone?: string; secondary_phone?: string; whatsapp_number?: string;
+          email?: string; address?: string; highest_qualification?: "" | "جامعي" | "ثانوي"; academic_degree?: "" | "دبلوم" | "بكالوريوس" | "ماجستير" | "دكتوراه";
+          specialization?: string; qualification?: string; hire_date?: string; appointment_date?: string; years_of_teaching_experience?: number | null;
+          training_courses?: string; is_active?: boolean; photo_url?: string;
+        };
+        setPersonal({
+          national_id: t.national_id || "",
+          name: t.name || "",
+          gender: ((t.gender ?? "ذكر") as Gender),
+          birth_date: t.birth_date || "",
+          place_of_birth: t.place_of_birth || "",
+          nationality: t.nationality || "",
+          document_type: (t.document_type as "" | "جواز سفر" | "البطاقة الشخصية" | "الرقم الوطني") || "",
+          document_number: t.document_number || "",
+          marital_status: (t.marital_status as "" | "ارمل" | "مطلق" | "متزوج" | "اعزب") || "",
+          number_of_children: t.number_of_children ?? "",
+          children_in_school: t.children_in_school ?? "",
+        });
+        setContact({
+          phone: t.phone || "",
+          secondary_phone: t.secondary_phone || "",
+          whatsapp_number: t.whatsapp_number || "",
+          email: t.email || "",
+          address: t.address || "",
+        });
+        setEducation({
+          highest_qualification: t.highest_qualification || "",
+          academic_degree: t.academic_degree || "",
+          specialization: t.specialization || "",
+          qualification: t.qualification || "",
+        });
+        setExperience({
+          hire_date: t.hire_date || today,
+          appointment_date: t.appointment_date || "",
+          years_of_teaching_experience: t.years_of_teaching_experience ?? "",
+          training_courses: t.training_courses || "",
+        });
+        setIsActive(!!t.is_active);
+        setPhotoPreview(t.photo_url || null);
       };
       fetchData();
     } else {
-      reset({
-        // Default for create mode
-        national_id: "",
-        name: "",
-        email: "",
-        phone: null,
-        gender: "ذكر" as Gender,
-        birth_date: null,
-        qualification: "",
-        hire_date: dayjs().format("YYYY-MM-DD"),
-        address: null,
-        photo: null,
-        is_active: true,
-      });
-      setPhotoPreview(null);
+      resetCurrentTeacher();
     }
     return () => resetCurrentTeacher();
-  }, [
-    teacherId,
-    isEditMode,
-    getTeacherById,
-    reset,
-    resetCurrentTeacher,
-    enqueueSnackbar,
-    navigate,
-  ]);
+  }, [isEditMode, teacherId, getTeacherById, resetCurrentTeacher, enqueueSnackbar, navigate]);
 
-  // Populate form when currentTeacher data arrives (for edit mode)
+  // Photo preview
   useEffect(() => {
-    if (isEditMode && currentTeacher && currentTeacher.data.id === teacherId) {
-      reset({
-        ...currentTeacher.data,
-        birth_date: currentTeacher.data.birth_date
-          ? dayjs(currentTeacher.data.birth_date).format("YYYY-MM-DD")
-          : null,
-        hire_date: currentTeacher.data.hire_date
-          ? dayjs(currentTeacher.data.hire_date).format("YYYY-MM-DD")
-          : "",
-        photo: null, // File input cannot be pre-filled
-      });
-      setPhotoPreview(currentTeacher.data.photo_url || null);
-    }
-  }, [currentTeacher, isEditMode, reset, teacherId]);
-
-  // Photo Preview Effect
-  useEffect(() => {
-    if (watchedPhoto && watchedPhoto instanceof File) {
+    if (documents.photo instanceof File) {
       const reader = new FileReader();
       reader.onloadend = () => setPhotoPreview(reader.result as string);
-      reader.readAsDataURL(watchedPhoto);
-    } else if (!watchedPhoto && isEditMode && currentTeacher?.data.photo_url) {
+      reader.readAsDataURL(documents.photo);
+    } else if (!documents.photo && isEditMode && currentTeacher?.data.photo_url) {
       setPhotoPreview(currentTeacher.data.photo_url);
-    } else if (!watchedPhoto) {
+    } else if (!documents.photo) {
       setPhotoPreview(null);
     }
-  }, [watchedPhoto, currentTeacher, isEditMode]);
+  }, [documents.photo, currentTeacher, isEditMode]);
 
-  // --- Form Submission ---
-  const onSubmit = async (data: TeacherFormData) => {
+  // Submit (merge all local states)
+  const onSubmit = async () => {
     setFormSubmitError(null);
+    setFieldErrors({}); // Clear any previous field errors
+    // Final validate current step
+    if (!validateStep(activeStep)) return;
+
+    const payload: TeacherFormData = {
+      national_id: personal.national_id,
+      name: personal.name,
+      email: contact.email,
+      phone: contact.phone || null,
+      gender: personal.gender,
+      birth_date: personal.birth_date || null,
+      place_of_birth: personal.place_of_birth || null,
+      nationality: personal.nationality || null,
+      document_type: personal.document_type || null,
+      document_number: personal.document_number || null,
+      marital_status: personal.marital_status || null,
+      number_of_children: personal.number_of_children === "" ? null : Number(personal.number_of_children),
+      children_in_school: personal.children_in_school === "" ? null : Number(personal.children_in_school),
+      secondary_phone: contact.secondary_phone || null,
+      whatsapp_number: contact.whatsapp_number || null,
+      qualification: education.qualification,
+      highest_qualification: education.highest_qualification || null,
+      specialization: education.specialization || null,
+      academic_degree: education.academic_degree || null,
+      hire_date: experience.hire_date,
+      appointment_date: experience.appointment_date || null,
+      years_of_teaching_experience:
+        experience.years_of_teaching_experience === "" ? null : Number(experience.years_of_teaching_experience),
+      training_courses: experience.training_courses || null,
+      address: contact.address || null,
+      photo: documents.photo || null,
+      academic_qualifications_doc_path: null,
+      personal_id_doc_path: null,
+      cv_doc_path: null,
+      is_active: isActive,
+      photo_path: "",
+    } as unknown as TeacherFormData;
+
     try {
       let result = null;
-
       if (isEditMode && teacherId) {
-        result = await updateTeacher(teacherId, data);
+        result = await updateTeacher(teacherId, payload);
+      } else {
+        result = await createTeacher(payload);
+      }
+
+      // Only show success toast and navigate if the operation was successful
+      if (result) {
+        if (isEditMode) {
         enqueueSnackbar("تم تحديث بيانات المدرس بنجاح", { variant: "success" });
       } else {
-        result = await createTeacher(data);
         enqueueSnackbar("تم إضافة المدرس بنجاح", { variant: "success" });
       }
-      if (result) {
-        navigate(`/teachers/${result.data.id}`); // Navigate to view page
+        navigate(`/teachers/${result.data.id}`);
       }
-    } catch (error) {
-      setFormSubmitError(error.message || "حدث خطأ أثناء حفظ البيانات");
-      enqueueSnackbar(error.message || "فشل في حفظ البيانات", {
+    } catch (error: unknown) {
+      // Handle validation errors from Laravel
+      const errorObj = error as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      
+      if (errorObj.response?.data?.errors) {
+        const errors = errorObj.response.data.errors;
+        
+        // Show the consolidated error message from backend
+        if (errorObj.response.data.message) {
+          enqueueSnackbar(errorObj.response.data.message, { 
         variant: "error",
-      });
+            autoHideDuration: 8000 // Show for 8 seconds to allow reading
+          });
+        }
+        
+        // Set field-specific errors for highlighting
+        const fieldErrorMap: Record<string, string> = {};
+        Object.keys(errors).forEach(field => {
+          if (Array.isArray(errors[field]) && errors[field].length > 0) {
+            fieldErrorMap[field] = errors[field][0];
+          }
+        });
+        setFieldErrors(fieldErrorMap);
+        
+        // Set the consolidated error message as form error
+        setFormSubmitError(errorObj.response.data.message || "خطأ في التحقق من البيانات");
+      } else {
+        // Handle other types of errors
+        const errorWithMessage = error as { message?: string; response?: { data?: { message?: string } } };
+        const message = errorWithMessage.message || errorWithMessage.response?.data?.message || "حدث خطأ أثناء حفظ البيانات";
+        setFormSubmitError(message);
+        enqueueSnackbar(message, { variant: "error" });
+      }
     }
   };
 
-  // --- Render Skeletons for Loading ---
-  if (isFetchingData && isEditMode) {
-    return (
-      <div className="container max-w-3xl mx-auto py-8 px-4" dir="rtl">
-        <Skeleton className="h-10 w-32 mb-6" />
-        <Card className="w-full">
-          <CardHeader>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64" />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Renderers (controlled inputs per-step)
+  const renderPersonal = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+      <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={personal.name}
+            onChange={(e) => {
+              setPersonal((p) => ({ ...p, name: e.target.value }));
+              // Clear field error when user starts typing
+              if (fieldErrors.name) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.name;
+                  return newErrors;
+                });
+              }
+            }}
+            fullWidth
+            label="الاسم الكامل *"
+            placeholder="مثال: أحمد محمد علي"
+            error={!!fieldErrors.name}
+            helperText={fieldErrors.name}
+          />
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={personal.national_id}
+            onChange={(e) => {
+              setPersonal((p) => ({ ...p, national_id: e.target.value }));
+              if (fieldErrors.national_id) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.national_id;
+                  return newErrors;
+                });
+              }
+            }}
+            fullWidth
+            label="الرقم الوطني *"
+            placeholder="01234567890"
+            error={!!fieldErrors.national_id}
+            helperText={fieldErrors.national_id}
+          />
+        </Box>
+     
+      </Box>
 
-  if (storeError && !isEditMode) {
-    return (
-      <div className="container max-w-3xl mx-auto py-8 px-4" dir="rtl">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>خطأ</AlertTitle>
-          <AlertDescription>{storeError}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={personal.birth_date}
+            onChange={(e) => setPersonal((p) => ({ ...p, birth_date: e.target.value }))}
+            fullWidth
+            type="date"
+            label="تاريخ الميلاد"
+            InputLabelProps={{ shrink: true }}
+          />
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={personal.place_of_birth}
+            onChange={(e) => setPersonal((p) => ({ ...p, place_of_birth: e.target.value }))}
+            fullWidth
+            label="مكان الميلاد"
+            placeholder="مثال: دمشق"
+          />
+        </Box>
+      </Box>
 
-  // --- Main Render ---
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="container max-w-3xl mx-auto py-8 px-4"
-      dir="rtl"
-    >
-      <Button
-        variant="outline"
-        onClick={() =>
-          navigate(
-            isEditMode
-              ? `/teachers/${teacherId}`
-              : "/teachers/list"
-          )
-        }
-        className="mb-6"
-      >
-        <ArrowRight className="ml-2 h-4 w-4" />{" "}
-        {isEditMode ? "العودة لصفحة المدرس" : "العودة للقائمة"}
-      </Button>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={personal.nationality}
+            onChange={(e) => setPersonal((p) => ({ ...p, nationality: e.target.value }))}
+            fullWidth
+            label="الجنسية"
+            placeholder="مثال: سوري"
+          />
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <FormControl fullWidth>
+            <InputLabel>الجنس *</InputLabel>
+            <Select
+              label="الجنس *"
+              value={personal.gender}
+              onChange={(e) => setPersonal((p) => ({ ...p, gender: e.target.value as Gender }))}
+            >
+              <MenuItem value="ذكر">ذكر</MenuItem>
+              <MenuItem value="انثي">أنثى</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
 
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-2xl">
-            {isEditMode
-              ? `تعديل بيانات المدرس: ${currentTeacher?.data.name || ""}`
-              : "إضافة مدرس جديد"}
-          </CardTitle>
-          <CardDescription>
-            الرجاء ملء الحقول المطلوبة لـ {isEditMode ? "تحديث" : "إضافة"}{" "}
-            المدرس.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-6">
-            {formSubmitError && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>خطأ في الحفظ</AlertTitle>
-                <AlertDescription>{formSubmitError}</AlertDescription>
-              </Alert>
-            )}
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <FormControl fullWidth>
+            <InputLabel>نوع الوثيقة</InputLabel>
+            <Select
+              label="نوع الوثيقة"
+              value={personal.document_type}
+              onChange={(e) => setPersonal((p) => ({ ...p, document_type: e.target.value as "" | "جواز سفر" | "البطاقة الشخصية" | "الرقم الوطني" }))}
+            >
+              <MenuItem value="جواز سفر">جواز سفر</MenuItem>
+              <MenuItem value="البطاقة الشخصية">البطاقة الشخصية</MenuItem>
+              <MenuItem value="الرقم الوطني">الرقم الوطني</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={personal.document_number}
+            onChange={(e) => setPersonal((p) => ({ ...p, document_number: e.target.value }))}
+            fullWidth
+            label="رقم الوثيقة"
+            placeholder="رقم الوثيقة"
+          />
+        </Box>
+      </Box>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* National ID */}
-              <div className="space-y-2">
-                <Label htmlFor="national_id">الرقم الوطني *</Label>
-                <Controller
-                  name="national_id"
-                  control={control}
-                  rules={{ required: "الرقم الوطني مطلوب" }}
-                  render={({ field }) => (
-                    <Input
-                      id="national_id"
-                      placeholder="01234567890"
-                      {...field}
-                      className={cn(errors.national_id && "border-destructive")}
-                    />
-                  )}
-                />
-                {errors.national_id && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.national_id.message}
-                  </p>
-                )}
-              </div>
-              {/* Full Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name">الاسم الكامل *</Label>
-                <Controller
-                  name="name"
-                  control={control}
-                  rules={{ required: "الاسم الكامل مطلوب" }}
-                  render={({ field }) => (
-                    <Input
-                      id="name"
-                      placeholder="مثال: أحمد محمد علي"
-                      {...field}
-                      className={cn(errors.name && "border-destructive")}
-                    />
-                  )}
-                />
-                {errors.name && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.name.message}
-                  </p>
-                )}
-              </div>
-            </div>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <FormControl fullWidth>
+            <InputLabel>الحالة الاجتماعية</InputLabel>
+            <Select
+              label="الحالة الاجتماعية"
+              value={personal.marital_status}
+              onChange={(e) => setPersonal((p) => ({ ...p, marital_status: e.target.value as "" | "ارمل" | "مطلق" | "متزوج" | "اعزب" }))}
+            >
+              <MenuItem value="اعزب">أعزب</MenuItem>
+              <MenuItem value="متزوج">متزوج</MenuItem>
+              <MenuItem value="مطلق">مطلق</MenuItem>
+              <MenuItem value="ارمل">أرمل</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        {personal.marital_status === "متزوج" && (
+          <Box sx={{ flex: "1 1 300px" }}>
+            <TextField
+              value={personal.number_of_children}
+              onChange={(e) =>
+                setPersonal((p) => ({ ...p, number_of_children: e.target.value === "" ? "" : Number(e.target.value) }))
+              }
+              fullWidth
+              type="number"
+              label="عدد الأطفال"
+            />
+          </Box>
+        )}
+      </Box>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني *</Label>
-                <Controller
-                  name="email"
-                  control={control}
-                  rules={{
-                    required: "البريد مطلوب",
-                    pattern: {
-                      value: /^\S+@\S+$/i,
-                      message: "صيغة بريد غير صحيحة",
-                    },
-                  }}
-                  render={({ field }) => (
-                    <Input
-                      id="email"
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={personal.children_in_school}
+            onChange={(e) =>
+              setPersonal((p) => ({ ...p, children_in_school: e.target.value === "" ? "" : Number(e.target.value) }))
+            }
+            fullWidth
+            type="number"
+            label="عدد الأطفال المسجلين في المدرسة"
+          />
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  const renderContact = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={contact.phone}
+            onChange={(e) => {
+              setContact((c) => ({ ...c, phone: e.target.value }));
+              // Clear field error when user starts typing
+              if (fieldErrors.phone) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.phone;
+                  return newErrors;
+                });
+              }
+            }}
+            fullWidth
+            label="رقم الهاتف الأساسي"
+            placeholder="09..."
+            error={!!fieldErrors.phone}
+            helperText={fieldErrors.phone}
+          />
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={contact.secondary_phone}
+            onChange={(e) => {
+              setContact((c) => ({ ...c, secondary_phone: e.target.value }));
+              // Clear field error when user starts typing
+              if (fieldErrors.secondary_phone) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.secondary_phone;
+                  return newErrors;
+                });
+              }
+            }}
+            fullWidth
+            label="رقم هاتف آخر"
+            placeholder="09..."
+            error={!!fieldErrors.secondary_phone}
+            helperText={fieldErrors.secondary_phone}
+          />
+        </Box>
+      </Box>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={contact.whatsapp_number}
+            onChange={(e) => {
+              setContact((c) => ({ ...c, whatsapp_number: e.target.value }));
+              // Clear field error when user starts typing
+              if (fieldErrors.whatsapp_number) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.whatsapp_number;
+                  return newErrors;
+                });
+              }
+            }}
+            fullWidth
+            label="رقم الواتساب"
+            placeholder="09..."
+            error={!!fieldErrors.whatsapp_number}
+            helperText={fieldErrors.whatsapp_number}
+          />
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={contact.email}
+            onChange={(e) => {
+              setContact((c) => ({ ...c, email: e.target.value }));
+              // Clear field error when user starts typing
+              if (fieldErrors.email) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.email;
+                  return newErrors;
+                });
+              }
+            }}
+            fullWidth
                       type="email"
+            label="البريد الإلكتروني *"
                       placeholder="teacher@example.com"
-                      {...field}
-                      className={cn(errors.email && "border-destructive")}
-                    />
-                  )}
-                />
-                {errors.email && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-              {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف (اختياري)</Label>
-                <Controller
-                  name="phone"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="phone"
-                      placeholder="09..."
-                      {...field}
-                      value={field.value ?? ""}
-                    />
-                  )}
-                />
-              </div>
-            </div>
+            error={!!fieldErrors.email}
+            helperText={fieldErrors.email}
+          />
+        </Box>
+      </Box>
+      <Box>
+        <TextField
+          value={contact.address}
+          onChange={(e) => setContact((c) => ({ ...c, address: e.target.value }))}
+          fullWidth
+          multiline
+          rows={3}
+          label="العنوان الحالي بالتفصيل"
+          placeholder="تفاصيل العنوان..."
+        />
+      </Box>
+    </Box>
+  );
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Gender */}
-              <div className="space-y-2">
-                <Label htmlFor="gender">الجنس *</Label>
-                <Controller
-                  name="gender"
-                  control={control}
-                  rules={{ required: "الجنس مطلوب" }}
-                  render={({ field }) => (
+  const renderEducation = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <FormControl fullWidth>
+            <InputLabel>أعلى مؤهل علمي</InputLabel>
                     <Select
-                      value={field.value ?? "ذكر"}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger
-                        id="gender"
-                        className={cn(errors.gender && "border-destructive")}
-                      >
-                        <SelectValue placeholder="اختر الجنس..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ذكر">ذكر</SelectItem>
-                        <SelectItem value="انثي">أنثى</SelectItem>
-                      </SelectContent>
+              label="أعلى مؤهل علمي"
+              value={education.highest_qualification}
+              onChange={(e) => setEducation((ed) => ({ ...ed, highest_qualification: e.target.value as "" | "جامعي" | "ثانوي" }))}
+            >
+              <MenuItem value="جامعي">جامعي</MenuItem>
+              <MenuItem value="ثانوي">ثانوي</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <FormControl fullWidth>
+            <InputLabel>الدرجة العلمية</InputLabel>
+            <Select
+              label="الدرجة العلمية"
+              value={education.academic_degree}
+              onChange={(e) => setEducation((ed) => ({ ...ed, academic_degree: e.target.value as "" | "دبلوم" | "بكالوريوس" | "ماجستير" | "دكتوراه" }))}
+            >
+              <MenuItem value="دبلوم">دبلوم</MenuItem>
+              <MenuItem value="بكالوريوس">بكالوريوس</MenuItem>
+              <MenuItem value="ماجستير">ماجستير</MenuItem>
+              <MenuItem value="دكتوراه">دكتوراه</MenuItem>
                     </Select>
-                  )}
-                />
-                {errors.gender && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.gender.message}
-                  </p>
-                )}
-              </div>
-              {/* Birth Date */}
-              <div className="space-y-2">
-                <Label htmlFor="birth_date">تاريخ الميلاد (اختياري)</Label>
-                <Controller
-                  name="birth_date"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="birth_date"
+          </FormControl>
+        </Box>
+      </Box>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={education.specialization}
+            onChange={(e) => setEducation((ed) => ({ ...ed, specialization: e.target.value }))}
+            fullWidth
+            label="التخصص"
+            placeholder="مثال: عربي - انجليزي - رياضيات"
+          />
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={education.qualification}
+            onChange={(e) => setEducation((ed) => ({ ...ed, qualification: e.target.value }))}
+            fullWidth
+            label="المؤهل العلمي *"
+            placeholder="مثال: بكالوريوس تربية"
+          />
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  const renderExperience = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={experience.hire_date}
+            onChange={(e) => setExperience((ex) => ({ ...ex, hire_date: e.target.value }))}
+            fullWidth
+            type="date"
+            label="تاريخ التعيين *"
+            InputLabelProps={{ shrink: true }}
+          />
+        </Box>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={experience.appointment_date}
+            onChange={(e) => setExperience((ex) => ({ ...ex, appointment_date: e.target.value }))}
+            fullWidth
                       type="date"
-                      {...field}
-                      value={field.value || ""}
-                      className={cn(
-                        "w-full",
-                        errors.birth_date && "border-destructive"
-                      )}
-                    />
-                  )}
-                />
-                {errors.birth_date && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.birth_date.message}
-                  </p>
-                )}
-              </div>
-            </div>
+            label="تاريخ التعيين بالمدرسة"
+            InputLabelProps={{ shrink: true }}
+          />
+        </Box>
+      </Box>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ flex: "1 1 300px" }}>
+          <TextField
+            value={experience.years_of_teaching_experience}
+            onChange={(e) =>
+              setExperience((ex) => ({
+                ...ex,
+                years_of_teaching_experience: e.target.value === "" ? "" : Number(e.target.value),
+              }))
+            }
+            fullWidth
+            type="number"
+            label="عدد سنوات الخبرة في التدريس"
+          />
+        </Box>
+      </Box>
+      <Box>
+        <TextField
+          value={experience.training_courses}
+          onChange={(e) => setExperience((ex) => ({ ...ex, training_courses: e.target.value }))}
+          fullWidth
+          multiline
+          rows={3}
+          label="الدورات التدريبية التربوية"
+          placeholder="اذكر الدورات التدريبية التي حصلت عليها..."
+        />
+      </Box>
+    </Box>
+  );
 
-            {/* Qualification & Hire Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="qualification">المؤهل العلمي *</Label>
-                <Controller
-                  name="qualification"
-                  control={control}
-                  rules={{ required: "المؤهل مطلوب" }}
-                  render={({ field }) => (
-                    <Input
-                      id="qualification"
-                      placeholder="مثال: بكالوريوس تربية"
-                      {...field}
-                      className={cn(
-                        errors.qualification && "border-destructive"
-                      )}
-                    />
-                  )}
-                />
-                {errors.qualification && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.qualification.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hire_date">تاريخ التعيين *</Label>
-                <Controller
-                  name="hire_date"
-                  control={control}
-                  rules={{ required: "تاريخ التعيين مطلوب" }}
-                  render={({ field }) => (
-                    <Input
-                      id="hire_date"
-                      type="date"
-                      {...field}
-                      value={field.value || ""}
-                      className={cn(
-                        "w-full",
-                        errors.hire_date && "border-destructive"
-                      )}
-                    />
-                  )}
-                />
-                {errors.hire_date && (
-                  <p className="text-xs text-destructive mt-1">
-                    {errors.hire_date.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="space-y-2">
-              <Label htmlFor="address">العنوان (اختياري)</Label>
-              <Controller
-                name="address"
-                control={control}
-                render={({ field }) => (
-                  <Textarea
-                    id="address"
-                    placeholder="تفاصيل العنوان..."
-                    {...field}
-                    value={field.value ?? ""}
-                    className="min-h-[80px]"
-                  />
-                )}
-              />
-            </div>
-
-            {/* Photo Upload */}
-            <div className="space-y-2">
-              <Label htmlFor="photo">الصورة الشخصية (اختياري)</Label>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20 rounded-md">
-                  <AvatarImage
-                    src={photoPreview ?? undefined}
-                    alt="صورة المدرس"
-                  />
-                  <AvatarFallback>
-                    <User className="h-10 w-10 text-muted-foreground" />
-                  </AvatarFallback>
+  const renderDocuments = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          الصورة الشخصية
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+          <Avatar src={photoPreview || undefined} sx={{ width: 80, height: 80 }}>
+            <Person />
                 </Avatar>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => photoInputRef.current?.click()}
-                >
-                  <Upload className="mr-2 h-4 w-4" />{" "}
+          <Box>
+            <Button variant="outlined" component="label" startIcon={<PhotoCamera />}>
                   {photoPreview ? "تغيير الصورة" : "اختيار صورة"}
-                </Button>
-                <Input
-                  id="photo"
+              <input
                   type="file"
-                  className="hidden"
+                hidden
                   ref={photoInputRef}
                   accept="image/*"
                   onChange={(e) =>
-                    setValue("photo", e.target.files?.[0] ?? null, {
-                      shouldValidate: true,
-                    })
+                  setDocuments({ photo: e.target.files?.[0] ?? null })
                   }
                 />
-                {photoPreview && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setValue("photo", null);
-                      setPhotoPreview(null);
-                      if (photoInputRef.current)
-                        photoInputRef.current.value = "";
-                    }}
-                  >
-                    <XCircle className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                )}
-              </div>
-              {errors.photo && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.photo.message}
-                </p>
-              )}
-            </div>
-
-            {/* Is Active Switch */}
-            <div className="flex items-center space-x-2 space-x-reverse pt-2">
-              <Controller
-                name="is_active"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    id="is_active"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
-              />
-              <Label htmlFor="is_active" className="cursor-pointer">
-                حالة الحساب نشطة
-              </Label>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button
-              type="submit"
-              disabled={isSubmitting || (isFetchingData && isEditMode)}
-              className="min-w-[120px]"
-            >
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Save className="ml-2 h-4 w-4" />{" "}
-                  {isEditMode ? "حفظ التعديلات" : "إضافة مدرس"}
-                </>
-              )}
             </Button>
-          </CardFooter>
-        </form>
+                {photoPreview && (
+              <IconButton
+                    onClick={() => {
+                  setDocuments({ photo: null });
+                      setPhotoPreview(null);
+                  if (photoInputRef.current) photoInputRef.current.value = "";
+                }}
+                color="error"
+              >
+                <Delete />
+              </IconButton>
+            )}
+          </Box>
+        </Box>
+      </Box>
+
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          المستندات المطلوبة
+        </Typography>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+          <Button
+            variant="outlined"
+            component="label"
+            startIcon={<Upload />}
+            disabled={isUploadingDocs}
+          >
+            {isUploadingDocs ? "جارٍ رفع الملفات..." : "رفع مستندات المدرس (PDF)"}
+            <input
+              type="file"
+              hidden
+              accept=".pdf"
+              multiple
+              onChange={async (e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length === 0) return;
+                if (!isEditMode || !teacherId) {
+                  enqueueSnackbar("يرجى حفظ بيانات المدرس أولاً قبل رفع المستندات", { variant: "warning" });
+                  return;
+                }
+                const formData = new FormData();
+                files.forEach((file) => formData.append("documents[]", file));
+                setIsUploadingDocs(true);
+                try {
+                  const { data } = await axiosClient.post(`/teachers/${teacherId}/documents`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+                  const paths: string[] = Array.isArray(data?.files) ? data.files : [];
+                  setUploadedDocPaths(paths);
+                  enqueueSnackbar("تم رفع المستندات بنجاح", { variant: "success" });
+                } catch (err: unknown) {
+                  const errorWithMessage = err as { response?: { data?: { message?: string } }; message?: string };
+                  const message =
+                    errorWithMessage.response?.data?.message || errorWithMessage.message || "فشل رفع المستندات";
+                  enqueueSnackbar(message, { variant: "error" });
+                } finally {
+                  setIsUploadingDocs(false);
+                  if (e.target) e.target.value = ""; // reset input
+                }
+              }}
+            />
+          </Button>
+          {isEditMode && (
+            <Button
+              variant="contained"
+              onClick={async () => {
+                if (!teacherId) return;
+                try {
+                  const { data } = await axiosClient.get(`/teachers/${teacherId}/documents`);
+                  const paths: string[] = Array.isArray(data?.files) ? data.files : [];
+                  setUploadedDocPaths(paths);
+                  setIsDocsDialogOpen(true);
+                } catch {
+                  enqueueSnackbar("تعذر تحميل قائمة المستندات", { variant: "error" });
+                }
+              }}
+            >
+              عرض المستندات
+            </Button>
+          )}
+          {uploadedDocPaths.length > 0 && (
+            <Typography variant="body2" color="text.secondary">
+              تم رفع {uploadedDocPaths.length} ملف(ات).
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      <Dialog open={isDocsDialogOpen} onClose={() => setIsDocsDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>مستندات المدرس</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 2 }}>
+            {uploadedDocPaths.length === 0 && (
+              <Typography variant="body2" color="text.secondary">لا توجد مستندات</Typography>
+            )}
+            {uploadedDocPaths.map((path) => {
+              const url = `${webUrl}storage/${path}`; // public disk URL
+              const name = path.split('/').pop() || path;
+              return (
+                <Card key={path} variant="outlined">
+                  <CardContent>
+                    <Typography variant="body2" sx={{ mb: 1 }}>{name}</Typography>
+                    <Button href={url} target="_blank" rel="noopener" size="small" variant="contained">
+                      فتح PDF
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsDocsDialogOpen(false)}>إغلاق</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+
+  const getStepContent = (step: number) => {
+    switch (step) {
+      case 0:
+        return renderPersonal();
+      case 1:
+        return renderContact();
+      case 2:
+        return renderEducation();
+      case 3:
+        return renderExperience();
+      case 4:
+        return renderDocuments();
+      default:
+        return null;
+    }
+  };
+
+  // Loading & error states
+  if (isFetchingData && isEditMode) {
+    return (
+      <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }} dir="rtl">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }} dir="rtl">
+            <Button
+        variant="outlined"
+        startIcon={<ArrowBack />}
+        onClick={() => navigate(isEditMode ? `/teachers/${teacherId}` : "/teachers/list")}
+        sx={{ mb: 3 }}
+      >
+        {isEditMode ? "العودة لصفحة المدرس" : "العودة للقائمة"}
+      </Button>
+
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          {isEditMode ? `تعديل بيانات المدرس: ${currentTeacher?.data.name || ""}` : "إضافة مدرس جديد"}
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          الرجاء ملء الحقول المطلوبة لـ {isEditMode ? "تحديث" : "إضافة"} المدرس.
+        </Typography>
+
+            {formSubmitError && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {formSubmitError}
+              </Alert>
+            )}
+
+        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+          {steps.map((label, index) => (
+            <Step key={label}>
+              <StepLabel onClick={() => handleStepClick(index)}>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+
+        <Card>
+          <CardContent>{getStepContent(activeStep)}</CardContent>
+          <CardActions sx={{ justifyContent: "space-between", p: 3 }}>
+            <Box>
+              <Button disabled={activeStep === 0} onClick={handleBack} sx={{ mr: 1 }}>
+                السابق
+              </Button>
+              <Button variant="contained" onClick={handleNext} disabled={activeStep === steps.length - 1}>
+                التالي
+                </Button>
+            </Box>
+            {activeStep === steps.length - 1 && (
+              <Button type="button" variant="contained" onClick={onSubmit} startIcon={<Save />}>
+                  {isEditMode ? "حفظ التعديلات" : "إضافة مدرس"}
+                  </Button>
+              )}
+          </CardActions>
       </Card>
-    </motion.div>
+
+        <Box sx={{ mt: 3, display: "flex", alignItems: "center" }}>
+          <FormControlLabel
+            control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />}
+            label="حالة الحساب نشطة"
+          />
+        </Box>
+      </Paper>
+    </Box>
   );
 };
 

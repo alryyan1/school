@@ -5,7 +5,7 @@ import { School } from './school';
 import { Student } from './student';
 
 export type EnrollmentStatus = 'active' | 'transferred' | 'graduated' | 'withdrawn';
-export type EnrollmentType = 'regular' | 'scholarship';
+export type EnrollmentType = 'regular' | 'scholarship' | 'free';
 
 export type Enrollment = {
     id: number | string;

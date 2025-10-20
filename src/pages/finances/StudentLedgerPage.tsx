@@ -54,7 +54,12 @@ const StudentLedgerPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createLedgerEntry(formData);
+      const payload = {
+        ...formData,
+        payment_method: formData.transaction_type === 'payment' ? formData.payment_method : null,
+      } as any;
+
+      await createLedgerEntry(payload);
       setShowAddForm(false);
       setFormData({
         enrollment_id: Number(enrollmentId),
@@ -445,23 +450,25 @@ const StudentLedgerPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="payment_method">طريقة الدفع</Label>
-                  <Select
-                    value={formData.payment_method}
-                    onValueChange={(value) => setFormData({ ...formData, payment_method: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">نقداً</SelectItem>
-                      <SelectItem value="bankak">بنكك</SelectItem>
-                      <SelectItem value="Fawri">فوري</SelectItem>
-                      <SelectItem value="OCash">أوكاش</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {formData.transaction_type === 'payment' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="payment_method">طريقة الدفع</Label>
+                    <Select
+                      value={formData.payment_method}
+                      onValueChange={(value) => setFormData({ ...formData, payment_method: value as any })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">نقداً</SelectItem>
+                        <SelectItem value="bankak">بنكك</SelectItem>
+                        <SelectItem value="Fawri">فوري</SelectItem>
+                        <SelectItem value="OCash">أوكاش</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

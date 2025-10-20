@@ -12,6 +12,7 @@ import { useGradeLevelStore } from "@/stores/gradeLevelStore";
 import { useClassroomStore } from "@/stores/classroomStore";
 import { User } from "lucide-react";
 import { Student } from "@/types/student";
+import { EnrollmentType } from "@/types/enrollment";
 import { useLedgerStore } from "@/stores/ledgerStore";
 import { webUrl } from "@/constants";
 
@@ -35,6 +36,8 @@ const RevenuesPage: React.FC = () => {
   const [availableGradeLevels, setAvailableGradeLevels] = useState<typeof gradeLevels>([]);
   const [ledgerSummaryMap, setLedgerSummaryMap] = useState<Record<number, { total_fees: number; total_payments: number; total_discounts?: number; total_refunds?: number; total_adjustments?: number }>>({});
   const [onlyDiscounts, setOnlyDiscounts] = useState<boolean>(false);
+  const [onlyNoPayments, setOnlyNoPayments] = useState<boolean>(false);
+  const [enrollmentType, setEnrollmentType] = useState<EnrollmentType | null>(null);
   const [perPage, setPerPage] = useState<number>(30);
   const [page, setPage] = useState<number>(1);
   const [search, setSearch] = useState<string>("");
@@ -96,13 +99,16 @@ const RevenuesPage: React.FC = () => {
     if (schoolId && schoolId !== null) filters.school_id = schoolId;
     if (gradeLevelId && gradeLevelId !== null) filters.grade_level_id = gradeLevelId;
     if (classroomId && classroomId !== null) filters.classroom_id = classroomId;
+    if (search && search.trim() !== "") filters.search = search.trim();
+    if (onlyNoPayments) filters.only_no_payments = true;
+    if (enrollmentType) filters.enrollment_type = enrollmentType;
     return filters;
-  }, [schoolId, gradeLevelId, classroomId, perPage, page]);
+  }, [schoolId, gradeLevelId, classroomId, perPage, page, search, onlyNoPayments, enrollmentType]);
 
-  // Reset to first page on filter/perPage change
+  // Reset to first page on filter/perPage/search change
   useEffect(() => {
     setPage(1);
-  }, [schoolId, gradeLevelId, classroomId, perPage]);
+  }, [schoolId, gradeLevelId, classroomId, perPage, search, onlyNoPayments, enrollmentType]);
 
   // fetch students on filter changes
   useEffect(() => {
@@ -148,16 +154,8 @@ const RevenuesPage: React.FC = () => {
     })();
   }, [students, getLedgerSummary]);
 
-  // Local search filter (by student name or first enrollment id)
-  const filteredStudents = students.filter((s) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    const name = (s as unknown as { student_name?: string }).student_name || "";
-    const enrollmentId = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
-    const matchName = name.toLowerCase().includes(q);
-    const matchEnrollment = enrollmentId ? String(enrollmentId).includes(q) : false;
-    return matchName || matchEnrollment;
-  });
+  // Server-side search is applied; keep client list as-is
+  const filteredStudents = students;
 
   const totalRevenue = students.reduce((sum, s) => {
     const enrollments = (s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [];
@@ -175,6 +173,16 @@ const RevenuesPage: React.FC = () => {
     });
     const pdfUrl = `${webUrl}reports/revenues?${params.toString()}`;
     window.open(pdfUrl, '_blank');
+  };
+
+  const handleExportExcel = async () => {
+    const params = new URLSearchParams();
+    const filters = buildFilters();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+    });
+    const excelUrl = `${webUrl}reports/revenues-excel?${params.toString()}`;
+    window.open(excelUrl, '_blank');
   };
 
   const handleStudentClick = (student: Student) => {
@@ -208,13 +216,20 @@ const RevenuesPage: React.FC = () => {
               >
                 خصومات فقط
               </Button>
+              <Button
+                variant={onlyNoPayments ? "default" : "outline"}
+                onClick={() => setOnlyNoPayments(v => !v)}
+              >
+                غير مدفوع
+              </Button>
               <Button variant="outline" onClick={handleExportPdf}>تصدير PDF</Button>
+              <Button variant="outline" onClick={handleExportExcel}>تصدير Excel</Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3 mb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
               {/* School filter */}
               <Select value={schoolId ? String(schoolId) : ""} onValueChange={(v) => { 
                 if (v === " ") {
@@ -280,6 +295,25 @@ const RevenuesPage: React.FC = () => {
                 </SelectContent>
               </Select>
 
+              {/* Enrollment type filter */}
+              <Select value={enrollmentType || ""} onValueChange={(v) => {
+                if (v === " ") {
+                  setEnrollmentType(null);
+                } else {
+                  setEnrollmentType(v as EnrollmentType);
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="نوع التسجيل" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=" ">جميع الأنواع</SelectItem>
+                  <SelectItem value="regular">عادي</SelectItem>
+                  <SelectItem value="scholarship">منحة</SelectItem>
+                  <SelectItem value="free">إعفاء</SelectItem>
+                </SelectContent>
+              </Select>
+
               {/* Per page selector */}
               <Select value={String(perPage)} onValueChange={(v) => setPerPage(Number(v))}>
                 <SelectTrigger>
@@ -296,8 +330,8 @@ const RevenuesPage: React.FC = () => {
               </Select>
             </div>
                           <div className="flex items-center justify-between">
-                              <div className="text-sm text-muted-foreground">عدد الطلاب: {numberWithCommas(totalStudents)}</div>
-              <div className="text-sm text-muted-foreground">اجمالي متوقع: {numberWithCommas(totalRevenue)} جنيه</div>
+                              {/* <div className="text-sm text-muted-foreground">عدد الطلاب: {numberWithCommas(totalStudents)}</div> */}
+              {/* <div className="text-sm text-muted-foreground">اجمالي متوقع: {numberWithCommas(totalRevenue)} جنيه</div> */}
               </div>
           </div>
           <div className="border rounded-md overflow-x-auto">
@@ -336,7 +370,11 @@ const RevenuesPage: React.FC = () => {
                       className={`cursor-pointer transition-colors ${(() => {
                         const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
                         const hasDiscount = eid ? Number(ledgerSummaryMap[eid]?.total_discounts || 0) > 0 : false;
-                        return hasDiscount ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-muted/50';
+                        const hasNoPayments = eid ? Number(ledgerSummaryMap[eid]?.total_payments || 0) === 0 : false;
+                        
+                        if (hasDiscount) return 'bg-amber-50 hover:bg-amber-100';
+                        if (hasNoPayments) return 'bg-red-50 hover:bg-red-100';
+                        return 'hover:bg-muted/50';
                       })()}`}
                       onClick={() => handleStudentClick(s)}
                     >
