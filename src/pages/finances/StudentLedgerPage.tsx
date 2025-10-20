@@ -10,10 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLedgerStore } from "@/stores/ledgerStore";
 import { CreateLedgerEntryRequest } from "@/types/ledger";
-import { Plus, Calculator, CreditCard, FileText, DollarSign, ArrowRight, User, Hash, Printer } from "lucide-react";
+import { Plus, Calculator, CreditCard, FileText, DollarSign, ArrowRight, User, Hash, Printer, Trash2 } from "lucide-react";
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { webUrl } from "@/constants";
+import { deleteLedgerEntry } from "@/api/ledgerDeletions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 // Helper function to format numbers with thousands separator
 const numberWithCommas = (x: number): string => {
@@ -41,6 +51,12 @@ const StudentLedgerPage: React.FC = () => {
     reference_number: '',
     payment_method: 'cash',
   });
+
+  // Delete dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  const [deletionReason, setDeletionReason] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (enrollmentId) {
@@ -228,6 +244,46 @@ const StudentLedgerPage: React.FC = () => {
       printWindow.focus();
       printWindow.print();
     }
+  };
+
+  const handleDeleteClick = (entryId: number) => {
+    setEntryToDelete(entryId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!entryToDelete || !deletionReason.trim()) {
+      alert('يرجى إدخال سبب الحذف');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteLedgerEntry(entryToDelete, deletionReason);
+      
+      // Refresh the ledger
+      if (enrollmentId) {
+        await fetchEnrollmentLedger(Number(enrollmentId));
+      }
+      
+      // Close dialog and reset state
+      setShowDeleteDialog(false);
+      setEntryToDelete(null);
+      setDeletionReason('');
+      
+      alert('تم حذف القيد بنجاح');
+    } catch (error: any) {
+      console.error('Failed to delete ledger entry:', error);
+      alert('فشل حذف القيد: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setEntryToDelete(null);
+    setDeletionReason('');
   };
 
   if (loading) {
@@ -554,17 +610,28 @@ const StudentLedgerPage: React.FC = () => {
                       {entry.created_by?.name || '-'}
                     </TableCell>
                     <TableCell className="text-center">
-                      {entry.transaction_type === 'payment' && (
+                      <div className="flex items-center justify-center gap-2">
+                        {entry.transaction_type === 'payment' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePrintReceipt(entry)}
+                            className="flex items-center gap-2 text-xs"
+                          >
+                            <Printer className="w-3 h-3" />
+                            طباعة إيصال
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handlePrintReceipt(entry)}
-                          className="flex items-center gap-2 text-xs"
+                          onClick={() => handleDeleteClick(entry.id)}
+                          className="flex items-center gap-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
-                          <Printer className="w-3 h-3" />
-                          طباعة إيصال
+                          <Trash2 className="w-3 h-3" />
+                          حذف
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -573,6 +640,51 @@ const StudentLedgerPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[500px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تأكيد حذف القيد</DialogTitle>
+            <DialogDescription>
+              هذا الإجراء لا يمكن التراجع عنه. سيتم تسجيل هذا الحذف في سجل الحذف.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="deletion_reason">سبب الحذف *</Label>
+              <Textarea
+                id="deletion_reason"
+                placeholder="اكتب سبب حذف هذا القيد..."
+                value={deletionReason}
+                onChange={(e) => setDeletionReason(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting || !deletionReason.trim()}
+            >
+              {isDeleting ? 'جاري الحذف...' : 'تأكيد الحذف'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

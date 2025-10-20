@@ -14,6 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Settings, 
   Type, 
@@ -27,6 +28,7 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 export interface UserPreferences {
   // Font settings
   fontSize: number;
+  fontFamily?: 'cairo' | 'tajawal';
   
   // Theme settings
   darkTheme: boolean;
@@ -45,6 +47,7 @@ const UserPreferencesDialog: React.FC<UserPreferencesDialogProps> = ({
   const { preferences, savePreferences, resetPreferences } = useUserPreferences();
   const [localPreferences, setLocalPreferences] = useState<UserPreferences>({
     fontSize: preferences.fontSize || 16,
+    fontFamily: preferences.fontFamily || 'cairo',
     darkTheme: preferences.darkTheme || false,
   });
   const [hasChanges, setHasChanges] = useState(false);
@@ -55,6 +58,7 @@ const UserPreferencesDialog: React.FC<UserPreferencesDialogProps> = ({
     if (open) {
       setLocalPreferences({
         fontSize: preferences.fontSize || 16,
+        fontFamily: preferences.fontFamily || 'cairo',
         darkTheme: preferences.darkTheme || false,
       });
       setHasChanges(false);
@@ -65,10 +69,12 @@ const UserPreferencesDialog: React.FC<UserPreferencesDialogProps> = ({
   useEffect(() => {
     const currentPrefs = {
       fontSize: preferences.fontSize || 16,
+      fontFamily: preferences.fontFamily || 'cairo',
       darkTheme: preferences.darkTheme || false,
     };
     setHasChanges(
       localPreferences.fontSize !== currentPrefs.fontSize ||
+      localPreferences.fontFamily !== currentPrefs.fontFamily ||
       localPreferences.darkTheme !== currentPrefs.darkTheme
     );
   }, [localPreferences, preferences]);
@@ -79,6 +85,7 @@ const UserPreferencesDialog: React.FC<UserPreferencesDialogProps> = ({
       const success = savePreferences({
         ...preferences,
         fontSize: localPreferences.fontSize,
+        fontFamily: localPreferences.fontFamily || 'cairo',
         darkTheme: localPreferences.darkTheme,
       });
       if (success) {
@@ -145,6 +152,21 @@ const UserPreferencesDialog: React.FC<UserPreferencesDialogProps> = ({
                     {localPreferences.fontSize}px
                   </Badge>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fontFamily">نوع الخط</Label>
+                <Select
+                  value={localPreferences.fontFamily || 'cairo'}
+                  onValueChange={(value) => setLocalPreferences(prev => ({ ...prev, fontFamily: value as 'cairo' | 'tajawal' }))}
+                >
+                  <SelectTrigger id="fontFamily" className="w-full">
+                    <SelectValue placeholder="اختر الخط" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cairo">Cairo</SelectItem>
+                    <SelectItem value="tajawal">Tajawal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

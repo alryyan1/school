@@ -56,6 +56,7 @@ import RevenuesPage from '@/pages/finances/RevenuesPage';
 import ExpensesPage from '@/pages/finances/ExpensesPage';
 import ExpenseCategoriesPage from '@/pages/finances/ExpenseCategoriesPage';
 import StudentLedgerPage from '@/pages/finances/StudentLedgerPage';
+import StudentLedgerDeletionsPage from '@/pages/finances/StudentLedgerDeletionsPage';
 
 // --- Exam Pages ---
 import ExamList from '@/pages/exams/ExamList';                         // Adjust path
@@ -250,6 +251,7 @@ const router = createHashRouter([
                        { path: 'expense-categories', element: <ExpenseCategoriesPage /> },
                        { path: 'due-installments', element: <DueInstallmentsPage /> },
                        { path: 'student-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },
+                       { path: 'ledger-deletions', element: <StudentLedgerDeletionsPage /> },
                   ]
              },
 

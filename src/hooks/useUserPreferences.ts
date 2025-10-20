@@ -5,6 +5,7 @@ import { UserPreferences } from '@/components/UserPreferencesDialog';
 const defaultPreferences: UserPreferences = {
   fontSize: 16,
   darkTheme: false,
+  fontFamily: 'cairo',
 };
 
 export const useUserPreferences = () => {
@@ -17,10 +18,11 @@ export const useUserPreferences = () => {
       const savedPrefs = localStorage.getItem('userPreferences');
       if (savedPrefs) {
         const parsedPrefs = JSON.parse(savedPrefs);
-        // Only load fontSize and darkTheme, ignore other properties
-        const validPrefs = {
+        // Load known preferences with fallbacks
+        const validPrefs: UserPreferences = {
           fontSize: parsedPrefs.fontSize || defaultPreferences.fontSize,
           darkTheme: parsedPrefs.darkTheme || defaultPreferences.darkTheme,
+          fontFamily: parsedPrefs.fontFamily || defaultPreferences.fontFamily,
         };
         setPreferences(validPrefs);
       }
@@ -34,10 +36,11 @@ export const useUserPreferences = () => {
   // Save preferences to localStorage
   const savePreferences = useCallback((newPreferences: UserPreferences) => {
     try {
-      // Only save fontSize and darkTheme
-      const preferencesToSave = {
+      // Persist supported preferences
+      const preferencesToSave: UserPreferences = {
         fontSize: newPreferences.fontSize,
         darkTheme: newPreferences.darkTheme,
+        fontFamily: newPreferences.fontFamily || defaultPreferences.fontFamily,
       };
       localStorage.setItem('userPreferences', JSON.stringify(preferencesToSave));
       setPreferences(preferencesToSave);
@@ -65,7 +68,14 @@ export const useUserPreferences = () => {
   const applyPreferences = useCallback((prefs: UserPreferences) => {
     // Apply font size
     document.documentElement.style.fontSize = `${prefs.fontSize}px`;
-    
+
+    // Apply font family via CSS variable so it cascades everywhere
+    const resolvedFontStack =
+      prefs.fontFamily === 'tajawal'
+        ? '"Tajawal", Cairo, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif'
+        : '"Cairo", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif';
+    document.documentElement.style.setProperty('--app-font', resolvedFontStack);
+
     // Apply dark theme
     if (prefs.darkTheme) {
       document.documentElement.classList.add('dark');

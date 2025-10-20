@@ -310,6 +310,7 @@ const SidebarContent: React.FC<{
                             { label: 'المصروفات', href: '/finances/expenses', icon: Receipt },
                             { label: 'فئات المصروفات', href: '/finances/expense-categories', icon: CreditCard },
                             { label: 'الإيرادات', href: '/finances/revenues', icon: DollarSign },
+                            { label: 'سجل حذف القيود', href: '/finances/ledger-deletions', icon: History },
                             // { label: 'الأقساط المستحقة', href: '/finances/due-installments', icon: CreditCard },
                         ];
                         if (financeSubItems.length === 0) return null;
@@ -353,11 +354,11 @@ const SidebarContent: React.FC<{
                                     variant={currentPathname.startsWith('/enrollments') && !isCollapsed && openEnrollments ? 'secondary' : 'ghost'}
                                     className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
                                     onClick={() => setOpenEnrollments(!openEnrollments)}
-                                    title="التسجيلات"
+                                    title="السجلات"
                                 >
                                     <ClipboardList className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
                                     {!isCollapsed && (
-                                        <span className="truncate flex-1 text-right">التسجيلات</span>
+                                        <span className="truncate flex-1 text-right">السجلات</span>
                                     )}
                                     {!isCollapsed && (openEnrollments ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
                                 </Button>

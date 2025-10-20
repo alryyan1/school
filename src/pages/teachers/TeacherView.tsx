@@ -18,7 +18,8 @@ import {
   CardHeader,
   CardContent,
 } from '@mui/material';
-import { ArrowBack, Edit, CalendarMonth, Mail, Phone, Place, School, Work, Person } from '@mui/icons-material';
+import { ArrowBack, Edit, CalendarMonth, Mail, Phone, Place, School, Work, Person, PictureAsPdf } from '@mui/icons-material';
+import { webUrl } from '@/constants';
 import { useTeacherStore } from '@/stores/teacherStore';
 
 dayjs.locale('ar');
@@ -109,6 +110,13 @@ const TeacherView: React.FC = () => {
           <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate('/teachers/list')}>
                             العودة للقائمة
                         </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PictureAsPdf />}
+            onClick={() => window.open(`${webUrl}teachers/${t.id}/pdf`, '_blank')}
+          >
+            عرض PDF
+          </Button>
           <Button variant="contained" startIcon={<Edit />} onClick={() => navigate(`/teachers/${t.id}/edit`)}>
                             تعديل
                         </Button>
