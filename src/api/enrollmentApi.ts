@@ -88,4 +88,15 @@ export const EnrollmentApi = {
     axiosClient.put<ResourceResponse>(`/enrollments/${enrollmentId}/change-type`, {
       enrollment_type: enrollmentType,
     }),
+
+  // Update deportation subscription
+  updateDeportation: (
+    enrollmentId: number,
+    data: {
+      deportation: boolean;
+      deportation_type?: 'داخلي' | 'خارجي' | null;
+      deportation_path_id?: number | null;
+    }
+  ) =>
+    axiosClient.put<ResourceResponse>(`/enrollments/${enrollmentId}/deportation`, data),
 };

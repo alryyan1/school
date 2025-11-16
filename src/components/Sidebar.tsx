@@ -14,7 +14,7 @@ import {
     LayoutDashboard, Building2, Users, GraduationCap, Settings,
     Milestone, Library, Network,
     School, KeyRound, DollarSign, Receipt, CreditCard,
-    ClipboardList, History, Send
+    ClipboardList, History
 } from 'lucide-react';
 
 // Define Menu Item Structure
@@ -63,7 +63,6 @@ const SidebarContent: React.FC<{
     const [openTeachers, setOpenTeachers] = useState(false);
     const [openSchools, setOpenSchools] = useState(false);
     const [openFinances, setOpenFinances] = useState(false);
-    const [openWhatsappBulk, setOpenWhatsappBulk] = useState(false);
     const [openEnrollments, setOpenEnrollments] = useState(false);
 
     useEffect(() => {
@@ -73,10 +72,6 @@ const SidebarContent: React.FC<{
         setOpenSchools(currentPathname.startsWith('/schools'));
         setOpenFinances(currentPathname.startsWith('/finances'));
         setOpenEnrollments(currentPathname.startsWith('/enrollments') || currentPathname.startsWith('/enrollment-logs'));
-        setOpenWhatsappBulk(
-            currentPathname.startsWith('/teachers/whatsapp-bulk') ||
-            currentPathname.startsWith('/students/whatsapp-bulk')
-        );
     }, [currentPathname]);
 
     const NavLink: React.FC<{ item: NavItem; isCollapsed: boolean; isSubItem?: boolean; onClick?: () => void }> =
@@ -148,11 +143,6 @@ const SidebarContent: React.FC<{
 
                     {/* Students Section */}
                     {(() => {
-                        const whatsappBulkSubItems: NavItem[] = [
-                            { label: 'للمعلمين', href: '/teachers/whatsapp-bulk', icon: Send },
-                            { label: 'للطلاب', href: '/students/whatsapp-bulk', icon: Send },
-                        ];
-                        
                         const studentSubItems: NavItem[] = [
                             { label: 'لوحة الطلاب', href: '/students', icon: Users },
                             { label: 'قائمة الطلاب', href: '/students/list', icon: Users },
@@ -254,57 +244,8 @@ const SidebarContent: React.FC<{
                         );
                     })()}
 
-                    {/* WhatsApp Bulk Parent */}
-                    {(() => {
-                        const whatsappBulkParent: NavItem = {
-                            label: 'إرسال واتساب جماعي',
-                            href: '/whatsapp-bulk',
-                            icon: Send,
-                            subItems: [
-                                { label: 'للمعلمين', href: '/teachers/whatsapp-bulk', icon: Send },
-                                { label: 'للطلاب', href: '/students/whatsapp-bulk', icon: Send },
-                            ]
-                        };
-
-                        return (
-                            <div>
-                                <Button
-                                    variant={openWhatsappBulk ? 'secondary' : 'ghost'}
-                                    className={cn('w-full justify-start h-9 sm:h-10 text-sm sm:text-base', isCollapsed ? 'px-2' : 'px-3')}
-                                    onClick={() => setOpenWhatsappBulk(!openWhatsappBulk)}
-                                    title={whatsappBulkParent.label}
-                                >
-                                    <Send className={cn('h-4 w-4 sm:h-5 sm:w-5', isCollapsed ? '' : 'ml-2')} />
-                                    {!isCollapsed && (
-                                        <span className="truncate flex-1 text-right">{whatsappBulkParent.label}</span>
-                                    )}
-                                    {!isCollapsed && (openWhatsappBulk ? <ChevronLeft className="h-4 w-4 mr-auto rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 mr-auto rotate-[-90deg]" />)}
-                                </Button>
-                                <AnimatePresence>
-                                    {!isCollapsed && openWhatsappBulk && (
-                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden grid gap-1 mt-1">
-                                            {whatsappBulkParent.subItems!.map((item) => (
-                                                <NavLink key={item.href} item={item} isCollapsed={isCollapsed} isSubItem onClick={onNavLinkClick} />
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        );
-                    })()}
-
                     {/* Finances Section */}
                     {(() => {
-                        const whatsappBulkParent: NavItem = {
-                            label: 'إرسال واتساب جماعي',
-                            href: '/whatsapp-bulk',
-                            icon: Send,
-                            subItems: [
-                                { label: 'للمعلمين', href: '/teachers/whatsapp-bulk', icon: Send },
-                                { label: 'للطلاب', href: '/students/whatsapp-bulk', icon: Send },
-                            ]
-                        };
-
                         const financeSubItems: NavItem[] = [
                             { label: 'لوحة المالية', href: '/finances', icon: DollarSign },
                             { label: 'المصروفات', href: '/finances/expenses', icon: Receipt },

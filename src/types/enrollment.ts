@@ -7,6 +7,8 @@ import { Student } from './student';
 export type EnrollmentStatus = 'active' | 'transferred' | 'graduated' | 'withdrawn';
 export type EnrollmentType = 'regular' | 'scholarship' | 'free';
 
+export type DeportationType = 'داخلي' | 'خارجي';
+
 export type Enrollment = {
     id: number | string;
     student_id: number | string;
@@ -18,6 +20,9 @@ export type Enrollment = {
     enrollment_type: EnrollmentType;
     fees: number;
     discount: number;
+    deportation?: boolean;
+    deportation_type?: DeportationType | null;
+    deportation_path_id?: number | null;
     created_at?: string;
     updated_at?: string;
     

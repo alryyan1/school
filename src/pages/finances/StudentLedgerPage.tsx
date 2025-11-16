@@ -1,6 +1,6 @@
 // src/pages/finances/StudentLedgerPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLedgerStore } from "@/stores/ledgerStore";
+import { useDeportationLedgerStore } from "@/stores/deportationLedgerStore";
 import { CreateLedgerEntryRequest } from "@/types/ledger";
 import { Plus, Calculator, CreditCard, FileText, DollarSign, ArrowRight, User, Hash, Printer, Trash2 } from "lucide-react";
 import { format } from 'date-fns';
@@ -33,13 +34,22 @@ const numberWithCommas = (x: number): string => {
 const StudentLedgerPage: React.FC = () => {
   const { enrollmentId, studentName } = useParams<{ enrollmentId: string; studentName: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Detect if this is a deportation ledger route
+  const isDeportationLedger = location.pathname.includes('student-deportation-ledger');
+  
+  // Use the appropriate store based on route
+  const regularLedgerStore = useLedgerStore();
+  const deportationLedgerStore = useDeportationLedgerStore();
+  
   const { 
     currentLedger, 
     loading, 
     error, 
     fetchEnrollmentLedger, 
     createLedgerEntry 
-  } = useLedgerStore();
+  } = isDeportationLedger ? deportationLedgerStore : regularLedgerStore;
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState<CreateLedgerEntryRequest>({
@@ -94,7 +104,9 @@ const StudentLedgerPage: React.FC = () => {
   const handleGeneratePdf = () => {
     if (enrollmentId) {
       // Simply open the PDF URL in a new tab (web route, no auth required)
-      const pdfUrl = `${webUrl}student-ledgers/enrollment/${enrollmentId}/pdf`;
+      const pdfUrl = isDeportationLedger 
+        ? `${webUrl}student-deportation-ledgers/enrollment/${enrollmentId}/pdf`
+        : `${webUrl}student-ledgers/enrollment/${enrollmentId}/pdf`;
       window.open(pdfUrl, '_blank');
     }
   };
@@ -322,7 +334,9 @@ const StudentLedgerPage: React.FC = () => {
           <ArrowRight className="w-4 h-4" />
           العودة
         </Button>
-        <h1 className="text-2xl font-bold text-primary">دفتر حسابات الطالب</h1>
+        <h1 className="text-2xl font-bold text-primary">
+          {isDeportationLedger ? 'دفتر حسابات الترحيل' : 'دفتر حسابات الطالب'}
+        </h1>
       </div>
 
       {/* Student Info Card */}

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, ArrowRightLeft } from 'lucide-react';
+import { Wallet, ArrowRightLeft, Users, BookOpen } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const FinanceDashboard: React.FC = () => {
@@ -24,6 +24,18 @@ const FinanceDashboard: React.FC = () => {
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
+              <h2 className="text-lg font-semibold">تسجيلات الترحيل</h2>
+              <p className="text-sm text-muted-foreground mt-1">ايرادات رسوم الطلاب المسجلين في الترحيل</p>
+              <Button asChild className="mt-4" variant="outline">
+                <RouterLink to="/finances/deportation-enrollments">عرض تسجيلات الترحيل</RouterLink>
+              </Button>
+            </div>
+            <Users className="h-12 w-12 text-blue-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
               <h2 className="text-lg font-semibold">المصروفات</h2>
               <p className="text-sm text-muted-foreground mt-1">ادارة المصروفات وسجل المدفوعات</p>
               <Button asChild className="mt-4" variant="outline">
@@ -31,6 +43,18 @@ const FinanceDashboard: React.FC = () => {
               </Button>
             </div>
             <ArrowRightLeft className="h-12 w-12 text-amber-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">دفتر الحسابات</h2>
+              <p className="text-sm text-muted-foreground mt-1">عرض جميع المعاملات حسب طريقة الدفع</p>
+              <Button asChild className="mt-4" variant="outline">
+                <RouterLink to="/finances/ledger">عرض دفتر الحسابات</RouterLink>
+              </Button>
+            </div>
+            <BookOpen className="h-12 w-12 text-purple-600" />
           </CardContent>
         </Card>
       </div>

@@ -53,10 +53,12 @@ import UserList from '@/pages/settings/UserList';                       // Adjus
 import DueInstallmentsPage from '@/pages/finances/DueInstallmentsPage';   // Adjust path
 import FinanceDashboard from '@/pages/finances/FinanceDashboard';
 import RevenuesPage from '@/pages/finances/RevenuesPage';
+import DeportationEnrollmentsPage from '@/pages/finances/DeportationEnrollmentsPage';
 import ExpensesPage from '@/pages/finances/ExpensesPage';
 import ExpenseCategoriesPage from '@/pages/finances/ExpenseCategoriesPage';
 import StudentLedgerPage from '@/pages/finances/StudentLedgerPage';
 import StudentLedgerDeletionsPage from '@/pages/finances/StudentLedgerDeletionsPage';
+import LedgerPage from '@/pages/finances/LedgerPage';
 
 // --- Exam Pages ---
 import ExamList from '@/pages/exams/ExamList';                         // Adjust path
@@ -247,11 +249,14 @@ const router = createHashRouter([
                   children: [
                        { index: true, element: <FinanceDashboard />},
                        { path: 'revenues', element: <RevenuesPage /> },
+                       { path: 'deportation-enrollments', element: <DeportationEnrollmentsPage /> },
                        { path: 'expenses', element: <ExpensesPage /> },
                        { path: 'expense-categories', element: <ExpenseCategoriesPage /> },
                        { path: 'due-installments', element: <DueInstallmentsPage /> },
                        { path: 'student-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },
+                       { path: 'student-deportation-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },
                        { path: 'ledger-deletions', element: <StudentLedgerDeletionsPage /> },
+                       { path: 'ledger', element: <LedgerPage /> },
                   ]
              },
 

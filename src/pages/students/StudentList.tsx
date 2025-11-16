@@ -24,6 +24,7 @@ import { useSchoolStore } from "@/stores/schoolStore";
 import { Gender, Student } from "@/types/student";
 import { EnrollmentType } from "@/types/enrollment";
 import { EnrollmentApi } from "@/api/enrollmentApi";
+import { StudentApi } from "@/api/studentApi";
 import { useSnackbar } from "notistack";
 
 import { useNavigate } from "react-router-dom";
@@ -311,6 +312,30 @@ const StudentList = () => {
             const errorMessage = error.response?.data?.message || 'حدث خطأ أثناء تغيير نوع التسجيل';
             enqueueSnackbar(errorMessage, { variant: 'error' });
           });
+        break;
+      }
+      case 'delete': {
+        // Delete the student
+        StudentApi.delete(student.id)
+          .then(() => {
+            enqueueSnackbar('تم حذف الطالب بنجاح', { variant: 'success' });
+            // Refresh the students list
+            fetchStudents();
+          })
+          .catch((error) => {
+            console.error('Error deleting student:', error);
+            const errorMessage = error.response?.data?.message || 'حدث خطأ أثناء حذف الطالب';
+            enqueueSnackbar(errorMessage, { variant: 'error' });
+          });
+        break;
+      }
+      case 'transport-subscription': {
+        // This is now handled in the dialog itself
+        break;
+      }
+      case 'refresh': {
+        // Refresh the student data
+        fetchStudents();
         break;
       }
     }
