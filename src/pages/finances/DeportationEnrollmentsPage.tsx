@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Autocomplete, TextField } from "@mui/material";
 import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { useGradeLevelStore } from "@/stores/gradeLevelStore";
-import { useClassroomStore } from "@/stores/classroomStore";
-import { User } from "lucide-react";
 import { Student } from "@/types/student";
-import { EnrollmentType } from "@/types/enrollment";
+import { DeportationType } from "@/types/enrollment";
 import { useDeportationLedgerStore } from "@/stores/deportationLedgerStore";
+import { DeportationPathApi, DeportationPath } from "@/api/deportationPathApi";
 import { webUrl } from "@/constants";
 
 // Helper function to format numbers with thousands separator
@@ -26,68 +26,56 @@ const DeportationEnrollmentsPage: React.FC = () => {
   const { students, fetchStudents, pagination } = useStudentStore();
   const { schools, fetchSchools } = useSchoolStore();
   const { gradeLevels, fetchGradeLevels } = useGradeLevelStore();
-  const { classrooms, fetchClassrooms, clearClassrooms } = useClassroomStore();
   const navigate = useNavigate();
   const { getLedgerSummary } = useDeportationLedgerStore();
 
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [gradeLevelId, setGradeLevelId] = useState<number | null>(null);
-  const [classroomId, setClassroomId] = useState<number | null>(null);
+  const [deportationType, setDeportationType] = useState<DeportationType | null>(null);
   const [availableGradeLevels, setAvailableGradeLevels] = useState<typeof gradeLevels>([]);
   const [ledgerSummaryMap, setLedgerSummaryMap] = useState<Record<number, { total_fees: number; total_payments: number; total_discounts?: number; total_refunds?: number; total_adjustments?: number }>>({});
   const [onlyDiscounts, setOnlyDiscounts] = useState<boolean>(false);
   const [onlyNoPayments, setOnlyNoPayments] = useState<boolean>(false);
-  const [enrollmentType, setEnrollmentType] = useState<EnrollmentType | null>(null);
+  const [deportationPathId, setDeportationPathId] = useState<number | null>(null);
+  const [deportationPaths, setDeportationPaths] = useState<DeportationPath[]>([]);
   const [perPage, setPerPage] = useState<number>(30);
   const [page, setPage] = useState<number>(1);
   const [search, setSearch] = useState<string>("");
   console.log("ledgerSummaryMap", ledgerSummaryMap);
+  
   // bootstrap lists
   useEffect(() => {
     if (schools.length === 0) fetchSchools();
     if (gradeLevels.length === 0) fetchGradeLevels();
   }, [fetchSchools, fetchGradeLevels, schools.length, gradeLevels.length]);
 
+  // Fetch deportation paths
+  useEffect(() => {
+    const fetchDeportationPaths = async () => {
+      try {
+        const response = await DeportationPathApi.getAll();
+        setDeportationPaths(response.data.data || []);
+      } catch (error) {
+        console.error('Error fetching deportation paths:', error);
+      }
+    };
+    fetchDeportationPaths();
+  }, []);
+
   // Do not preselect school; show all schools by default
 
-  // load classrooms when school or grade changes
+  // Note: Classroom filter has been replaced with deportation type filter
+
+  // Show all grade levels when school is selected, or all if no school selected
   useEffect(() => {
     if (schoolId) {
-      console.log('Fetching classrooms for school:', schoolId, 'grade level:', gradeLevelId);
-      fetchClassrooms({ school_id: schoolId, grade_level_id: gradeLevelId || undefined });
+      // For now, show all grade levels when a school is selected
+      // You can add filtering logic here if needed based on school-grade relationships
+      setAvailableGradeLevels(gradeLevels);
     } else {
-      console.log('Clearing classrooms');
-      clearClassrooms();
+      setAvailableGradeLevels(gradeLevels);
     }
-  }, [schoolId, gradeLevelId, fetchClassrooms, clearClassrooms]);
-
-  // filter grade levels based on selected school
-  useEffect(() => {
-    if (schoolId && classrooms.length > 0) {
-      console.log('Filtering grade levels - schoolId:', schoolId, 'classrooms count:', classrooms.length);
-      console.log('Available classrooms:', classrooms.map(c => ({ id: c.id, school_id: c.school_id, grade_level_id: c.grade_level_id })));
-      
-      // Filter grade levels to only show those available for the selected school
-      // This assumes that classrooms have both school_id and grade_level_id
-      // We find grade levels that have at least one classroom in the selected school
-      const schoolGradeLevels = gradeLevels.filter(gl => 
-        classrooms.some(c => c.school_id === schoolId && c.grade_level_id === gl.id)
-      );
-      console.log('Filtering grade levels for school:', schoolId, 'Available:', schoolGradeLevels);
-      setAvailableGradeLevels(schoolGradeLevels);
-      
-      // Reset grade level selection if current selection is not available for the school
-      if (gradeLevelId && !schoolGradeLevels.some(gl => gl.id === gradeLevelId)) {
-        setGradeLevelId(null);
-      }
-    } else if (schoolId && classrooms.length === 0) {
-      console.log('School selected but no classrooms loaded yet, waiting...');
-      // Don't filter yet, wait for classrooms to load
-    } else {
-      setAvailableGradeLevels([]);
-      setGradeLevelId(null);
-    }
-  }, [schoolId, gradeLevels, classrooms, gradeLevelId]);
+  }, [schoolId, gradeLevels]);
 
   const buildFilters = useCallback(() => {
     const filters: Record<string, string | number | boolean> = {
@@ -99,17 +87,17 @@ const DeportationEnrollmentsPage: React.FC = () => {
     };
     if (schoolId && schoolId !== null) filters.school_id = schoolId;
     if (gradeLevelId && gradeLevelId !== null) filters.grade_level_id = gradeLevelId;
-    if (classroomId && classroomId !== null) filters.classroom_id = classroomId;
+    if (deportationType && deportationType !== null) filters.deportation_type = deportationType;
     if (search && search.trim() !== "") filters.search = search.trim();
     if (onlyNoPayments) filters.only_no_payments = true;
-    if (enrollmentType) filters.enrollment_type = enrollmentType;
+    if (deportationPathId && deportationPathId !== null) filters.deportation_path_id = deportationPathId;
     return filters;
-  }, [schoolId, gradeLevelId, classroomId, perPage, page, search, onlyNoPayments, enrollmentType]);
+  }, [schoolId, gradeLevelId, deportationType, perPage, page, search, onlyNoPayments, deportationPathId]);
 
   // Reset to first page on filter/perPage/search change
   useEffect(() => {
     setPage(1);
-  }, [schoolId, gradeLevelId, classroomId, perPage, search, onlyNoPayments, enrollmentType]);
+  }, [schoolId, gradeLevelId, deportationType, perPage, search, onlyNoPayments, deportationPathId]);
 
   // fetch students on filter changes
   useEffect(() => {
@@ -240,7 +228,6 @@ const DeportationEnrollmentsPage: React.FC = () => {
                 }
                 // Clear dependent filters when school changes
                 setGradeLevelId(null); 
-                setClassroomId(null); 
               }}>
                 <SelectTrigger>
                   <SelectValue placeholder="فلترة بالمدرسة" />
@@ -260,7 +247,6 @@ const DeportationEnrollmentsPage: React.FC = () => {
                 } else {
                   setGradeLevelId(v ? Number(v) : null);
                 }
-                setClassroomId(null); 
               }} disabled={!schoolId}>
                 <SelectTrigger>
                   <SelectValue placeholder={schoolId ? "فلترة بالمرحلة" : "اختر مدرسة أولاً"} />
@@ -277,43 +263,49 @@ const DeportationEnrollmentsPage: React.FC = () => {
                 </SelectContent>
               </Select>
 
-              {/* Classroom filter (depends on school/grade) */}
-              <Select value={classroomId ? String(classroomId) : ""} onValueChange={(v) => {
+              {/* Deportation type filter */}
+              <Select value={deportationType || ""} onValueChange={(v) => {
                 if (v === " ") {
-                  setClassroomId(null);
+                  setDeportationType(null);
                 } else {
-                  setClassroomId(v ? Number(v) : null);
-                }
-              }} disabled={!gradeLevelId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={gradeLevelId ? "فلترة بالفصل" : "اختر مرحلة أولاً"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" ">جميع الفصول</SelectItem>
-                  {classrooms.map(c => (
-                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Enrollment type filter */}
-              <Select value={enrollmentType || ""} onValueChange={(v) => {
-                if (v === " ") {
-                  setEnrollmentType(null);
-                } else {
-                  setEnrollmentType(v as EnrollmentType);
+                  setDeportationType(v as DeportationType);
                 }
               }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="نوع التسجيل" />
+                  <SelectValue placeholder="نوع الترحيل" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value=" ">جميع الأنواع</SelectItem>
-                  <SelectItem value="regular">عادي</SelectItem>
-                  <SelectItem value="scholarship">منحة</SelectItem>
-                  <SelectItem value="free">إعفاء</SelectItem>
+                  <SelectItem value="داخلي">داخلي</SelectItem>
+                  <SelectItem value="خارجي">خارجي</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Deportation path filter */}
+              <Autocomplete
+                options={deportationPaths}
+                getOptionLabel={(option) => option.name}
+                value={deportationPaths.find(p => p.id === deportationPathId) || null}
+                onChange={(_, newValue) => {
+                  setDeportationPathId(newValue ? newValue.id : null);
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="مسار الترحيل"
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: 'rgba(0, 0, 0, 0.23)',
+                        },
+                      },
+                    }}
+                  />
+                )}
+                sx={{ minWidth: 200 }}
+                dir="rtl"
+              />
 
               {/* Per page selector */}
               <Select value={String(perPage)} onValueChange={(v) => setPerPage(Number(v))}>
@@ -340,11 +332,10 @@ const DeportationEnrollmentsPage: React.FC = () => {
                               <TableHeader>
                   <TableRow>
                     <TableHead className="text-center text-xs sm:text-sm">رقم التسجيل</TableHead>
-                    <TableHead className="text-center text-xs sm:text-sm">الصورة</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">اسم الطالب</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المدرسة</TableHead>
-                    <TableHead className="text-center text-xs sm:text-sm">المرحلة</TableHead>
-                    <TableHead className="text-center text-xs sm:text-sm">الفصل</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">نوع الترحيل</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">مسار الترحيل</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">الرسوم (دفتر)</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المدفوع (دفتر)</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">الخصومات</TableHead>
@@ -382,35 +373,15 @@ const DeportationEnrollmentsPage: React.FC = () => {
                       <TableCell className="text-center text-xs sm:text-sm font-mono font-bold">
                         {((s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id) ?? '-'}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                          {s.image_url ? (
-                            <img 
-                              src={s.image_url} 
-                              alt={s.student_name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <div className={`w-full h-full flex items-center justify-center text-primary ${s.image_url ? 'hidden' : ''}`}>
-                            <User className="w-6 h-6 text-primary" />
-                          </div>
-                        </div>
-                      </TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { student_name?: string }).student_name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { wished_school_details?: { name?: string } }).wished_school_details?.name ?? '-'}</TableCell>
-                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { grade_level?: { name?: string } }[] }).enrollments?.[0]?.grade_level?.name ?? '-'}</TableCell>
-                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { classroom?: { name?: string } }[] }).enrollments?.[0]?.classroom?.name ?? '-'}</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { deportation_type?: string }[] }).enrollments?.[0]?.deportation_type ?? '-'}</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { deportation_path?: { name?: string } }[] }).enrollments?.[0]?.deportation_path?.name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{
                         (() => {
                           const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
                           const summary = eid ? ledgerSummaryMap[eid] : undefined;
-                          const expected = summary ? Number(summary.total_fees || 0) : (((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
-                            .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0));
+                          const expected = summary ? Number(summary.total_fees || 0) : 0;
                           return numberWithCommas(expected);
                         })()
                       } جنيه</TableCell>
@@ -418,8 +389,7 @@ const DeportationEnrollmentsPage: React.FC = () => {
                         (() => {
                           const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
                           const summary = eid ? ledgerSummaryMap[eid] : undefined;
-                          const paid = summary ? Number(summary.total_payments || 0) : (((s as unknown as { enrollments?: { total_amount_paid?: number }[] }).enrollments ?? [])
-                            .reduce((acc, e) => acc + (Number(e.total_amount_paid ?? 0) || 0), 0));
+                          const paid = summary ? Number(summary.total_payments || 0) : 0;
                           return numberWithCommas(paid);
                         })()
                       } جنيه</TableCell>
@@ -435,12 +405,8 @@ const DeportationEnrollmentsPage: React.FC = () => {
                         (() => {
                           const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
                           const summary = eid ? ledgerSummaryMap[eid] : undefined;
-                          const expectedFallback = (((s as unknown as { enrollments?: { fees?: number; fee?: number }[] }).enrollments ?? [])
-                            .reduce((acc, e) => acc + (Number(e.fees ?? e.fee ?? 0) || 0), 0));
-                          const paidFallback = (((s as unknown as { enrollments?: { total_amount_paid?: number }[] }).enrollments ?? [])
-                            .reduce((acc, e) => acc + (Number(e.total_amount_paid ?? 0) || 0), 0));
-                          const expected = summary ? Number(summary.total_fees || 0) : expectedFallback;
-                          const paid = summary ? Number(summary.total_payments || 0) : paidFallback;
+                          const expected = summary ? Number(summary.total_fees || 0) : 0;
+                          const paid = summary ? Number(summary.total_payments || 0) : 0;
                           const discounts = summary ? Number(summary.total_discounts || 0) : 0;
                           return numberWithCommas(Math.max(expected - paid - discounts, 0));
                         })()

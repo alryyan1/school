@@ -10,7 +10,7 @@ import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { useGradeLevelStore } from "@/stores/gradeLevelStore";
 import { useClassroomStore } from "@/stores/classroomStore";
-import { User } from "lucide-react";
+import { User, Truck } from "lucide-react";
 import { Student } from "@/types/student";
 import { EnrollmentType } from "@/types/enrollment";
 import { useLedgerStore } from "@/stores/ledgerStore";
@@ -400,7 +400,14 @@ const RevenuesPage: React.FC = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { student_name?: string }).student_name ?? '-'}</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">
+                        <div className="flex items-center justify-center gap-2">
+                          {(s as unknown as { student_name?: string }).student_name ?? '-'}
+                          {((s as unknown as { enrollments?: { deportation?: boolean }[] }).enrollments?.[0]?.deportation) && (
+                            <Truck className="w-4 h-4 text-blue-600" title="مشترك في الترحيل" />
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { wished_school_details?: { name?: string } }).wished_school_details?.name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { grade_level?: { name?: string } }[] }).enrollments?.[0]?.grade_level?.name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { classroom?: { name?: string } }[] }).enrollments?.[0]?.classroom?.name ?? '-'}</TableCell>

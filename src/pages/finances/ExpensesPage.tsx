@@ -9,14 +9,14 @@ import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 import { Autocomplete } from "@mui/material";
 import { TextField } from "@mui/material";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Edit, Trash2, FileText } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, Edit, Trash2, FileText, FileSpreadsheet } from "lucide-react";
 import { formatNumber } from '@/constants';
 import { useExpenseStore } from "@/stores/expenseStore";
 import { useExpenseCategoryStore } from "@/stores/expenseCategoryStore";
 import { Expense, ExpenseFilters, CreateExpenseRequest, UpdateExpenseRequest, ExpenseCategory } from "@/types/expense";
 import ExpenseForm from "@/components/expenses/ExpenseForm";
 import { toast } from "sonner";
-import { ExpenseApi } from "@/api/expenseApi";
 import { webUrl } from "@/constants";
 
 const ExpensesPage: React.FC = () => {
@@ -126,7 +126,14 @@ const ExpensesPage: React.FC = () => {
 
 
   const handleFilterChange = (key: keyof ExpenseFilters, value: string | number | undefined) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => {
+      const newFilters = { ...prev, [key]: value };
+      // Reset to page 1 when per_page changes
+      if (key === 'per_page') {
+        newFilters.page = 1;
+      }
+      return newFilters;
+    });
   };
 
   
@@ -168,17 +175,30 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
+  const generateExcel = async () => {
+    try {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+      });
+      const excelUrl = `${webUrl}reports/expenses-excel?${params.toString()}`;
+      window.open(excelUrl, '_blank');
+    } catch {
+      toast.error("فشل في فتح تقرير Excel");
+    }
+  };
+
   return (
-    <section className="container mx-auto p-4 sm:p-6 max-w-7xl" dir="rtl">
+    <section className="container mx-auto p-1 sm:p-1" dir="rtl">
       <div className="space-y-6">
 
-        <Tabs defaultValue="expenses" className="space-y-4">
+        <Tabs defaultValue="expenses" className="space-y-1">
           <TabsList>
             <TabsTrigger value="expenses">المصروفات</TabsTrigger>
             <TabsTrigger value="statistics">الإحصائيات</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="expenses" className="space-y-4">
+          <TabsContent value="expenses" className="space-y-1">
             <Card>
               <CardHeader>
                 <div dir="rtl" className="flex justify-between items-center">
@@ -187,6 +207,10 @@ const ExpensesPage: React.FC = () => {
                     <Button variant="outline" onClick={generatePDF}>
                       <FileText className="w-4 h-4 ml-2" />
                       تصدير PDF
+                    </Button>
+                    <Button variant="outline" onClick={generateExcel}>
+                      <FileSpreadsheet className="w-4 h-4 ml-2" />
+                      تصدير Excel
                     </Button>
                     <Button onClick={() => setIsCreateDialogOpen(true)}>
                       <Plus className="w-4 h-4 ml-2" />
@@ -213,8 +237,8 @@ const ExpensesPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {/* Filters */}
-                <div className="mb-6 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="mb-1 space-y-1">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-1">
                     <div className="relative">
                       <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -355,38 +379,132 @@ const ExpensesPage: React.FC = () => {
                   </Table>
                 </div>
 
+                {/* Per page selector and Pagination */}
+                <div className="flex justify-between items-center mt-4">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="per-page">عدد الصفوف:</Label>
+                    <Select 
+                      value={String(filters.per_page || 15)} 
+                      onValueChange={(v) => handleFilterChange('per_page', Number(v))}
+                    >
+                      <SelectTrigger className="w-[120px]" id="per-page">
+                        <SelectValue placeholder="عدد الصفوف" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="200">200</SelectItem>
+                        <SelectItem value="500">500</SelectItem>
+                        <SelectItem value="1000">1000</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                 {/* Pagination */}
-                {pagination && pagination.last_page > 1 && (
-                  <div className="flex justify-center mt-4">
-                    <div className="flex space-x-2 space-x-reverse">
+                {pagination && pagination.last_page > 1 && (() => {
+                  const currentPage = pagination.current_page;
+                  const lastPage = pagination.last_page;
+                  const handlePageChange = (page: number) => {
+                    const newFilters = { ...filters, page };
+                    setFilters(newFilters);
+                    fetchExpenses(newFilters);
+                  };
+
+                  // Generate page numbers to display
+                  const getPageNumbers = () => {
+                    const pages: (number | string)[] = [];
+                    const maxPagesToShow = 7;
+                    
+                    if (lastPage <= maxPagesToShow) {
+                      // Show all pages if total pages is less than max
+                      for (let i = 1; i <= lastPage; i++) {
+                        pages.push(i);
+                      }
+                    } else {
+                      // Always show first page
+                      pages.push(1);
+                      
+                      if (currentPage <= 4) {
+                        // Near the beginning
+                        for (let i = 2; i <= 5; i++) {
+                          pages.push(i);
+                        }
+                        pages.push('ellipsis');
+                        pages.push(lastPage);
+                      } else if (currentPage >= lastPage - 3) {
+                        // Near the end
+                        pages.push('ellipsis');
+                        for (let i = lastPage - 4; i <= lastPage; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        // In the middle
+                        pages.push('ellipsis');
+                        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                          pages.push(i);
+                        }
+                        pages.push('ellipsis');
+                        pages.push(lastPage);
+                      }
+                    }
+                    
+                    return pages;
+                  };
+
+                  const pageNumbers = getPageNumbers();
+
+                  return (
+                    <div className="flex justify-center items-center gap-2">
                       <Button
                         variant="outline"
-                        disabled={pagination.current_page === 1}
-                        onClick={() => {
-                          const newFilters = { ...filters, page: pagination.current_page - 1 };
-                          setFilters(newFilters);
-                          fetchExpenses(newFilters);
-                        }}
+                        size="sm"
+                        disabled={currentPage === 1}
+                        onClick={() => handlePageChange(currentPage - 1)}
                       >
                         السابق
                       </Button>
-                      <span className="flex items-center px-4">
-                        صفحة {pagination.current_page} من {pagination.last_page}
-                      </span>
+                      
+                      <div className="flex items-center gap-1">
+                        {pageNumbers.map((page, index) => {
+                          if (page === 'ellipsis') {
+                            return (
+                              <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+                                ...
+                              </span>
+                            );
+                          }
+                          
+                          const pageNum = page as number;
+                          const isActive = pageNum === currentPage;
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={isActive ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(pageNum)}
+                              className={isActive ? "bg-primary text-primary-foreground" : ""}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      
                       <Button
                         variant="outline"
-                        disabled={pagination.current_page === pagination.last_page}
-                        onClick={() => {
-                          const newFilters = { ...filters, page: pagination.current_page + 1 };
-                          setFilters(newFilters);
-                          fetchExpenses(newFilters);
-                        }}
+                        size="sm"
+                        disabled={currentPage === lastPage}
+                        onClick={() => handlePageChange(currentPage + 1)}
                       >
                         التالي
                       </Button>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
+                {(!pagination || pagination.last_page <= 1) && <div></div>}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

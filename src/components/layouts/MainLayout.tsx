@@ -67,7 +67,7 @@ const MainLayout: React.FC = () => {
                 <NavbarArea onMobileMenuToggle={handleMobileSheetToggle} />
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 sm:px-6 sm:py-4 md:gap-8 overflow-y-auto"> {/* Changed to py-4 */}
+                <main className="flex-1 p-1 sm:px-1 sm:py-1 md:gap-1 overflow-y-auto"> {/* Changed to py-4 */}
                     <Outlet />
                 </main>
             </div>
