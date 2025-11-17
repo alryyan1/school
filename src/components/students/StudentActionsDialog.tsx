@@ -51,6 +51,7 @@ interface StudentActionsDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedStudent: Student | null;
   onActionClick: (action: string, student: Student, enrollmentType?: EnrollmentType) => void;
+  autoOpenTransport?: boolean;
 }
 
 const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
@@ -58,6 +59,7 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
   onOpenChange,
   selectedStudent,
   onActionClick,
+  autoOpenTransport = false,
 }) => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -83,6 +85,13 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
       setLoading(false);
     }
   }, [enqueueSnackbar]);
+
+  // Auto-open transport dialog if autoOpenTransport is true
+  useEffect(() => {
+    if (open && autoOpenTransport) {
+      setTransportDialogOpen(true);
+    }
+  }, [open, autoOpenTransport]);
 
   // Fetch deportation paths when dialog opens
   useEffect(() => {
@@ -161,6 +170,10 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
       setTransportDialogOpen(false);
       // Refresh student data by calling the action
       onActionClick('refresh', selectedStudent);
+      // Close main dialog if it was auto-opened
+      if (autoOpenTransport) {
+        onOpenChange(false);
+      }
     } catch (error: unknown) {
       console.error('Error saving deportation:', error);
       const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'حدث خطأ أثناء حفظ اشتراك الترحيل';
@@ -627,6 +640,10 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
                   setDeportationPathId('');
                   setNewPathName('');
                   setShowAddPath(false);
+                  // Close main dialog if it was auto-opened
+                  if (autoOpenTransport) {
+                    onOpenChange(false);
+                  }
                 }}
               >
                 إلغاء

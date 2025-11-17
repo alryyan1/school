@@ -10,10 +10,11 @@ import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { useGradeLevelStore } from "@/stores/gradeLevelStore";
 import { useClassroomStore } from "@/stores/classroomStore";
-import { User, Truck } from "lucide-react";
+import { Truck, Plus } from "lucide-react";
 import { Student } from "@/types/student";
 import { EnrollmentType } from "@/types/enrollment";
 import { useLedgerStore } from "@/stores/ledgerStore";
+import DeportationDialog from "@/components/students/DeportationDialog";
 import { webUrl } from "@/constants";
 
 // Helper function to format numbers with thousands separator
@@ -41,6 +42,10 @@ const RevenuesPage: React.FC = () => {
   const [perPage, setPerPage] = useState<number>(30);
   const [page, setPage] = useState<number>(1);
   const [search, setSearch] = useState<string>("");
+  const [referenceNumber, setReferenceNumber] = useState<string>("");
+  const [deportationDialogOpen, setDeportationDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
   console.log("ledgerSummaryMap", ledgerSummaryMap);
   // bootstrap lists
   useEffect(() => {
@@ -100,15 +105,16 @@ const RevenuesPage: React.FC = () => {
     if (gradeLevelId && gradeLevelId !== null) filters.grade_level_id = gradeLevelId;
     if (classroomId && classroomId !== null) filters.classroom_id = classroomId;
     if (search && search.trim() !== "") filters.search = search.trim();
+    if (referenceNumber && referenceNumber.trim() !== "") filters.reference_number = referenceNumber.trim();
     if (onlyNoPayments) filters.only_no_payments = true;
     if (enrollmentType) filters.enrollment_type = enrollmentType;
     return filters;
-  }, [schoolId, gradeLevelId, classroomId, perPage, page, search, onlyNoPayments, enrollmentType]);
+  }, [schoolId, gradeLevelId, classroomId, perPage, page, search, referenceNumber, onlyNoPayments, enrollmentType]);
 
   // Reset to first page on filter/perPage/search change
   useEffect(() => {
     setPage(1);
-  }, [schoolId, gradeLevelId, classroomId, perPage, search, onlyNoPayments, enrollmentType]);
+  }, [schoolId, gradeLevelId, classroomId, perPage, search, referenceNumber, onlyNoPayments, enrollmentType]);
 
   // fetch students on filter changes
   useEffect(() => {
@@ -124,6 +130,21 @@ const RevenuesPage: React.FC = () => {
       console.log('First student enrollments:', (students[0] as unknown as { enrollments?: unknown[] }).enrollments);
     }
   }, [students]);
+
+  // Update selected student when students data refreshes
+  useEffect(() => {
+    if (selectedStudent && students.length > 0) {
+      const updatedStudent = students.find(s => s.id === selectedStudent.id);
+      if (updatedStudent) {
+        // Check if deportation status changed to avoid unnecessary updates
+        const currentDeportation = (selectedStudent as unknown as { enrollments?: { deportation?: boolean }[] }).enrollments?.[0]?.deportation;
+        const updatedDeportation = (updatedStudent as unknown as { enrollments?: { deportation?: boolean }[] }).enrollments?.[0]?.deportation;
+        if (currentDeportation !== updatedDeportation || updatedStudent !== selectedStudent) {
+          setSelectedStudent(updatedStudent);
+        }
+      }
+    }
+  }, [students, selectedStudent?.id]); // Only depend on students and selectedStudent.id to avoid infinite loop
 
   // Fetch ledger summaries for visible enrollments (first enrollment per student)
   useEffect(() => {
@@ -206,6 +227,13 @@ const RevenuesPage: React.FC = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="بحث بالاسم أو رقم التسجيل"
+                />
+              </div>
+              <div className="max-w-xs w-full">
+                <Input
+                  value={referenceNumber}
+                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  placeholder="بحث برقم المرجع"
                 />
               </div>
             </div>
@@ -339,15 +367,14 @@ const RevenuesPage: React.FC = () => {
                               <TableHeader>
                   <TableRow>
                     <TableHead className="text-center text-xs sm:text-sm">رقم التسجيل</TableHead>
-                    <TableHead className="text-center text-xs sm:text-sm">الصورة</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">اسم الطالب</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المدرسة</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المرحلة</TableHead>
-                    <TableHead className="text-center text-xs sm:text-sm">الفصل</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">الرسوم (دفتر)</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المدفوع (دفتر)</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">الخصومات</TableHead>
                     <TableHead className="text-center text-xs sm:text-sm">المتبقي</TableHead>
+                    <TableHead className="text-center text-xs sm:text-sm">الترحيل</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -371,7 +398,9 @@ const RevenuesPage: React.FC = () => {
                         const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
                         const hasDiscount = eid ? Number(ledgerSummaryMap[eid]?.total_discounts || 0) > 0 : false;
                         const hasNoPayments = eid ? Number(ledgerSummaryMap[eid]?.total_payments || 0) === 0 : false;
+                        const isHighlighted = highlightedStudentId === s.id;
                         
+                        if (isHighlighted) return 'bg-green-100 hover:bg-green-200 border-2 border-green-500';
                         if (hasDiscount) return 'bg-amber-50 hover:bg-amber-100';
                         if (hasNoPayments) return 'bg-red-50 hover:bg-red-100';
                         return 'hover:bg-muted/50';
@@ -381,36 +410,18 @@ const RevenuesPage: React.FC = () => {
                       <TableCell className="text-center text-xs sm:text-sm font-mono font-bold">
                         {((s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id) ?? '-'}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                          {s.image_url ? (
-                            <img 
-                              src={s.image_url} 
-                              alt={s.student_name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <div className={`w-full h-full flex items-center justify-center text-primary ${s.image_url ? 'hidden' : ''}`}>
-                            <User className="w-6 h-6 text-primary" />
-                          </div>
-                        </div>
-                      </TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">
                         <div className="flex items-center justify-center gap-2">
-                          {(s as unknown as { student_name?: string }).student_name ?? '-'}
-                          {((s as unknown as { enrollments?: { deportation?: boolean }[] }).enrollments?.[0]?.deportation) && (
-                            <Truck className="w-4 h-4 text-blue-600" title="مشترك في الترحيل" />
+                          {s.student_name ?? '-'}
+                          {s.enrollments?.[0]?.deportation && (
+                            <div title="مشترك في الترحيل">
+                              <Truck className="w-4 h-4 text-blue-600" />
+                            </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { wished_school_details?: { name?: string } }).wished_school_details?.name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { grade_level?: { name?: string } }[] }).enrollments?.[0]?.grade_level?.name ?? '-'}</TableCell>
-                      <TableCell className="text-center text-xs sm:text-sm">{(s as unknown as { enrollments?: { classroom?: { name?: string } }[] }).enrollments?.[0]?.classroom?.name ?? '-'}</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">{
                         (() => {
                           const eid = (s as unknown as { enrollments?: { id: number }[] }).enrollments?.[0]?.id;
@@ -451,6 +462,27 @@ const RevenuesPage: React.FC = () => {
                           return numberWithCommas(Math.max(expected - paid - discounts, 0));
                         })()
                       } جنيه</TableCell>
+                      <TableCell className="text-center text-xs sm:text-sm">
+                        {s.enrollments?.[0]?.deportation ? (
+                          <div className="flex justify-center" title="مشترك في الترحيل">
+                            <Truck className="w-5 h-5 text-blue-600" />
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStudent(s);
+                              setDeportationDialogOpen(true);
+                            }}
+                          >
+                            <Plus className="w-3 h-3 ml-1" />
+                            اشتراك
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                 ))}
               </TableBody>
@@ -490,6 +522,32 @@ const RevenuesPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Deportation Dialog */}
+      <DeportationDialog
+        open={deportationDialogOpen}
+        onOpenChange={(open) => {
+          setDeportationDialogOpen(open);
+          if (!open) {
+            setSelectedStudent(null);
+          }
+        }}
+        selectedStudent={selectedStudent}
+        onSuccess={async () => {
+          if (selectedStudent) {
+            const filters = buildFilters();
+            // Highlight the updated student immediately
+            setHighlightedStudentId(selectedStudent.id);
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+              setHighlightedStudentId(null);
+            }, 3000);
+            // Refresh students data
+            await fetchStudents(filters);
+            // The selectedStudent will be updated automatically via useEffect when students array updates
+          }
+        }}
+      />
     </section>
   );
 };
