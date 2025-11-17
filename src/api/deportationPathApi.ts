@@ -29,3 +29,4 @@ export const DeportationPathApi = {
   delete: (id: number) => axiosClient.delete(`/deportation-paths/${id}`),
 };
 
+

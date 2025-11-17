@@ -10,8 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePaymentMethodStore } from "@/stores/paymentMethodStore";
 import { getLedgerEntriesByPaymentMethod, GetLedgerEntriesByPaymentMethodParams } from "@/api/ledgerApi";
 import { StudentLedger } from "@/types/ledger";
-import { ArrowRight, Wallet, Calendar, Search, Loader2 } from "lucide-react";
+import { ArrowRight, Wallet, Calendar, Search, Loader2, FileText, FileSpreadsheet } from "lucide-react";
 import dayjs from 'dayjs';
+import { webUrl } from "@/constants";
 
 // Helper function to format numbers with thousands separator
 const numberWithCommas = (x: number): string => {
@@ -214,10 +215,44 @@ const LedgerPage: React.FC = () => {
       {selectedPaymentMethod && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
-              سجل المعاملات - {translatePaymentMethod(selectedPaymentMethod)}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Search className="w-5 h-5" />
+                سجل المعاملات - {translatePaymentMethod(selectedPaymentMethod)}
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    params.append('payment_method', selectedPaymentMethod);
+                    if (dateFrom) params.append('start_date', dateFrom);
+                    if (dateTo) params.append('end_date', dateTo);
+                    const pdfUrl = `${webUrl}student-ledgers/by-payment-method/pdf?${params.toString()}`;
+                    window.open(pdfUrl, '_blank');
+                  }}
+                  disabled={!dateFrom || !dateTo}
+                >
+                  <FileText className="w-4 h-4 ml-2" />
+                  تصدير PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    params.append('payment_method', selectedPaymentMethod);
+                    if (dateFrom) params.append('start_date', dateFrom);
+                    if (dateTo) params.append('end_date', dateTo);
+                    const excelUrl = `${webUrl}student-ledgers/by-payment-method/excel?${params.toString()}`;
+                    window.open(excelUrl, '_blank');
+                  }}
+                  disabled={!dateFrom || !dateTo}
+                >
+                  <FileSpreadsheet className="w-4 h-4 ml-2" />
+                  تصدير Excel
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
