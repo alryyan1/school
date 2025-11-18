@@ -395,24 +395,47 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
               </Button>
               
               {/* Transport Subscription Action - Only show if student has enrollment */}
-              {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="flex-1 justify-start h-14 text-right hover:bg-orange-50 hover:border-orange-300 transition-all duration-200"
-                  onClick={() => setTransportDialogOpen(true)}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                      <Truck className="w-5 h-5 text-orange-600" />
+              {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && (() => {
+                const activeEnrollment = selectedStudent.enrollments.find(
+                  enrollment => enrollment.status === 'active'
+                );
+                const isSubscribed = activeEnrollment?.deportation === true || 
+                                   (activeEnrollment?.deportation_type && activeEnrollment?.deportation_path_id);
+                
+                return (
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className={`flex-1 justify-start h-14 text-right transition-all duration-200 ${
+                      isSubscribed 
+                        ? 'bg-emerald-50 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400' 
+                        : 'hover:bg-orange-50 hover:border-orange-300'
+                    }`}
+                    onClick={() => setTransportDialogOpen(true)}
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isSubscribed ? 'bg-emerald-100' : 'bg-orange-100'
+                      }`}>
+                        {isSubscribed ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                        ) : (
+                          <Truck className="w-5 h-5 text-orange-600" />
+                        )}
+                      </div>
+                      <div className="flex-1 text-right">
+                        <div className="font-semibold text-foreground flex items-center gap-2 justify-end">
+                          {isSubscribed && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                          اشتراك في الترحيل
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {isSubscribed ? 'الطالب مشترك في خدمة الترحيل' : 'إدارة اشتراك الطالب في خدمة الترحيل'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 text-right">
-                      <div className="font-semibold text-foreground">اشتراك في الترحيل</div>
-                      <div className="text-xs text-muted-foreground">إدارة اشتراك الطالب في خدمة الترحيل</div>
-                    </div>
-                  </div>
-                </Button>
-              )}
+                  </Button>
+                );
+              })()}
             </div>
             
             {/* Enroll Action - Only show if approved and not enrolled */}

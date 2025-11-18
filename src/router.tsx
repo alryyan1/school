@@ -59,6 +59,7 @@ import ExpenseCategoriesPage from '@/pages/finances/ExpenseCategoriesPage';
 import StudentLedgerPage from '@/pages/finances/StudentLedgerPage';
 import StudentLedgerDeletionsPage from '@/pages/finances/StudentLedgerDeletionsPage';
 import LedgerPage from '@/pages/finances/LedgerPage';
+import OtherRevenuesPage from '@/pages/finances/OtherRevenuesPage';
 
 // --- Exam Pages ---
 import ExamList from '@/pages/exams/ExamList';                         // Adjust path
@@ -257,6 +258,7 @@ const router = createHashRouter([
                        { path: 'student-deportation-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },
                        { path: 'ledger-deletions', element: <StudentLedgerDeletionsPage /> },
                        { path: 'ledger', element: <LedgerPage /> },
+                       { path: 'other-revenues', element: <OtherRevenuesPage /> },
                   ]
              },
 

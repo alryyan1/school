@@ -1,15 +1,31 @@
 // src/pages/finances/ExpensesPage.tsx
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
-import { Autocomplete } from "@mui/material";
-import { TextField } from "@mui/material";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  Button,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Autocomplete,
+  Tabs,
+  Tab,
+  Box,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Typography,
+  Paper,
+  IconButton,
+} from "@mui/material";
 import { Plus, Search, Edit, Trash2, FileText, FileSpreadsheet } from "lucide-react";
 import { formatNumber } from '@/constants';
 import { useExpenseStore } from "@/stores/expenseStore";
@@ -41,6 +57,7 @@ const ExpensesPage: React.FC = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [newlyCreatedExpenseId, setNewlyCreatedExpenseId] = useState<number | null>(null);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<ExpenseCategory | null>(null);
+  const [tabValue, setTabValue] = useState("expenses");
   // Default date range: start of current month to end of current month
   const today = new Date();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -189,65 +206,47 @@ const ExpensesPage: React.FC = () => {
   };
 
   return (
-    <section className="container mx-auto p-1 sm:p-1" dir="rtl">
-      <div className="space-y-6">
+    <Box sx={{ maxWidth: '100%', mx: 'auto', p: 1 }} dir="rtl">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 2 }}>
+          <Tab label="المصروفات" value="expenses" />
+          <Tab label="الإحصائيات" value="statistics" />
+        </Tabs>
 
-        <Tabs defaultValue="expenses" className="space-y-1">
-          <TabsList>
-            <TabsTrigger value="expenses">المصروفات</TabsTrigger>
-            <TabsTrigger value="statistics">الإحصائيات</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="expenses" className="space-y-1">
+        {tabValue === "expenses" && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Card>
-              <CardHeader>
-                <div dir="rtl" className="flex justify-between items-center">
-                  <CardTitle>إدارة المصروفات</CardTitle>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={generatePDF}>
-                      <FileText className="w-4 h-4 ml-2" />
+              <CardHeader
+                title="إدارة المصروفات"
+                dir="rtl"
+                action={
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button variant="outlined" onClick={generatePDF} startIcon={<FileText size={16} />}>
                       تصدير PDF
                     </Button>
-                    <Button variant="outline" onClick={generateExcel}>
-                      <FileSpreadsheet className="w-4 h-4 ml-2" />
+                    <Button variant="outlined" onClick={generateExcel} startIcon={<FileSpreadsheet size={16} />}>
                       تصدير Excel
                     </Button>
-                    <Button onClick={() => setIsCreateDialogOpen(true)}>
-                      <Plus className="w-4 h-4 ml-2" />
+                    <Button variant="contained" onClick={() => setIsCreateDialogOpen(true)} startIcon={<Plus size={16} />}>
                       إضافة مصروف جديد
                     </Button>
-                    <Dialog 
-                      open={isCreateDialogOpen} 
-                      onClose={() => setIsCreateDialogOpen(false)}
-                      maxWidth="sm"
-                      fullWidth
-                      dir="rtl"
-                    >
-                      <DialogTitle>إضافة مصروف جديد</DialogTitle>
-                      <DialogContent dir="rtl" sx={{ maxHeight: '90vh', overflowY: 'auto' }}>
-                        <ExpenseForm
-                          onSubmit={handleCreate}
-                          onCancel={() => setIsCreateDialogOpen(false)}
-                          loading={loading}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </div>
-              </CardHeader>
+                  </Box>
+                }
+              />
               <CardContent>
                 {/* Filters */}
-                <div className="mb-1 space-y-1">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-1">
-                    <div className="relative">
-                      <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="البحث في المصروفات..."
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                        className="pr-10"
-                      />
-                    </div>
+                <Box sx={{ mb: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(5, 1fr)' }, gap: 1 }}>
+                    
+                    <TextField
+                      placeholder="البحث في المصروفات..."
+                      value={filters.search}
+                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      size="small"
+                      InputProps={{
+                        startAdornment: <Search size={16} style={{ marginRight: 8, color: '#999' }} />,
+                      }}
+                    />
                     
                     <Autocomplete
                       value={selectedCategoryFilter}
@@ -277,55 +276,57 @@ const ExpensesPage: React.FC = () => {
                       }}
                     />
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="date_from">من تاريخ</Label>
-                      <Input
-                        id="date_from"
-                        type="date"
-                        value={filters.date_from || ''}
-                        onChange={(e) => handleFilterChange('date_from', e.target.value || undefined)}
-                      />
-                    </div>
+                    <TextField
+                      id="date_from"
+                      label="من تاريخ"
+                      type="date"
+                      value={filters.date_from || ''}
+                      onChange={(e) => handleFilterChange('date_from', e.target.value || undefined)}
+                      size="small"
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                    />
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="date_to">إلى تاريخ</Label>
-                      <Input
-                        id="date_to"
-                        type="date"
-                        value={filters.date_to || ''}
-                        onChange={(e) => handleFilterChange('date_to', e.target.value || undefined)}
-                      />
-                    </div>
-                    
-                    
-                  </div>
-                </div>
+                    <TextField
+                      id="date_to"
+                      label="إلى تاريخ"
+                      type="date"
+                      value={filters.date_to || ''}
+                      onChange={(e) => handleFilterChange('date_to', e.target.value || undefined)}
+                      size="small"
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                    />
+                  </Box>
+                </Box>
 
                 {/* Expenses Table */}
-                <div className="border rounded-md overflow-x-auto" dir="rtl">
+                <Paper sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'auto' }} dir="rtl">
                   <Table>
-                    <TableHeader>
+                    <TableHead>
                       <TableRow>
-                        <TableHead className="text-center">#</TableHead>
-                        <TableHead className="text-center">العنوان</TableHead>
-                        <TableHead className="text-center">الفئة</TableHead>
-                        <TableHead className="text-center">المبلغ</TableHead>
-                        <TableHead className="text-center">التاريخ</TableHead>
-                        <TableHead className="text-center">طريقة الدفع</TableHead>
-                        <TableHead className="text-center">المستخدم</TableHead>
-                        <TableHead className="text-center">الإجراءات</TableHead>
+                        <TableCell align="center">#</TableCell>
+                        <TableCell align="center">العنوان</TableCell>
+                        <TableCell align="center">الفئة</TableCell>
+                        <TableCell align="center">المبلغ</TableCell>
+                        <TableCell align="center">التاريخ</TableCell>
+                        <TableCell align="center">طريقة الدفع</TableCell>
+                        <TableCell align="center">المستخدم</TableCell>
+                        <TableCell align="center">الإجراءات</TableCell>
                       </TableRow>
-                    </TableHeader>
+                    </TableHead>
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center">
+                          <TableCell colSpan={8} align="center">
                             جاري التحميل...
                           </TableCell>
                         </TableRow>
                       ) : expenses.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center">
+                          <TableCell colSpan={8} align="center">
                             لا توجد مصروفات
                           </TableCell>
                         </TableRow>
@@ -333,73 +334,74 @@ const ExpensesPage: React.FC = () => {
                         expenses.map((expense) => (
                           <TableRow 
                             key={expense.id}
-                            className={newlyCreatedExpenseId === expense.id ? "bg-green-50 border-green-200" : ""}
+                            sx={{
+                              backgroundColor: newlyCreatedExpenseId === expense.id ? 'rgba(34, 197, 94, 0.1)' : 'inherit',
+                              borderColor: newlyCreatedExpenseId === expense.id ? 'rgba(34, 197, 94, 0.3)' : 'inherit',
+                            }}
                           >
-                            <TableCell className="text-center">{expense.id}</TableCell>
-                            <TableCell className="text-center font-medium">
+                            <TableCell align="center">{expense.id}</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'medium' }}>
                               {expense.title}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell align="center">
                               {expense.expense_category?.name}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell align="center">
                               {formatNumber(expense.amount)}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell align="center">
                               {formatDate(expense.expense_date)}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell align="center">
                               {translatePaymentMethod(expense.payment_method)}
                             </TableCell>
-                            <TableCell className="text-center">
-                              {expense.created_by?.name || "غير محدد"}
+                            <TableCell align="center">
+                              {expense.created_by_user?.name || "غير محدد"}
                             </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex justify-center space-x-2 space-x-reverse">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
+                            <TableCell align="center">
+                              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                <IconButton
+                                  size="small"
                                   onClick={() => handleEdit(expense)}
                                 >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
+                                  <Edit size={16} />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
                                   onClick={() => handleDelete(expense.id)}
                                 >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
+                                  <Trash2 size={16} />
+                                </IconButton>
+                              </Box>
                             </TableCell>
                           </TableRow>
                         ))
                       )}
                     </TableBody>
                   </Table>
-                </div>
+                </Paper>
 
                 {/* Per page selector and Pagination */}
-                <div className="flex justify-between items-center mt-4">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="per-page">عدد الصفوف:</Label>
-                    <Select 
-                      value={String(filters.per_page || 15)} 
-                      onValueChange={(v) => handleFilterChange('per_page', Number(v))}
-                    >
-                      <SelectTrigger className="w-[120px]" id="per-page">
-                        <SelectValue placeholder="عدد الصفوف" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                        <SelectItem value="200">200</SelectItem>
-                        <SelectItem value="500">500</SelectItem>
-                        <SelectItem value="1000">1000</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                      <InputLabel id="per-page-label">عدد الصفوف</InputLabel>
+                      <Select 
+                        labelId="per-page-label"
+                        id="per-page"
+                        value={String(filters.per_page || 15)} 
+                        onChange={(e) => handleFilterChange('per_page', Number(e.target.value))}
+                        label="عدد الصفوف"
+                      >
+                        <MenuItem value="10">10</MenuItem>
+                        <MenuItem value="50">50</MenuItem>
+                        <MenuItem value="100">100</MenuItem>
+                        <MenuItem value="200">200</MenuItem>
+                        <MenuItem value="500">500</MenuItem>
+                        <MenuItem value="1000">1000</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
 
                 {/* Pagination */}
                 {pagination && pagination.last_page > 1 && (() => {
@@ -455,23 +457,23 @@ const ExpensesPage: React.FC = () => {
                   const pageNumbers = getPageNumbers();
 
                   return (
-                    <div className="flex justify-center items-center gap-2">
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="outlined"
+                        size="small"
                         disabled={currentPage === 1}
                         onClick={() => handlePageChange(currentPage - 1)}
                       >
                         السابق
                       </Button>
                       
-                      <div className="flex items-center gap-1">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {pageNumbers.map((page, index) => {
                           if (page === 'ellipsis') {
                             return (
-                              <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+                              <Typography key={`ellipsis-${index}`} sx={{ px: 1, color: 'text.secondary' }}>
                                 ...
-                              </span>
+                              </Typography>
                             );
                           }
                           
@@ -481,92 +483,113 @@ const ExpensesPage: React.FC = () => {
                           return (
                             <Button
                               key={pageNum}
-                              variant={isActive ? "default" : "outline"}
-                              size="sm"
+                              variant={isActive ? "contained" : "outlined"}
+                              size="small"
                               onClick={() => handlePageChange(pageNum)}
-                              className={isActive ? "bg-primary text-primary-foreground" : ""}
                             >
                               {pageNum}
                             </Button>
                           );
                         })}
-                      </div>
+                      </Box>
                       
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="outlined"
+                        size="small"
                         disabled={currentPage === lastPage}
                         onClick={() => handlePageChange(currentPage + 1)}
                       >
                         التالي
                       </Button>
-                    </div>
+                    </Box>
                   );
                 })()}
-                {(!pagination || pagination.last_page <= 1) && <div></div>}
-                </div>
+                {(!pagination || pagination.last_page <= 1) && <Box></Box>}
+                </Box>
               </CardContent>
             </Card>
-          </TabsContent>
+          </Box>
+        )}
 
-          <TabsContent value="statistics" className="space-y-4">
+        {tabValue === "statistics" && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {statistics && (
-              <div className="space-y-4" dir="rtl">
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }} dir="rtl">
                 <Card dir="rtl">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>
-                        إحصائيات المصروفات
+                  <Box sx={{ p: 2, pb: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="h6">
+                          إحصائيات المصروفات
+                        </Typography>
                         {filters.date_from || filters.date_to ? (
-                          <span className="block text-sm text-muted-foreground mt-1">
+                          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
                             الفترة: {filters.date_from ? formatDate(filters.date_from) : '—'} إلى {filters.date_to ? formatDate(filters.date_to) : '—'}
-                          </span>
+                          </Typography>
                         ) : null}
-                      </CardTitle>
-                      <div className="text-right">
-                        <div className="font-medium">الإجمالي: {formatNumber(statistics.total_expenses)}</div>
-                        <div className="text-sm text-muted-foreground">عدد العمليات: {statistics.expense_count}</div>
-                      </div>
-                    </div>
-                  </CardHeader>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography sx={{ fontWeight: 'medium' }}>الإجمالي: {formatNumber(statistics.total_expenses)}</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>عدد العمليات: {statistics.expense_count}</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <div className="font-semibold mb-3">حسب الفئة</div>
-                        <div className="space-y-3">
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'semibold', mb: 2 }}>حسب الفئة</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                           {statistics.expenses_by_category.map((item, index) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <span>{item.category_name}</span>
-                              <div className="text-right">
-                                <div className="font-medium">{formatNumber(item.total_amount)}</div>
-                                <div className="text-sm text-muted-foreground">{item.count} مصروف</div>
-                              </div>
-                            </div>
+                            <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography>{item.category_name}</Typography>
+                              <Box sx={{ textAlign: 'right' }}>
+                                <Typography sx={{ fontWeight: 'medium' }}>{formatNumber(item.total_amount)}</Typography>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>{item.count} مصروف</Typography>
+                              </Box>
+                            </Box>
                           ))}
-                        </div>
-                      </div>
+                        </Box>
+                      </Box>
 
-                      <div>
-                        <div className="font-semibold mb-3">حسب طريقة الدفع</div>
-                        <div className="space-y-3">
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'semibold', mb: 2 }}>حسب طريقة الدفع</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                           {(statistics.totals_by_payment_method || []).map((item, index) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <span>
+                            <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography>
                                 {translatePaymentMethod(item.payment_method)}
-                              </span>
-                              <div className="text-right font-medium">{formatNumber(item.total_amount)}</div>
-                            </div>
+                              </Typography>
+                              <Typography sx={{ textAlign: 'right', fontWeight: 'medium' }}>{formatNumber(item.total_amount)}</Typography>
+                            </Box>
                           ))}
-                        </div>
-                      </div>
-                    </div>
+                        </Box>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
-              </div>
+              </Box>
             )}
-          </TabsContent>
-        </Tabs>
-      </div>
+          </Box>
+        )}
+      </Box>
+
+      {/* Create Dialog */}
+      <Dialog 
+        open={isCreateDialogOpen} 
+        onClose={() => setIsCreateDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        dir="rtl"
+      >
+        <DialogTitle>إضافة مصروف جديد</DialogTitle>
+        <DialogContent dir="rtl" sx={{ maxHeight: '90vh', overflowY: 'auto' }}>
+          <ExpenseForm
+            onSubmit={handleCreate}
+            onCancel={() => setIsCreateDialogOpen(false)}
+            loading={loading}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog 
@@ -595,8 +618,7 @@ const ExpensesPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-
-    </section>
+    </Box>
   );
 };
 

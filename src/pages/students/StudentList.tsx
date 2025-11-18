@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"; // shadcn Select
 import {
   Plus, FileText, ChevronUp, ChevronDown, FilterX,
-  CheckCircle2, Eye, RefreshCw, User, XCircle,
+  CheckCircle2, Eye, RefreshCw, User, XCircle, Truck,
 } from "lucide-react";
 import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
@@ -749,7 +749,40 @@ const StudentList = () => {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium text-center">{student.student_name}</TableCell>
+                          <TableCell className="font-medium text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <span>{student.student_name}</span>
+                              {(() => {
+                                const activeEnrollment = student.enrollments?.find(
+                                  enrollment => enrollment.status === 'active'
+                                );
+                                const isSubscribed = activeEnrollment?.deportation === true || 
+                                                   (activeEnrollment?.deportation_type && activeEnrollment?.deportation_path_id);
+                                
+                                return isSubscribed ? (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="flex items-center">
+                                          <Truck className="h-4 w-4 text-orange-600" />
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="text-center">
+                                          <p className="font-medium">مشترك في الترحيل</p>
+                                          {activeEnrollment?.deportation_type && (
+                                            <p className="text-xs text-muted-foreground">
+                                              النوع: {activeEnrollment.deportation_type}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                ) : null;
+                              })()}
+                            </div>
+                          </TableCell>
                           <TableCell className="text-center hidden sm:table-cell">
                             <Badge variant={student.gender === Gender.Male ? "default" : "secondary"} 
                                    className={student.gender === Gender.Male ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400"}>

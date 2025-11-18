@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, ArrowRightLeft, Users, BookOpen } from 'lucide-react';
+import { Wallet, ArrowRightLeft, Users, BookOpen, DollarSign } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const FinanceDashboard: React.FC = () => {
@@ -55,6 +55,18 @@ const FinanceDashboard: React.FC = () => {
               </Button>
             </div>
             <BookOpen className="h-12 w-12 text-purple-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">الإيرادات الأخرى</h2>
+              <p className="text-sm text-muted-foreground mt-1">إدارة الإيرادات الأخرى المصنفة حسب الفئات</p>
+              <Button asChild className="mt-4" variant="outline">
+                <RouterLink to="/finances/other-revenues">عرض الإيرادات الأخرى</RouterLink>
+              </Button>
+            </div>
+            <DollarSign className="h-12 w-12 text-emerald-600" />
           </CardContent>
         </Card>
       </div>

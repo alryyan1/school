@@ -38,6 +38,7 @@ const RevenuesPage: React.FC = () => {
   const [ledgerSummaryMap, setLedgerSummaryMap] = useState<Record<number, { total_fees: number; total_payments: number; total_discounts?: number; total_refunds?: number; total_adjustments?: number }>>({});
   const [onlyDiscounts, setOnlyDiscounts] = useState<boolean>(false);
   const [onlyNoPayments, setOnlyNoPayments] = useState<boolean>(false);
+  const [onlyDeportation, setOnlyDeportation] = useState<boolean>(false);
   const [enrollmentType, setEnrollmentType] = useState<EnrollmentType | null>(null);
   const [perPage, setPerPage] = useState<number>(30);
   const [page, setPage] = useState<number>(1);
@@ -107,14 +108,15 @@ const RevenuesPage: React.FC = () => {
     if (search && search.trim() !== "") filters.search = search.trim();
     if (referenceNumber && referenceNumber.trim() !== "") filters.reference_number = referenceNumber.trim();
     if (onlyNoPayments) filters.only_no_payments = true;
+    if (onlyDeportation) filters.only_deportation = true;
     if (enrollmentType) filters.enrollment_type = enrollmentType;
     return filters;
-  }, [schoolId, gradeLevelId, classroomId, perPage, page, search, referenceNumber, onlyNoPayments, enrollmentType]);
+  }, [schoolId, gradeLevelId, classroomId, perPage, page, search, referenceNumber, onlyNoPayments, onlyDeportation, enrollmentType]);
 
   // Reset to first page on filter/perPage/search change
   useEffect(() => {
     setPage(1);
-  }, [schoolId, gradeLevelId, classroomId, perPage, search, referenceNumber, onlyNoPayments, enrollmentType]);
+  }, [schoolId, gradeLevelId, classroomId, perPage, search, referenceNumber, onlyNoPayments, onlyDeportation, enrollmentType]);
 
   // fetch students on filter changes
   useEffect(() => {
@@ -249,6 +251,12 @@ const RevenuesPage: React.FC = () => {
                 onClick={() => setOnlyNoPayments(v => !v)}
               >
                 غير مدفوع
+              </Button>
+              <Button
+                variant={onlyDeportation ? "default" : "outline"}
+                onClick={() => setOnlyDeportation(v => !v)}
+              >
+                الترحيل فقط
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>تصدير PDF</Button>
               <Button variant="outline" onClick={handleExportExcel}>تصدير Excel</Button>
@@ -464,7 +472,15 @@ const RevenuesPage: React.FC = () => {
                       } جنيه</TableCell>
                       <TableCell className="text-center text-xs sm:text-sm">
                         {s.enrollments?.[0]?.deportation ? (
-                          <div className="flex justify-center" title="مشترك في الترحيل">
+                          <div 
+                            className="flex justify-center cursor-pointer hover:opacity-70 transition-opacity" 
+                            title="مشترك في الترحيل - انقر للتعديل"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStudent(s);
+                              setDeportationDialogOpen(true);
+                            }}
+                          >
                             <Truck className="w-5 h-5 text-blue-600" />
                           </div>
                         ) : (

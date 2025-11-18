@@ -61,7 +61,11 @@ const DeportationDialog: React.FC<DeportationDialogProps> = ({
       const firstEnrollment = selectedStudent?.enrollments?.[0];
       if (firstEnrollment) {
         setDeportationType(firstEnrollment.deportation_type || '');
-        setDeportationPathId(firstEnrollment.deportation_path_id?.toString() || '');
+        // Try deportation_path_id first, then fallback to deportation_path?.id
+        const pathId = firstEnrollment.deportation_path_id 
+          || (firstEnrollment as any).deportation_path?.id 
+          || null;
+        setDeportationPathId(pathId ? pathId.toString() : '');
       } else {
         setDeportationType('');
         setDeportationPathId('');
