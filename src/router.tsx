@@ -49,6 +49,7 @@ import SubjectList from '@/pages/settings/SubjectList';                 // Adjus
 import ClassroomList from '@/pages/settings/ClassroomList';               // Adjust path
 import SchoolGradeLevelManager from '@/pages/settings/SchoolGradeLevelManager';// Adjust path
 import UserList from '@/pages/settings/UserList';                       // Adjust path
+import DatabaseBackupPage from '@/pages/settings/DatabaseBackupPage';
 
 // --- Finance Pages ---
 import DueInstallmentsPage from '@/pages/finances/DueInstallmentsPage';   // Adjust path
@@ -57,6 +58,7 @@ import RevenuesPage from '@/pages/finances/RevenuesPage';
 import DeportationEnrollmentsPage from '@/pages/finances/DeportationEnrollmentsPage';
 import ExpensesPage from '@/pages/finances/ExpensesPage';
 import ExpenseCategoriesPage from '@/pages/finances/ExpenseCategoriesPage';
+import RevenueCategoriesPage from '@/pages/finances/RevenueCategoriesPage';
 import StudentLedgerPage from '@/pages/finances/StudentLedgerPage';
 import StudentLedgerDeletionsPage from '@/pages/finances/StudentLedgerDeletionsPage';
 import LedgerPage from '@/pages/finances/LedgerPage';
@@ -214,6 +216,7 @@ const router = createHashRouter([
                     { path: 'users', element: <UserList /> },
                     { path: 'roles-permissions', element: <RolePermissionManager /> }, // <-- Add this
                     { path: 'classroom-assigner', element: <ClassroomStudentAssigner /> },
+                    { path: 'database-backup', element: <DatabaseBackupPage /> },
 
                 ]
             },
@@ -255,6 +258,7 @@ const router = createHashRouter([
                        { path: 'deportation-enrollments', element: <DeportationEnrollmentsPage /> },
                        { path: 'expenses', element: <ExpensesPage /> },
                        { path: 'expense-categories', element: <ExpenseCategoriesPage /> },
+                       { path: 'revenue-categories', element: <RevenueCategoriesPage /> },
                        { path: 'due-installments', element: <DueInstallmentsPage /> },
                        { path: 'student-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },
                        { path: 'student-deportation-ledger/:enrollmentId/:studentName', element: <StudentLedgerPage /> },

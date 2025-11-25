@@ -14,7 +14,7 @@ import {
     LayoutDashboard, Building2, Users, GraduationCap, Settings,
     Milestone, Library, Network,
     School, KeyRound, DollarSign, Receipt, CreditCard,
-    ClipboardList, History, Send
+    ClipboardList, History, Send, Database
 } from 'lucide-react';
 
 // Define Menu Item Structure
@@ -37,6 +37,7 @@ const settingsNavItems: NavItem[] = [
 	{ label: 'مراحل المدرسة', href: '/settings/school-grades', icon: School }, // Using School icon from lucide
 	{ label: 'إدارة المستخدمين', href: '/settings/users', icon: Users },
 	{ label: 'الأدوار والصلاحيات', href: '/settings/roles-permissions', icon: KeyRound },
+	{ label: 'نسخ   احتياطي', href: '/settings/database-backup', icon: Database },
 ];
 
 
@@ -252,6 +253,7 @@ const SidebarContent: React.FC<{
                             { label: 'المصروفات', href: '/finances/expenses', icon: Receipt },
                             { label: 'فئات المصروفات', href: '/finances/expense-categories', icon: CreditCard },
                             { label: 'الإيرادات', href: '/finances/revenues', icon: DollarSign },
+                            { label: 'فئات الإيرادات', href: '/finances/revenue-categories', icon: CreditCard },
                             { label: 'سجل حذف القيود', href: '/finances/ledger-deletions', icon: History },
                             // { label: 'الأقساط المستحقة', href: '/finances/due-installments', icon: CreditCard },
                         ];

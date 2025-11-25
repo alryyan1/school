@@ -3,6 +3,8 @@
 export type RevenueCategory = {
   id: number;
   name: string;
+  color: string;
+  is_active: boolean;
   created_at?: string;
   updated_at?: string;
   other_revenues?: OtherRevenue[];
@@ -67,6 +69,8 @@ export type OtherRevenueStatistics = {
 
 export type CreateRevenueCategoryRequest = {
   name: string;
+  color?: string;
+  is_active?: boolean;
 };
 
 export type UpdateRevenueCategoryRequest = Partial<CreateRevenueCategoryRequest>;
