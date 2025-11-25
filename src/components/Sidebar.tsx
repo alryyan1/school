@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"; // Your shadcn/ui utility
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator"; // For visual separation
-// import { useAuth } from '@/context/authcontext';
+import { useAuth } from '@/context/authcontext';
 
 // lucide-react icons
 import {
@@ -54,9 +54,8 @@ const SidebarContent: React.FC<{
 }> = ({
     isCollapsed, onNavLinkClick, currentPathname, onCollapseToggle, showCollapseButton = false
 }) => {
-    // const { userRole, permissions } = useAuth();
-    // const effectivePermissions = permissions || [];
-    // const isAdmin = (userRole === 'admin');
+    const { roles } = useAuth();
+    const hasAccountantRole = roles && roles.includes('accountant');
 
     const [openSettings, setOpenSettings] = useState(false);
     const [openStudents, setOpenStudents] = useState(false);
@@ -246,8 +245,8 @@ const SidebarContent: React.FC<{
                         );
                     })()}
 
-                    {/* Finances Section */}
-                    {(() => {
+                    {/* Finances Section - Only show if user has accountant role */}
+                    {hasAccountantRole && (() => {
                         const financeSubItems: NavItem[] = [
                             { label: 'لوحة المالية', href: '/finances', icon: DollarSign },
                             { label: 'المصروفات', href: '/finances/expenses', icon: Receipt },

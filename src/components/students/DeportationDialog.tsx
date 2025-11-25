@@ -34,6 +34,7 @@ const DeportationDialog: React.FC<DeportationDialogProps> = ({
   const { enqueueSnackbar } = useSnackbar();
   const [deportationType, setDeportationType] = useState<string>('');
   const [deportationPathId, setDeportationPathId] = useState<string>('');
+  const [nearestStation, setNearestStation] = useState<string>('');
   const [newPathName, setNewPathName] = useState<string>('');
   const [showAddPath, setShowAddPath] = useState(false);
   const [deportationPaths, setDeportationPaths] = useState<DeportationPath[]>([]);
@@ -66,14 +67,17 @@ const DeportationDialog: React.FC<DeportationDialogProps> = ({
           || (firstEnrollment as any).deportation_path?.id 
           || null;
         setDeportationPathId(pathId ? pathId.toString() : '');
+        setNearestStation((firstEnrollment as any).nearest_station || '');
       } else {
         setDeportationType('');
         setDeportationPathId('');
+        setNearestStation('');
       }
     } else {
       // Reset form when dialog closes
       setDeportationType('');
       setDeportationPathId('');
+      setNearestStation('');
       setNewPathName('');
       setShowAddPath(false);
     }
@@ -128,6 +132,7 @@ const DeportationDialog: React.FC<DeportationDialogProps> = ({
         deportation: true,
         deportation_type: deportationType as 'داخلي' | 'خارجي',
         deportation_path_id: Number(deportationPathId),
+        nearest_station: nearestStation.trim() || null,
       });
       
       enqueueSnackbar('تم حفظ اشتراك الترحيل بنجاح', { variant: 'success' });
@@ -225,6 +230,17 @@ const DeportationDialog: React.FC<DeportationDialogProps> = ({
                 )}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Nearest Station Input */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-right block">أقرب محطة</label>
+            <Input
+              placeholder="أدخل أقرب محطة"
+              value={nearestStation}
+              onChange={(e) => setNearestStation(e.target.value)}
+              className="text-right"
+            />
           </div>
 
           {/* Action Buttons */}

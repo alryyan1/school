@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useStudentStore } from "@/stores/studentStore";
 import { useSchoolStore } from "@/stores/schoolStore";
 import { useGradeLevelStore } from "@/stores/gradeLevelStore";
@@ -47,6 +50,27 @@ const RevenuesPage: React.FC = () => {
   const [deportationDialogOpen, setDeportationDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
+  const [excelColumnDialogOpen, setExcelColumnDialogOpen] = useState(false);
+  
+  // Available columns for Excel export
+  const availableColumns = [
+    { key: 'registration_id', label: 'رقم التسجيل' },
+    { key: 'student_name', label: 'اسم الطالب' },
+    { key: 'school', label: 'المدرسة' },
+    { key: 'grade_level', label: 'المرحلة' },
+    { key: 'classroom', label: 'الفصل' },
+    { key: 'total_fees', label: 'الرسوم (دفتر)' },
+    { key: 'total_payments', label: 'المدفوع (دفتر)' },
+    { key: 'total_discounts', label: 'الخصومات' },
+    { key: 'remaining', label: 'المتبقي' },
+    { key: 'deportation', label: 'الترحيل' },
+  ];
+  
+  // Default selected columns (all selected by default)
+  const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
+    new Set(availableColumns.map(col => col.key))
+  );
+  
   console.log("ledgerSummaryMap", ledgerSummaryMap);
   // bootstrap lists
   useEffect(() => {
@@ -198,14 +222,46 @@ const RevenuesPage: React.FC = () => {
     window.open(pdfUrl, '_blank');
   };
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = () => {
+    // Show column selection dialog first
+    setExcelColumnDialogOpen(true);
+  };
+
+  const handleConfirmExcelExport = () => {
+    if (selectedColumns.size === 0) {
+      return; // Don't export if no columns selected
+    }
+    
     const params = new URLSearchParams();
     const filters = buildFilters();
     Object.entries(filters).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
     });
+    
+    // Add selected columns as comma-separated list
+    params.append('columns', Array.from(selectedColumns).join(','));
+    
     const excelUrl = `${webUrl}reports/revenues-excel?${params.toString()}`;
     window.open(excelUrl, '_blank');
+    setExcelColumnDialogOpen(false);
+  };
+
+  const toggleColumn = (columnKey: string) => {
+    const newSelected = new Set(selectedColumns);
+    if (newSelected.has(columnKey)) {
+      newSelected.delete(columnKey);
+    } else {
+      newSelected.add(columnKey);
+    }
+    setSelectedColumns(newSelected);
+  };
+
+  const selectAllColumns = () => {
+    setSelectedColumns(new Set(availableColumns.map(col => col.key)));
+  };
+
+  const deselectAllColumns = () => {
+    setSelectedColumns(new Set());
   };
 
   const handleStudentClick = (student: Student) => {
@@ -563,6 +619,72 @@ const RevenuesPage: React.FC = () => {
           }
         }}
       />
+
+      {/* Excel Column Selection Dialog */}
+      <Dialog open={excelColumnDialogOpen} onOpenChange={setExcelColumnDialogOpen}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>اختر الأعمدة للتصدير</DialogTitle>
+            <DialogDescription>
+              اختر الأعمدة التي تريد تضمينها في ملف Excel
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={selectAllColumns}
+              >
+                تحديد الكل
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={deselectAllColumns}
+              >
+                إلغاء تحديد الكل
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
+              {availableColumns.map((column) => (
+                <div key={column.key} className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id={column.key}
+                    checked={selectedColumns.has(column.key)}
+                    onCheckedChange={() => toggleColumn(column.key)}
+                  />
+                  <Label
+                    htmlFor={column.key}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {column.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExcelColumnDialogOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleConfirmExcelExport}
+              disabled={selectedColumns.size === 0}
+            >
+              تصدير Excel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
