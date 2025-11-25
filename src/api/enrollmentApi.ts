@@ -96,6 +96,7 @@ export const EnrollmentApi = {
       deportation: boolean;
       deportation_type?: 'داخلي' | 'خارجي' | null;
       deportation_path_id?: number | null;
+      nearest_station?: string | null;
     }
   ) =>
     axiosClient.put<ResourceResponse>(`/enrollments/${enrollmentId}/deportation`, data),

@@ -218,12 +218,11 @@ const RevenuesPage: React.FC = () => {
   };
 
   return (
-    <section className="container mx-auto p-4 sm:p-6 max-w-8xl" dir="rtl">
+    <section className="container mx-auto p-1 sm:p-1 max-w-8xl" dir="rtl">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-1">
-              <CardTitle>الايرادات - رسوم الطلاب</CardTitle>
               <div className="max-w-xs w-full">
                 <Input
                   value={search}
@@ -408,9 +407,9 @@ const RevenuesPage: React.FC = () => {
                         const hasNoPayments = eid ? Number(ledgerSummaryMap[eid]?.total_payments || 0) === 0 : false;
                         const isHighlighted = highlightedStudentId === s.id;
                         
-                        if (isHighlighted) return 'bg-green-100 hover:bg-green-200 border-2 border-green-500';
-                        if (hasDiscount) return 'bg-amber-50 hover:bg-amber-100';
-                        if (hasNoPayments) return 'bg-red-50 hover:bg-red-100';
+                        // if (isHighlighted) return 'bg-green-100 hover:bg-green-200 border-2 border-green-500';
+                        // if (hasDiscount) return 'bg-amber-50 hover:bg-amber-100';
+                        // if (hasNoPayments) return 'bg-red-50 hover:bg-red-100';
                         return 'hover:bg-muted/50';
                       })()}`}
                       onClick={() => handleStudentClick(s)}

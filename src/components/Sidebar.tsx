@@ -14,7 +14,7 @@ import {
     LayoutDashboard, Building2, Users, GraduationCap, Settings,
     Milestone, Library, Network,
     School, KeyRound, DollarSign, Receipt, CreditCard,
-    ClipboardList, History
+    ClipboardList, History, Send
 } from 'lucide-react';
 
 // Define Menu Item Structure
@@ -147,6 +147,8 @@ const SidebarContent: React.FC<{
                             { label: 'لوحة الطلاب', href: '/students', icon: Users },
                             { label: 'قائمة الطلاب', href: '/students/list', icon: Users },
                             { label: 'إضافة طالب', href: '/students/create', icon: Users },
+                            { label: 'واتساب جماعي', href: '/students/whatsapp-bulk', icon: Send },
+                            { label: 'رسائل SMS جماعية', href: '/students/sms-bulk', icon: Send },
                         ];
                         if (studentSubItems.length === 0) return null;
                         return (

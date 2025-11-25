@@ -59,9 +59,30 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       console.log("Original expense_date:", expense.expense_date);
       
       // Format the date to YYYY-MM-DD for HTML date input
-      const formattedDate = expense.expense_date ? 
-        new Date(expense.expense_date).toISOString().split('T')[0] : 
-        new Date().toISOString().split('T')[0];
+      // Use local timezone to avoid date shifting
+      const formatDateForInput = (dateString: string | null | undefined): string => {
+        if (!dateString) {
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+        
+        // If already in YYYY-MM-DD format, use it directly
+        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+          return dateString;
+        }
+        
+        // Parse the date using local timezone to avoid UTC conversion issues
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      const formattedDate = formatDateForInput(expense.expense_date);
       
       console.log("Formatted date:", formattedDate);
       

@@ -23,6 +23,7 @@ export type Enrollment = {
     deportation?: boolean;
     deportation_type?: DeportationType | null;
     deportation_path_id?: number | null;
+    nearest_station?: string | null;
     created_at?: string;
     updated_at?: string;
     

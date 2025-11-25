@@ -323,7 +323,7 @@ const StudentLedgerPage: React.FC = () => {
   }
 
   return (
-    <section className="container mx-auto p-4 sm:p-6 max-w-6xl" dir="rtl">
+    <section className="w-full min-w-0 max-w-full px-4 sm:px-6 py-4 sm:py-6" dir="rtl">
       {/* Header with Back Button */}
       <div className="flex items-center justify-between mb-6">
         <Button 
@@ -574,39 +574,40 @@ const StudentLedgerPage: React.FC = () => {
           <CardTitle>سجل المعاملات</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-md overflow-x-auto">
-            <Table>
+          <div className="border rounded-md w-full overflow-x-auto">
+            <Table className="w-full min-w-[900px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-center">التاريخ</TableHead>
-                  <TableHead className="text-center">النوع</TableHead>
-                  <TableHead className="text-center">الوصف</TableHead>
-                  <TableHead className="text-center">المبلغ</TableHead>
-                  <TableHead className="text-center">طريقة الدفع</TableHead>
-                  <TableHead className="text-center">الرصيد بعد المعاملة</TableHead>
-                  <TableHead className="text-center">رقم المرجع</TableHead>
-                  <TableHead className="text-center">تم الإنشاء بواسطة</TableHead>
-                  <TableHead className="text-center">الإجراءات</TableHead>
+                  <TableHead className="text-center w-[10%]">التاريخ</TableHead>
+                  <TableHead className="text-center w-[8%]">النوع</TableHead>
+                  <TableHead className="text-center w-[20%]">الوصف</TableHead>
+                  <TableHead className="text-center w-[12%]">المبلغ</TableHead>
+                  <TableHead className="text-center w-[10%]">طريقة الدفع</TableHead>
+                  <TableHead className="text-center w-[10%]">رقم المرجع</TableHead>
+                  <TableHead className="text-center w-[10%]">تم الإنشاء بواسطة</TableHead>
+                  <TableHead className="text-center w-[8%]">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentLedger.ledger_entries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell className="text-center">
-                      {format(new Date(entry.transaction_date), 'dd/MM/yyyy', { locale: ar })}
+                      <div className="break-words">{format(new Date(entry.transaction_date), 'dd/MM/yyyy', { locale: ar })}</div>
                     </TableCell>
                     <TableCell className="text-center">
-                      {getTransactionTypeBadge(entry.transaction_type)}
+                      <div className="flex justify-center">{getTransactionTypeBadge(entry.transaction_type)}</div>
                     </TableCell>
-                    <TableCell className="text-center">{entry.description}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="break-words max-w-[200px] mx-auto">{entry.description}</div>
+                    </TableCell>
                     <TableCell className={`text-center font-semibold ${
                       entry.transaction_type === 'fee' ? 'text-red-600' : 'text-green-600'
                     }`}>
-                                                {entry.transaction_type === 'fee' ? '+' : '-'}{numberWithCommas(entry.amount)} جنيه
+                      <div className="break-words">{entry.transaction_type === 'fee' ? '+' : '-'}{numberWithCommas(entry.amount)} جنيه</div>
                     </TableCell>
                     <TableCell className="text-center">
                       {entry.payment_method ? (
-                        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 whitespace-nowrap">
                           {entry.payment_method === 'cash' && 'نقداً'}
                           {entry.payment_method === 'bankak' && 'بنكك'}
                           {entry.payment_method === 'Fawri' && 'فوري'}
@@ -614,36 +615,33 @@ const StudentLedgerPage: React.FC = () => {
                         </Badge>
                       ) : '-'}
                     </TableCell>
-                    <TableCell className="text-center font-semibold">
-                                                {numberWithCommas(entry.balance_after)} جنيه
+                    <TableCell className="text-center">
+                      <div className="break-words">{entry.reference_number || '-'}</div>
                     </TableCell>
                     <TableCell className="text-center">
-                      {entry.reference_number || '-'}
+                      <div className="break-words">{entry.created_by?.name || '-'}</div>
                     </TableCell>
                     <TableCell className="text-center">
-                      {entry.created_by?.name || '-'}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
                         {entry.transaction_type === 'payment' && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handlePrintReceipt(entry)}
-                            className="flex items-center gap-2 text-xs"
+                            className="flex items-center gap-1 text-xs whitespace-nowrap"
                           >
                             <Printer className="w-3 h-3" />
-                            طباعة إيصال
+                            <span className="hidden sm:inline">طباعة إيصال</span>
                           </Button>
                         )}
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteClick(entry.id)}
-                          className="flex items-center gap-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 whitespace-nowrap"
                         >
                           <Trash2 className="w-3 h-3" />
-                          حذف
+                          <span className="hidden sm:inline">حذف</span>
                         </Button>
                       </div>
                     </TableCell>

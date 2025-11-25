@@ -67,6 +67,7 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
   const [transportDialogOpen, setTransportDialogOpen] = useState(false);
   const [deportationType, setDeportationType] = useState<string>('');
   const [deportationPathId, setDeportationPathId] = useState<string>('');
+  const [nearestStation, setNearestStation] = useState<string>('');
   const [newPathName, setNewPathName] = useState<string>('');
   const [showAddPath, setShowAddPath] = useState(false);
   const [deportationPaths, setDeportationPaths] = useState<DeportationPath[]>([]);
@@ -104,11 +105,13 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
       if (activeEnrollment) {
         setDeportationType(activeEnrollment.deportation_type || '');
         setDeportationPathId(activeEnrollment.deportation_path_id?.toString() || '');
+        setNearestStation(activeEnrollment.nearest_station || '');
       }
     } else {
       // Reset form when dialog closes
       setDeportationType('');
       setDeportationPathId('');
+      setNearestStation('');
       setNewPathName('');
       setShowAddPath(false);
     }
@@ -164,6 +167,7 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
         deportation: true,
         deportation_type: deportationType as 'داخلي' | 'خارجي',
         deportation_path_id: Number(deportationPathId),
+        nearest_station: nearestStation.trim() || null,
       });
       
       enqueueSnackbar('تم حفظ اشتراك الترحيل بنجاح', { variant: 'success' });
@@ -288,13 +292,32 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
                 ) : null}
               </div>
               
-              {/* Center: Student ID */}
+              {/* Center: Student ID and Enrollment ID */}
               <div className="flex-1 flex items-center justify-center">
-                <div className="flex items-center gap-2">
-                  <Hash className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-xl font-bold text-foreground font-mono">
-                    {selectedStudent.id}
-                  </span>
+                <div className="flex flex-col items-center gap-2">
+                  {/* Student ID */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="text-xs text-muted-foreground">رقم الطالب</div>
+                    <div className="flex items-center gap-2">
+                      <Hash className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-lg font-bold text-foreground font-mono">
+                        {selectedStudent.id}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Enrollment ID */}
+                  {selectedStudent.enrollments && selectedStudent.enrollments.length > 0 && (
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="text-xs text-muted-foreground">رقم التسجيل</div>
+                      <div className="flex items-center gap-2">
+                        <Hash className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-lg font-bold text-foreground font-mono">
+                          {selectedStudent.enrollments[0]?.id}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -653,6 +676,18 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
               </Select>
             </div>
 
+            {/* Nearest Station Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-right block">أقرب محطة</label>
+              <Input
+                placeholder="أدخل أقرب محطة للطالب"
+                value={nearestStation}
+                onChange={(e) => setNearestStation(e.target.value)}
+                // className="text-right"
+                disabled={loading || saving}
+              />
+            </div>
+
             {/* Action Buttons */}
             <div className="flex gap-2 justify-end pt-4">
               <Button
@@ -661,6 +696,7 @@ const StudentActionsDialog: React.FC<StudentActionsDialogProps> = ({
                   setTransportDialogOpen(false);
                   setDeportationType('');
                   setDeportationPathId('');
+                  setNearestStation('');
                   setNewPathName('');
                   setShowAddPath(false);
                   // Close main dialog if it was auto-opened

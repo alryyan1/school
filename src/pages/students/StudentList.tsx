@@ -50,6 +50,7 @@ const StudentList = () => {
   const [actionsDialogOpen, setActionsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
+  const [filtersVisible, setFiltersVisible] = useState(false);
   
   // State for edit grade level dialog
   const [editGradeLevelDialogOpen, setEditGradeLevelDialogOpen] = useState(false);
@@ -365,7 +366,7 @@ const StudentList = () => {
 
   if (loading && students.length === 0) {
     return (
-      <div className="container mx-auto p-4 sm:p-6 max-w-7xl" dir="rtl">
+      <div className="container mx-auto p-1 sm:p-1 max-w-7xl" dir="rtl">
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -442,6 +443,32 @@ const StudentList = () => {
               <Button variant="outline" onClick={handlePrintList} size="sm" className="w-full sm:w-auto">
                 <FileText className="ml-2 h-4 w-4" /> طباعة القائمة
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  if (searchTerm.trim()) params.append('search', searchTerm.trim());
+                  if (wishedSchoolFilter !== null) params.append('wished_school_id', wishedSchoolFilter.toString());
+                  if (dateFilterType && dateFilterType !== " ") {
+                    if (startDateFilter) params.append('start_date', startDateFilter.format('YYYY-MM-DD'));
+                    if (endDateFilter) params.append('end_date', endDateFilter.format('YYYY-MM-DD'));
+                    params.append('date_type', dateFilterType);
+                  }
+                  if (onlyEnrolled) params.append('only_enrolled', 'true');
+                  if (onlyApproved) params.append('only_approved', 'true');
+                  if (onlyNotEnrolled) params.append('only_not_enrolled', 'true');
+                  if (onlyNotApproved) params.append('only_not_approved', 'true');
+                  params.append('sort_by', orderBy);
+                  params.append('sort_order', order);
+                  params.append('per_page', '1000');
+                  params.append('page', '1');
+                  window.open(`${webUrl}reports/students/list-excel?${params.toString()}`, '_blank');
+                }}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                <FileText className="ml-2 h-4 w-4" /> تصدير Excel
+              </Button>
               <Button variant="outline" onClick={() => window.open(`${webUrl}reports/terms-and-conditions`, '_blank')} size="sm" className="w-full sm:w-auto">
                 <FileText className="ml-2 h-4 w-4" /> طباعة الشروط والأحكام
               </Button>
@@ -458,11 +485,20 @@ const StudentList = () => {
                 <RefreshCw className={`ml-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> 
                 تحديث
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() => setFiltersVisible((prev) => !prev)}
+              >
+                {filtersVisible ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters Section */}
+          {filtersVisible && (
           <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 p-4 border rounded-lg transition-all duration-300 ${
             searchTerm.trim() || wishedSchoolFilter !== null || (dateFilterType && dateFilterType !== " ") || startDateFilter || endDateFilter || onlyEnrolled || onlyApproved || onlyNotEnrolled || onlyNotApproved
               ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 shadow-md' 
@@ -656,6 +692,7 @@ const StudentList = () => {
               </Button>
             </div>
           </div>
+          )}
 
           {/* Table Container - Centered */}
           <div className="w-full flex justify-center">

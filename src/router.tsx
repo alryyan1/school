@@ -35,6 +35,7 @@ import TeacherView from '@/pages/teachers/TeacherView';                   // Adj
 import TeacherForm from '@/components/teachers/TeacherForm';               // Adjust path
 import TeachersWhatsappBulkPage from '@/pages/teachers/TeachersWhatsappBulkPage';
 import StudentsWhatsappBulkPage from '@/pages/students/StudentsWhatsappBulkPage';
+import StudentBulkSmsPage from '@/pages/students/StudentBulkSmsPage';
 
 // --- School Pages & Components ---
 import SchoolList from '@/pages/schools/schoolList';                   // Adjust path
@@ -154,6 +155,7 @@ const router = createHashRouter([
                     { path: ':id/edit', element: <StudentForm /> },
                     { path: ':id/enrollments', element: <StudentEnrollmentsPage /> },
                     { path: 'whatsapp-bulk', element: <StudentsWhatsappBulkPage /> },
+                    { path: 'sms-bulk', element: <StudentBulkSmsPage /> },
                     {
                         path: ':studentId/enrollments/:enrollmentId',
                         element: <StudentEnrollmentLayout />,
